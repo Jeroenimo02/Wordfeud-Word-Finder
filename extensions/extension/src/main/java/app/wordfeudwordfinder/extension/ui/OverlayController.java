@@ -9,13 +9,11 @@ import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -38,6 +36,7 @@ import app.wordfeudwordfinder.extension.game.RawGame;
 import app.wordfeudwordfinder.extension.game.Ruleset;
 import app.wordfeudwordfinder.extension.hooks.RouteTap;
 import app.wordfeudwordfinder.extension.play.MoveSubmitter;
+import app.wordfeudwordfinder.extension.play.Refresher;
 import app.wordfeudwordfinder.extension.solver.Move;
 import app.wordfeudwordfinder.extension.solver.Rules;
 import app.wordfeudwordfinder.extension.solver.SortMode;
@@ -72,7 +71,7 @@ public final class OverlayController {
     private static final int RACK_TILE_DP = 36;
     private static final int RACK_GAP_DP = 3;
     private static final int SECTION_GAP_DP = 8;
-    private static final int BUTTON_HEIGHT_DP = 36;
+    private static final int BUTTON_HEIGHT_DP = Widgets.BUTTON_HEIGHT_DP;
     private static final int FAB_ELEVATION_DP = 6;
     /** The preview board takes at most this share of the panel height, so the list always keeps some room. */
     private static final float BOARD_MAX_HEIGHT_FRACTION = 0.5f;
@@ -93,6 +92,8 @@ public final class OverlayController {
     private final WordFinder wf;
     private final float density;
     private final Computations computations = new Computations();
+    /** Play button state; per activity, so a pending MV-NET block also holds for a reopened overlay. */
+    private final PlayState play = new PlayState();
     private final Application.ActivityLifecycleCallbacks lifecycle;
     private FrameLayout layer;
     private View fab;
@@ -116,9 +117,12 @@ public final class OverlayController {
     private WordGraph readyGraph;
     private int readyGraphRuleset = -1;
     private boolean wordListRequested;
-    /** The word list error of this open overlay; it stays shown (no automatic retry) until the overlay reopens. */
+    /** Counts ensureForOverlay calls; callbacks of an earlier attempt (before a Retry) are ignored. */
+    private int wordListAttempt;
+    /** The word list error of this open overlay; it stays shown (no automatic retry) until Retry or reopen. */
     private WfError wordListError;
-    private boolean playing;
+    /** The REJECTED message survives the list recomputed for it; the next list after that clears it. */
+    private boolean keepStatusForNextList;
     private Object backCallback;
     private View focusBeforeOpen;
 
@@ -128,6 +132,8 @@ public final class OverlayController {
     private LinearLayout rackRow;
     private BoardPreviewView board;
     private TextView status;
+    private DownloadProgress progress;
+    private ErrorPanel errorPanel;
     private LinearLayout infoRow;
     private TextView infoWord;
     private TextView infoDetail;
@@ -393,7 +399,7 @@ public final class OverlayController {
         readyGraphRuleset = -1;
         wordListRequested = false;
         wordListError = null;
-        playing = false;
+        keepStatusForNextList = false;
         lang = language();
         theme = Theme.forDarkMode(RouteTap.isDark());
         focusBeforeOpen = activity.getCurrentFocus();
@@ -573,7 +579,7 @@ public final class OverlayController {
         panel.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(PANEL_PADDING_DP);
         panel.setPadding(pad, 0, pad, pad);
-        panel.setBackground(rounded(theme.background, dp(PANEL_RADIUS_DP)));
+        panel.setBackground(Widgets.rounded(theme.background, dp(PANEL_RADIUS_DP)));
         panel.setClickable(true);
         Insets in = insets();
         int m = dp(PANEL_MARGIN_DP);
@@ -605,6 +611,16 @@ public final class OverlayController {
         LinearLayout.LayoutParams slp = matchWrap();
         slp.topMargin = dp(SECTION_GAP_DP);
         panel.addView(status, slp);
+
+        progress = new DownloadProgress(ctx, theme, lang, density);
+        LinearLayout.LayoutParams plp2 = matchWrap();
+        plp2.topMargin = dp(SECTION_GAP_DP);
+        panel.addView(progress, plp2);
+
+        errorPanel = new ErrorPanel(ctx, theme, lang, density);
+        LinearLayout.LayoutParams elp = matchWrap();
+        elp.topMargin = dp(SECTION_GAP_DP);
+        panel.addView(errorPanel, elp);
 
         infoRow = infoRow(ctx);
         LinearLayout.LayoutParams ilp = matchWrap();
@@ -799,6 +815,8 @@ public final class OverlayController {
         rackRow = null;
         board = null;
         status = null;
+        progress = null;
+        errorPanel = null;
         infoRow = null;
         infoWord = null;
         infoDetail = null;
@@ -830,14 +848,16 @@ public final class OverlayController {
         if (err == null && (game == null || ruleset == null || layout == null)) {
             err = WfError.gsData("game data missing");
         }
+        hideStatus();
+        keepStatusForNextList = false;
+        progress.hide();
+        errorPanel.hide();
         if (err != null) {
-            // TODO(Task 14): full ErrorPanel with "Copy details".
             showContent(false);
-            showStatus(errorText(err));
+            errorPanel.show(err, game == null ? -1 : game.getRulesetId(), null);
             return;
         }
         showContent(true);
-        hideStatus();
         board.setBoard(st.board(), layout, ruleset);
         board.setMove(null);
         updateRack();
@@ -881,24 +901,31 @@ public final class OverlayController {
         });
     }
 
-    /** Main thread: the word list is missing; download it once per open overlay and show a progress text. */
+    /**
+     * Main thread: the word list is missing. Downloads it once per open overlay (and again on Retry) with a progress
+     * bar; an error shows the error panel with "Retry" where that applies (spec 6.2 step 5).
+     */
     private void requestWordList(int rulesetId, Ruleset rs) {
-        // TODO(Task 14): progress bar, error panel with "Retry" and "Copy details".
         if (wordListError != null) {
-            showStatus(errorText(wordListError));
+            showWordListError(rulesetId);
             return;
         }
-        showStatus(Strings.get(lang, Key.DOWNLOADING));
+        if (progress.getVisibility() != View.VISIBLE) progress.start();
         if (wordListRequested) return;
         wordListRequested = true;
         final int s = session;
+        final int attempt = ++wordListAttempt;
         wf.wordLists().ensureForOverlay(rulesetId, rs, new WordListManager.Callback() {
+            /** Progress may be replayed on the calling thread, even after the result: ignore it once one is in. */
+            private boolean current() {
+                return open && session == s && wordListAttempt == attempt && progress != null;
+            }
+
             @Override
             public void onProgress(int pct) {
                 ui(() -> {
-                    if (open && session == s && moves == null && wordListError == null && status != null
-                            && status.getVisibility() == View.VISIBLE) {
-                        showStatus(Strings.get(lang, Key.DOWNLOADING) + " " + pct + "%");
+                    if (current() && wordListError == null && readyGraphRuleset != rulesetId) {
+                        progress.setPercent(pct);
                     }
                 });
             }
@@ -906,10 +933,10 @@ public final class OverlayController {
             @Override
             public void onReady(WordGraph g) {
                 ui(() -> {
-                    if (!open || session != s) return;
+                    if (!current()) return;
                     readyGraph = g;
                     readyGraphRuleset = rulesetId;
-                    hideStatus();
+                    progress.hide();
                     compute();
                 });
             }
@@ -917,11 +944,23 @@ public final class OverlayController {
             @Override
             public void onError(WfError e) {
                 ui(() -> {
-                    if (!open || session != s) return;
+                    if (!current()) return;
                     wordListError = e;
-                    showStatus(errorText(e));
+                    showWordListError(rulesetId);
                 });
             }
+        });
+    }
+
+    private void showWordListError(int rulesetId) {
+        progress.hide();
+        errorPanel.show(wordListError, rulesetId, () -> {
+            // Retry: a new ensureForOverlay attempt (through compute, which first checks memory and disk)
+            if (!open || errorPanel == null) return;
+            wordListError = null;
+            wordListRequested = false;
+            errorPanel.hide();
+            compute();
         });
     }
 
@@ -929,6 +968,12 @@ public final class OverlayController {
     private void showMoves(List<Move> out, boolean keepSelection) {
         if (adapter == null) return;
         Move keep = selected;
+        progress.hide();
+        if (keepStatusForNextList) {
+            keepStatusForNextList = false; // this is the list recomputed after a rejection: keep its message
+        } else {
+            hideStatus();
+        }
         moves = out;
         adapter.setMoves(out); // resets the adapter's selection
         int idx = keepSelection ? MovePipeline.indexOf(out, keep) : -1;
@@ -969,19 +1014,21 @@ public final class OverlayController {
     }
 
     // =====================================================================================================
-    // Play (seam for Task 14)
+    // Play (spec 8.3)
     // =====================================================================================================
 
     /**
-     * Sends the selected move. This task handles only SUCCESS (close the overlay; the store already holds the new
-     * game state). TODO(Task 14): REJECTED message + updated list, MV-* error panel with "Copy details", Play
-     * staying disabled after MV-NET until the next games/detail (spec 8.3).
+     * Sends the selected move on the background executor. SUCCESS closes the overlay and asks Wordfeud to refresh
+     * ({@link Refresher}); REJECTED shows the words and a recomputed list (RejectedWords now filters them); MV-NET
+     * keeps Play disabled until the next games/detail; any other error shows the error panel and Play comes back.
      */
     private void onPlayClicked() {
-        if (!open || selected == null || playing || state == null || !state.myTurn() || game == null) return;
+        if (!open || game == null || !canPlay()) return;
         MoveSubmitter submitter = wf.submitter();
-        if (submitter.isBusy()) return;
-        playing = true;
+        if (!play.begin()) return;
+        hideStatus();
+        keepStatusForNextList = false;
+        errorPanel.hide();
         updatePlayEnabled();
         computations.cancel(); // free the executor for the request
         final Move m = selected;
@@ -989,32 +1036,65 @@ public final class OverlayController {
         final int rulesetId = game.getRulesetId();
         final int s = session;
         background(() -> {
-            MoveSubmitter.Result r = submitter.submit(id, rulesetId, m);
-            ui(() -> {
-                if (open && session == s) {
-                    onPlayResult(r);
-                } else if (open) {
-                    updatePlayEnabled(); // a later overlay session waited for this request to finish
-                }
-            });
+            MoveSubmitter.Result.Kind kind = MoveSubmitter.Result.Kind.ERROR;
+            WfError error = null; // ERROR without an error: outcome unknown, handled like MV-NET
+            List<String> words = Collections.emptyList();
+            try {
+                MoveSubmitter.Result r = submitter.submit(id, rulesetId, m);
+                kind = r.kind;
+                error = r.error;
+                words = r.words;
+            } finally {
+                // Read after the request ended: only a games/detail processed from now on lifts an MV-NET block.
+                long generation = detailGeneration();
+                MoveSubmitter.Result.Kind k = kind;
+                WfError e = error;
+                List<String> w = words;
+                ui(() -> onPlayResult(s, id, k, e, w, generation));
+            }
         });
     }
 
-    private void onPlayResult(MoveSubmitter.Result r) {
-        playing = false;
-        if (r.kind == MoveSubmitter.Result.Kind.SUCCESS) {
-            close();
+    /** Main thread. Also runs when the overlay closed or reopened meanwhile: the Play state and refresh still apply. */
+    private void onPlayResult(int s, long id, MoveSubmitter.Result.Kind kind, WfError error, List<String> words,
+            long generation) {
+        PlayState.Action a = play.onResult(kind, error, generation);
+        boolean sameSession = open && session == s;
+        if (a == PlayState.Action.CLOSE_AND_REFRESH) {
+            if (sameSession) close();
+            Refresher.refresh(id);
             return;
         }
-        // TODO(Task 14): proper messages and error panel. For now: a plain text line and a fresh list.
-        if (r.kind == MoveSubmitter.Result.Kind.REJECTED) {
-            showStatus(Strings.get(lang, Key.REJECTED));
-            moves = null;
-            compute(); // RejectedWords now holds the words, so the move disappears from the list
-        } else if (r.error != null) {
-            showStatus(errorText(r.error));
+        if (sameSession) {
+            if (a == PlayState.Action.SHOW_REJECTED) {
+                showStatus(String.format(Strings.get(lang, Key.REJECTED_WORDS), TextUtils.join(", ", words)));
+                keepStatusForNextList = true;
+                moves = null;
+                selected = null; // the rejected move must not be played again while the list is recomputed
+                adapter.setMoves(Collections.<Move>emptyList());
+                board.setMove(null);
+                updateRack();
+                updateInfo();
+                compute(); // RejectedWords now holds the words, so the move disappears from the list
+            } else {
+                errorPanel.show(error != null ? error : WfError.mvNet(), game == null ? -1 : game.getRulesetId(),
+                        null);
+            }
         }
         updatePlayEnabled();
+    }
+
+    private boolean canPlay() {
+        return play.canPlay(selected != null, state != null && state.myTurn(), wf.submitter().isBusy(),
+                detailGeneration());
+    }
+
+    private long detailGeneration() {
+        try {
+            return wf.gameStore().detailGeneration();
+        } catch (Throwable t) {
+            return Long.MIN_VALUE;
+        }
     }
 
     // =====================================================================================================
@@ -1038,10 +1118,6 @@ public final class OverlayController {
 
     private void hideStatus() {
         if (status != null) status.setVisibility(View.GONE);
-    }
-
-    private String errorText(WfError e) {
-        return Strings.get(lang, Strings.errorKey(e)) + " (" + e.code() + ")";
     }
 
     private void updateRack() {
@@ -1083,7 +1159,7 @@ public final class OverlayController {
 
     private void updatePlayEnabled() {
         if (playButton == null) return;
-        boolean enabled = selected != null && !playing && !wf.submitter().isBusy();
+        boolean enabled = canPlay();
         playButton.setEnabled(enabled);
         playButton.setAlpha(enabled ? 1f : 0.4f);
     }
@@ -1093,7 +1169,7 @@ public final class OverlayController {
             TextView b = sortButtons[mode.ordinal()];
             if (b == null) continue;
             boolean on = mode == sort;
-            b.setBackground(rounded(on ? theme.accent : theme.surface, dp(BUTTON_HEIGHT_DP) / 2));
+            b.setBackground(Widgets.rounded(on ? theme.accent : theme.surface, dp(BUTTON_HEIGHT_DP) / 2));
             b.setTextColor(on ? theme.onAccent : theme.textPrimary);
         }
     }
@@ -1101,32 +1177,11 @@ public final class OverlayController {
     // ---- small view helpers ----
 
     private TextView text(Context ctx, int sp, int color, android.graphics.Typeface face) {
-        TextView t = new TextView(ctx);
-        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
-        t.setTextColor(color);
-        t.setTypeface(face);
-        t.setSingleLine(false);
-        t.setEllipsize(TextUtils.TruncateAt.END);
-        return t;
+        return Widgets.text(ctx, sp, color, face);
     }
 
     private TextView button(Context ctx, String label, boolean accent) {
-        TextView b = text(ctx, 14, accent ? theme.onAccent : theme.textPrimary, Fonts.interBold(ctx));
-        b.setText(label);
-        b.setGravity(Gravity.CENTER);
-        b.setSingleLine(true);
-        int h = dp(BUTTON_HEIGHT_DP);
-        b.setPadding(dp(16), 0, dp(16), 0);
-        b.setBackground(rounded(accent ? theme.accent : theme.surface, h / 2));
-        b.setClickable(true);
-        return b;
-    }
-
-    private static GradientDrawable rounded(int color, float radius) {
-        GradientDrawable g = new GradientDrawable();
-        g.setColor(color);
-        g.setCornerRadius(radius);
-        return g;
+        return Widgets.button(ctx, theme, density, label, accent);
     }
 
     private static LinearLayout.LayoutParams matchWrap() {

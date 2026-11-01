@@ -164,6 +164,23 @@ public class GameStoreTest {
         assertNull(store.game(OTHER));
     }
 
+    @Test
+    public void detailGenerationCountsOnlyProcessedGamesDetail() throws Exception {
+        GameStore store = new GameStore(new Storage(tmp.getRoot()));
+        assertEquals(0, store.detailGeneration());
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        assertEquals(1, store.detailGeneration());
+        store.onMoveResponse(fixture("move_hoort.json"));
+        assertEquals("a move response is not a games/detail", 1, store.detailGeneration());
+        store.onGamesDetail("not json");
+        assertEquals("an unparseable response is not processed", 1, store.detailGeneration());
+        final long[] seen = {-1};
+        store.addListener(new Runnable() { public void run() { seen[0] = store.detailGeneration(); } });
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        assertEquals(2, store.detailGeneration());
+        assertEquals("listeners already see the new count", 2, seen[0]);
+    }
+
     private static int countTiles(GameState s) {
         int n = 0;
         for (char[] row : s.board()) for (char c : row) if (c != '\0') n++;

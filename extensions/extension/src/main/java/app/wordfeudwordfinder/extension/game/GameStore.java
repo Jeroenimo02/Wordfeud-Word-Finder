@@ -27,6 +27,8 @@ public final class GameStore {
     private final Map<Integer, Ruleset> rulesets = new LinkedHashMap<>();
     private final Map<Integer, BoardLayout> boards = new LinkedHashMap<>();
     private final List<Runnable> listeners = new ArrayList<>();
+    /** Number of games/detail responses processed (see {@link #detailGeneration}). */
+    private long detailGeneration;
 
     public GameStore(Storage s) {
         this.storage = s;
@@ -52,6 +54,7 @@ public final class GameStore {
                 games.remove(f.getKey());
                 states.put(f.getKey(), unreadable(f.getKey(), f.getValue(), false, false));
             }
+            detailGeneration++;
             toRun = new ArrayList<>(listeners);
         }
         notifyAll(toRun);
@@ -91,6 +94,14 @@ public final class GameStore {
         Set<Integer> out = new HashSet<>();
         for (RawGame g : games.values()) out.add(g.getRulesetId());
         return out;
+    }
+
+    /**
+     * How many games/detail responses have been processed (a move response does not count). Listeners fire after
+     * both kinds; a caller that must wait for a games/detail compares this count instead (Play after MV-NET).
+     */
+    public synchronized long detailGeneration() {
+        return detailGeneration;
     }
 
     public synchronized void addListener(Runnable r) {
