@@ -133,9 +133,18 @@ public class GameReplayTest {
 
     @Test
     public void unknownEventMarksUnreadable() throws Exception {
-        GameState st = replayModifiedNeigen(g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"swap\"}")));
+        // V10: was "swap" in the plan; swap is now implemented, so "pass" (still unobserved) takes its place.
+        GameState st = replayModifiedNeigen(g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"pass\"}")));
         assertNotNull(st.unreadable());
-        assertEquals("GS-EVENT-swap", st.unreadable().code());
+        assertEquals("GS-EVENT-pass", st.unreadable().code());
+    }
+
+    @Test
+    public void timeoutAndFooStayUnreadable() throws Exception {
+        assertEquals("GS-EVENT-timeout", replayModifiedNeigen(
+                g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"timeout\"}"))).unreadable().code());
+        assertEquals("GS-EVENT-foo", replayModifiedNeigen(
+                g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"foo\"}"))).unreadable().code());
     }
 
     @Test
@@ -181,13 +190,62 @@ public class GameReplayTest {
     }
 
     @Test
-    public void realSwapAndResignEventsAreUnreadable() throws Exception {
+    public void realSwapGamesReplayWithCorrectRack() throws Exception {
         ResponseParser.Parsed p = ResponseParser.parseGamesDetail(fixture("detail_mandje.json"));
-        assertEquals("GS-EVENT-swap", GameReplay.replay(game(p, SWAP_GAME)).unreadable().code());
+        // Two swaps of all seven tiles: the rack is exactly the last new_tiles.
+        GameState st = GameReplay.replay(game(p, SWAP_GAME));
+        assertNull(st.unreadable());
+        assertEquals(sorted(Arrays.asList("O", "E", "D", "N", "B", "U", "U")), sorted(st.rack()));
+        // Swap of 4 tiles (C F C Z) after two moves: rack stays at 7 tiles.
+        GameState st2 = GameReplay.replay(game(p, 4391357107L));
+        assertNull(st2.unreadable());
+        assertEquals(7, st2.rack().size());
+        assertTrue(st2.rack().containsAll(Arrays.asList("E", "D", "M", "Y")));
+    }
+
+    @Test
+    public void realResignGameReplays() throws Exception {
+        ResponseParser.Parsed p = ResponseParser.parseGamesDetail(fixture("detail_mandje.json"));
         GameState resigned = GameReplay.replay(game(p, RESIGNED_GAME));
-        assertEquals("GS-EVENT-resign", resigned.unreadable().code());
+        assertNull(resigned.unreadable());
         assertTrue(resigned.ended()); // real ended games carry end_game = 2
         assertFalse(resigned.myTurn());
+        assertTrue(resigned.rack().size() <= 7);
+    }
+
+    private static GameState replayWithLog(String... events) throws Exception {
+        List<LogEvent> log = new ArrayList<>();
+        log.add(new LogEvent("start", new JSONObject("{\"type\":\"start\",\"tiles\":[[\"A\",\"B\",\"C\"],null],\"timestamp\":1.0}")));
+        for (String e : events) {
+            JSONObject o = new JSONObject(e);
+            log.add(new LogEvent(o.getString("type"), o));
+        }
+        return GameReplay.replay(new RawGame(1L, 0, 2, 1, 0, 0, log));
+    }
+
+    @Test
+    public void opponentSwapDoesNotChangeRack() throws Exception {
+        GameState st = replayWithLog("{\"type\":\"swap\",\"player\":1,\"tile_count\":2,\"tiles\":null,\"new_tiles\":null,\"timestamp\":2.0}");
+        assertNull(st.unreadable());
+        assertEquals(Arrays.asList("A", "B", "C"), sorted(st.rack()));
+    }
+
+    @Test
+    public void ownSwapWithoutNewTilesIsGsData() throws Exception {
+        GameState st = replayWithLog("{\"type\":\"swap\",\"player\":0,\"tile_count\":1,\"tiles\":[\"A\"],\"timestamp\":2.0}");
+        assertEquals("GS-DATA", st.unreadable().code());
+    }
+
+    @Test
+    public void ownSwapOfTileNotOnRackIsGsData() throws Exception {
+        GameState st = replayWithLog("{\"type\":\"swap\",\"player\":0,\"tile_count\":1,\"tiles\":[\"Z\"],\"new_tiles\":[\"Q\"],\"timestamp\":2.0}");
+        assertEquals("GS-DATA", st.unreadable().code());
+    }
+
+    @Test
+    public void swapAndResignWithUnknownFieldAreGsData() throws Exception {
+        assertEquals("GS-DATA", replayWithLog("{\"type\":\"resign\",\"player\":1,\"timestamp\":2.0,\"x\":1}").unreadable().code());
+        assertEquals("GS-DATA", replayWithLog("{\"type\":\"swap\",\"player\":1,\"tile_count\":1,\"extra\":1,\"timestamp\":2.0}").unreadable().code());
     }
 
     @Test

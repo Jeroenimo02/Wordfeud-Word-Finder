@@ -243,6 +243,12 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 | V11 | Bestandstype op APKMirror of UpToDown | Release pas na controle |
 | V12 | Bron van de interfacetaal van de app | Systeemtaal, met terugval naar Engels |
 
+Uitkomst V10 (uit proeflogs): `swap` en `resign` zijn bevestigd en geïmplementeerd in `GameReplay`.
+`swap` heeft de velden `type`, `player`, `tile_count`, `tiles`, `new_tiles`, `timestamp`; een eigen ruil verwijdert de
+geruilde tegels van het rek en voegt `new_tiles` toe (ontbreken die, dan `GS-DATA`); een ruil van de tegenstander
+wijzigt het rek niet. `resign` heeft `type`, `player`, `timestamp` en wijzigt niets (`end_game` is dan 2).
+`pass` en `timeout` zijn nog niet waargenomen en blijven `GS-EVENT-<type>`.
+
 ## 13. Buiten scope
 
 - De betaalde versie.

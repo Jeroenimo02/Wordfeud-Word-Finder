@@ -19,6 +19,11 @@ public final class GameReplay {
             new HashSet<>(Arrays.asList("type", "tiles", "timestamp"));
     private static final Set<String> PACKED_MOVE_FIELDS = new HashSet<>(Arrays.asList(
             "type", "player", "x", "y", "horizontal", "tiles", "new_tiles", "timestamp"));
+    // V10: swap and resign shapes observed in real logs (detail_mandje.json). pass and timeout are still unobserved.
+    private static final Set<String> SWAP_FIELDS =
+            new HashSet<>(Arrays.asList("type", "player", "tile_count", "tiles", "new_tiles", "timestamp"));
+    private static final Set<String> RESIGN_FIELDS =
+            new HashSet<>(Arrays.asList("type", "player", "timestamp"));
 
     public static GameState replay(RawGame g) {
         int lp = g.getLocalPosition();
@@ -39,6 +44,14 @@ public final class GameReplay {
                     case "packed_move":
                         checkFields(ev.getRaw(), PACKED_MOVE_FIELDS);
                         applyPackedMove(ev.getRaw(), lp, board, rack);
+                        break;
+                    case "swap":
+                        checkFields(ev.getRaw(), SWAP_FIELDS);
+                        applySwap(ev.getRaw(), lp, rack);
+                        break;
+                    case "resign":
+                        checkFields(ev.getRaw(), RESIGN_FIELDS);
+                        ResponseParser.integer(ev.getRaw(), "player"); // no board or rack change
                         break;
                     default:
                         throw WfError.gsEvent(type);
@@ -97,6 +110,25 @@ public final class GameReplay {
             JSONArray newTiles = ResponseParser.optArr(raw, "new_tiles");
             if (newTiles != null) rack.addAll(letters(newTiles));
         }
+    }
+
+    /**
+     * Swap: only the local player's own swap changes the rack. It must reveal both the swapped and the new tiles;
+     * otherwise the rack cannot be reconstructed and the game is unreadable (GS-DATA). The opponent's swap
+     * (whatever it reveals) does not touch the local rack.
+     */
+    private static void applySwap(JSONObject raw, int lp, List<String> rack) throws WfError {
+        int player = ResponseParser.integer(raw, "player");
+        if (player != lp) return;
+        List<String> swapped = letters(ResponseParser.arr(raw, "tiles"));
+        JSONArray newTiles = ResponseParser.optArr(raw, "new_tiles");
+        if (newTiles == null) throw WfError.gsData("own swap without new tiles");
+        List<String> fresh = letters(newTiles);
+        if (swapped.isEmpty() || fresh.size() != swapped.size()) throw WfError.gsData("swap tile count");
+        for (String letter : swapped) {
+            if (!rack.remove(letter)) throw WfError.gsData("letter " + letter + " not on rack");
+        }
+        rack.addAll(fresh);
     }
 
     private static List<String> letters(JSONArray a) throws WfError {
