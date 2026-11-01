@@ -33,6 +33,8 @@ sourceSets {
 }
 
 dependencies {
+    // Android provides org.json at runtime (android.jar); on the JVM it must be on the main classpath too.
+    compileOnly("org.json:json:20240303")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
 }
