@@ -181,6 +181,28 @@ public class GameStoreTest {
         assertEquals("listeners already see the new count", 2, seen[0]);
     }
 
+    @Test
+    public void replayRuntimeExceptionMakesGameUnreadable() throws Exception {
+        GameStore store = new GameStore(new Storage(tmp.getRoot()), g -> {
+            throw new IllegalStateException("boom");
+        });
+        final int[] notified = {0};
+        store.addListener(() -> notified[0]++);
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        GameState st = store.state(GAME);
+        assertNotNull(st);
+        assertNotNull(st.unreadable());
+        assertEquals("GS-DATA", st.unreadable().code());
+        assertEquals(1, notified[0]);
+        assertEquals(1, store.detailGeneration());
+        assertNotNull("raw game still stored", store.game(GAME));
+
+        store.onMoveResponse(fixture("move_hoort.json"));
+        assertEquals("GS-DATA", store.state(GAME).unreadable().code());
+        assertEquals(2, notified[0]);
+        assertEquals("a move does not count as a detail", 1, store.detailGeneration());
+    }
+
     private static int countTiles(GameState s) {
         int n = 0;
         for (char[] row : s.board()) for (char c : row) if (c != '\0') n++;

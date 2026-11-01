@@ -77,4 +77,52 @@ public class RejectedWordsTest {
         assertTrue(new File(tmp.getRoot(), "rejected/2.txt").isFile());
         assertTrue(new RejectedWords(st).contains(2, "WROET"));
     }
+
+    /** Storage whose reads fail while {@code failReads} is set. */
+    private static final class FlakyStorage extends Storage {
+        boolean failReads = true;
+
+        FlakyStorage(File root) {
+            super(root);
+        }
+
+        @Override
+        public String readText(String rel) throws java.io.IOException {
+            if (failReads) throw new java.io.IOException("read failed");
+            return super.readText(rel);
+        }
+    }
+
+    @Test
+    public void failedReadDoesNotOverwriteFileAndIsRetried() throws Exception {
+        File f = new File(tmp.getRoot(), "rejected/2.txt");
+        f.getParentFile().mkdirs();
+        Files.write(f.toPath(), "OUD\n".getBytes(StandardCharsets.UTF_8));
+        FlakyStorage st = new FlakyStorage(tmp.getRoot());
+        RejectedWords r = new RejectedWords(st);
+
+        r.add(2, Arrays.asList("nieuw"));
+        assertEquals("file untouched after a failed read", "OUD\n",
+                new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8));
+        assertTrue("new word kept in memory", r.contains(2, "NIEUW"));
+        assertEquals(1, r.filter(2, Arrays.asList(mv("NIEUW"), mv("ROG"))).size());
+
+        st.failReads = false;
+        assertTrue("read retried after the failure", r.contains(2, "OUD"));
+        assertTrue(r.contains(2, "NIEUW"));
+        assertEquals("pending words merged and persisted", "NIEUW\nOUD\n",
+                new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8));
+    }
+
+    @Test
+    public void failedReadIsNotPinnedAsEmpty() throws Exception {
+        File f = new File(tmp.getRoot(), "rejected/2.txt");
+        f.getParentFile().mkdirs();
+        Files.write(f.toPath(), "OUD\n".getBytes(StandardCharsets.UTF_8));
+        FlakyStorage st = new FlakyStorage(tmp.getRoot());
+        RejectedWords r = new RejectedWords(st);
+        assertFalse(r.contains(2, "OUD"));
+        st.failReads = false;
+        assertTrue(r.contains(2, "OUD"));
+    }
 }

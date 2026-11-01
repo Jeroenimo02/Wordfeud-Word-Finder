@@ -9,8 +9,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-/** Small file store rooted at one directory (in the app: {@code <filesDir>/wfwf/}). */
-public final class Storage {
+/**
+ * Small file store rooted at one directory (in the app: {@code <filesDir>/wfwf/}). Not final so tests can simulate
+ * I/O errors.
+ */
+public class Storage {
     private final File root;
 
     public Storage(File root) {

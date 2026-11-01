@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -22,6 +23,7 @@ public final class GameStore {
     private static final String BOARDS_FILE = "cache/boards.json";
 
     private final Storage storage;
+    private final Function<RawGame, GameState> replayer;
     private final Map<Long, RawGame> games = new LinkedHashMap<>();
     private final Map<Long, GameState> states = new LinkedHashMap<>();
     private final Map<Integer, Ruleset> rulesets = new LinkedHashMap<>();
@@ -31,7 +33,13 @@ public final class GameStore {
     private long detailGeneration;
 
     public GameStore(Storage s) {
+        this(s, GameReplay::replay);
+    }
+
+    /** Test seam: a custom replay function (e.g. one that throws). */
+    GameStore(Storage s, Function<RawGame, GameState> replayer) {
         this.storage = s;
+        this.replayer = replayer;
         loadCache();
     }
 
@@ -118,7 +126,14 @@ public final class GameStore {
         } else if (!boards.containsKey(g.getBoardId())) {
             states.put(g.getId(), unreadable(g.getId(), WfError.gsData("board " + g.getBoardId() + " unknown"), g));
         } else {
-            states.put(g.getId(), GameReplay.replay(g));
+            GameState st;
+            try {
+                st = replayer.apply(g);
+            } catch (RuntimeException e) {
+                // an unexpected replay bug makes this one game unreadable instead of losing the whole response
+                st = unreadable(g.getId(), WfError.gsData("replay: " + e), g);
+            }
+            states.put(g.getId(), st);
         }
     }
 
