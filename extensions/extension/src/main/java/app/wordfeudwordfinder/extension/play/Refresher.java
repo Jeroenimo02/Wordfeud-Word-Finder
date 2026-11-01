@@ -17,15 +17,22 @@ public final class Refresher {
     /** One way to make Wordfeud refresh. Returns true when it was carried out. */
     public interface Strategy {
         boolean refresh(long gameId) throws Exception;
+
+        /** Name for debug logs; the strategies return their NAME constant (class names may be minified). */
+        default String name() {
+            return "anonymous";
+        }
     }
 
     /** Sends platform messages to the Flutter engine of the current activity. */
     public interface Messenger {
         /**
-         * Schedules {@code message} on {@code channel}, {@code delayMs} from now, on the main thread. Returns false
+         * Schedules {@code messages} on {@code channel} on the main thread: the first right away, each next one
+         * {@code gapMs} after the previous one was sent. Once one was sent, the next is always sent too (unless the
+         * engine itself is gone), so a sequence like [background, foreground] never stops halfway. Returns false
          * when no Flutter engine is reachable now (nothing scheduled).
          */
-        boolean send(String channel, byte[] message, long delayMs);
+        boolean send(String channel, List<byte[]> messages, long gapMs);
     }
 
     /** Debug log line sink (only used when the debug file exists). */
@@ -75,7 +82,7 @@ public final class Refresher {
     /** Runs the strategies in order until one reports success; failures are swallowed. True when one worked. */
     static boolean run(List<Strategy> order, long gameId, DebugLog log) {
         for (Strategy s : order) {
-            String name = s.getClass().getSimpleName();
+            String name = s.name();
             try {
                 if (log != null) log.d("strategy " + name + ": start");
                 boolean ok = s.refresh(gameId);

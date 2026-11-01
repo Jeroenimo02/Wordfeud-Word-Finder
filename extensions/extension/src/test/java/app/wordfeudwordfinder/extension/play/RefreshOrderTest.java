@@ -45,6 +45,16 @@ public class RefreshOrderTest {
     }
 
     @Test
+    public void externalDebugFileOnlyFromApi30() {
+        File internal = new File("/i/debug_refresh_order.txt");
+        File external = new File("/e/debug_refresh_order.txt");
+        // Android <= 10: other apps with WRITE_EXTERNAL_STORAGE could write the external file (no opt-in then)
+        assertEquals(Arrays.asList(internal), RefreshOrder.debugFiles(internal, external, 29));
+        assertEquals(Arrays.asList(internal, external), RefreshOrder.debugFiles(internal, external, 30));
+        assertEquals(Arrays.asList(internal), RefreshOrder.debugFiles(internal, null, 34));
+    }
+
+    @Test
     public void debugFileIsTheOptIn() throws Exception {
         File a = new File(tmp.getRoot(), "a/debug_refresh_order.txt");
         File b = new File(tmp.getRoot(), "b/debug_refresh_order.txt");

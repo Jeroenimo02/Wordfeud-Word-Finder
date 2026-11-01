@@ -1,5 +1,6 @@
 package app.wordfeudwordfinder.extension.play;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,8 +26,13 @@ public final class RouteBounce implements Refresher.Strategy {
 
     @Override
     public boolean refresh(long gameId) {
-        return messenger.send(CHANNEL, push("/"), 0)
-                && messenger.send(CHANNEL, push("/game/" + gameId), BOUNCE_DELAY_MS);
+        // one sequence: "/" is always followed by the game
+        return messenger.send(CHANNEL, Arrays.asList(push("/"), push("/game/" + gameId)), BOUNCE_DELAY_MS);
+    }
+
+    @Override
+    public String name() {
+        return NAME;
     }
 
     static byte[] push(String route) {

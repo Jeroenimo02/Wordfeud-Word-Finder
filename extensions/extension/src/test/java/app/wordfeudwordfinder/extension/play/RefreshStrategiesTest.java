@@ -28,10 +28,14 @@ public class RefreshStrategiesTest {
         final List<Sent> sent = new ArrayList<>();
         boolean available = true;
 
+        final List<Integer> calls = new ArrayList<>();
+
+        /** Records message i of a sequence with delay i * gap (when the bridge would send it). */
         @Override
-        public boolean send(String channel, byte[] message, long delayMs) {
+        public boolean send(String channel, List<byte[]> messages, long gapMs) {
             if (!available) return false;
-            sent.add(new Sent(channel, message, delayMs));
+            calls.add(messages.size());
+            for (int i = 0; i < messages.size(); i++) sent.add(new Sent(channel, messages.get(i), i * gapMs));
             return true;
         }
     }
@@ -40,6 +44,7 @@ public class RefreshStrategiesTest {
     public void foregroundSignalSendsBackgroundThenForeground() throws Exception {
         FakeMessenger m = new FakeMessenger();
         assertTrue(new ForegroundSignal(m).refresh(42L));
+        assertEquals(java.util.Collections.singletonList(2), m.calls); // one sequence: [true] always follows [false]
         assertEquals(2, m.sent.size());
         String ch = "dev.flutter.pigeon.wordfeud.FlutterProcessLifecycleApi.onForegroundStateChanged";
         assertEquals(ch, m.sent.get(0).channel);
@@ -54,6 +59,7 @@ public class RefreshStrategiesTest {
     public void routeBounceGoesHomeThenBackToTheGame() throws Exception {
         FakeMessenger m = new FakeMessenger();
         assertTrue(new RouteBounce(m).refresh(4391L));
+        assertEquals(java.util.Collections.singletonList(2), m.calls); // "/" is always followed by the game
         assertEquals(2, m.sent.size());
         assertEquals("flutter/navigation", m.sent.get(0).channel);
         assertEquals("flutter/navigation", m.sent.get(1).channel);
@@ -87,6 +93,14 @@ public class RefreshStrategiesTest {
         assertTrue(text.contains("game_id"));
         assertTrue(text.contains("77"));
         assertTrue(text.contains("sentTime"));
+    }
+
+    @Test
+    public void strategiesHaveTheirNames() {
+        FakeMessenger m = new FakeMessenger();
+        assertEquals("ForegroundSignal", new ForegroundSignal(m).name());
+        assertEquals("RouteBounce", new RouteBounce(m).name());
+        assertEquals("FcmNudge", new FcmNudge(m).name());
     }
 
     @Test

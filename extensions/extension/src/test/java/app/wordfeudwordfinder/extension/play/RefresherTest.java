@@ -62,7 +62,7 @@ public class RefresherTest {
         assertEquals("flutter/navigation", env.messenger.sent.get(0).channel);
         assertTrue(env.seenLog != null);
         String all = String.join("\n", env.log);
-        assertTrue(all, all.contains("RouteBounce"));
+        assertTrue(all, all.contains("strategy RouteBounce: start"));
         assertFalse(all, all.contains("4391")); // no game ids or message contents in the log
     }
 
@@ -87,6 +87,9 @@ public class RefresherTest {
                 id -> { calls.add("c" + id); return true; },
                 id -> { calls.add("d" + id); return true; });
         assertTrue(Refresher.run(order, 7L, null));
+        List<String> log = new ArrayList<>();
+        Refresher.run(Arrays.asList(new RouteBounce(new RefreshStrategiesTest.FakeMessenger())), 7L, log::add);
+        assertEquals("strategy RouteBounce: start", log.get(0)); // the NAME constant, not a (minifiable) class name
         assertEquals(Arrays.asList("a7", "b7", "c7"), calls);
     }
 }

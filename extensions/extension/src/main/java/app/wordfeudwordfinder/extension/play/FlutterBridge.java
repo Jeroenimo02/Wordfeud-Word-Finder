@@ -1,6 +1,7 @@
 package app.wordfeudwordfinder.extension.play;
 
 import android.app.Activity;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -10,7 +11,6 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,8 +24,8 @@ import java.util.List;
  * <p>Messages are sent on the main (platform) thread, as Flutter requires, in direct ByteBuffers whose position is
  * the message size (DartMessenger passes {@code message.position()} as the length to FlutterJNI).
  *
- * <p>Debug: the file {@code debug_refresh_order.txt} in {@code <filesDir>/wfwf/} or
- * {@code <externalFilesDir>/wfwf/} is the opt-in (there is no host BuildConfig to read). Only while it exists does
+ * <p>Debug: the file {@code debug_refresh_order.txt} in {@code <filesDir>/wfwf/} or (API 30+ only, see
+ * {@link RefreshOrder#debugFiles}) {@code <externalFilesDir>/wfwf/} is the opt-in (there is no host BuildConfig to read). Only while it exists does
  * anything get logged (tag {@value #TAG}), and only strategy and channel names, never message contents.
  */
 public final class FlutterBridge implements Refresher.Env {
@@ -44,14 +44,17 @@ public final class FlutterBridge implements Refresher.Env {
     /** Main thread, once the activity's onCreate has run. Never throws. */
     public static void install(Activity a) {
         try {
-            List<File> files = new ArrayList<>();
-            files.add(new File(new File(a.getFilesDir(), "wfwf"), RefreshOrder.DEBUG_FILE));
-            try {
-                File ext = a.getExternalFilesDir(null);
-                if (ext != null) files.add(new File(new File(ext, "wfwf"), RefreshOrder.DEBUG_FILE));
-            } catch (Throwable ignored) {
-                // no external storage: internal file only
+            File internal = new File(new File(a.getFilesDir(), "wfwf"), RefreshOrder.DEBUG_FILE);
+            File external = null;
+            if (Build.VERSION.SDK_INT >= 30) { // scoped storage; older versions: internal file only
+                try {
+                    File ext = a.getExternalFilesDir(null);
+                    if (ext != null) external = new File(new File(ext, "wfwf"), RefreshOrder.DEBUG_FILE);
+                } catch (Throwable ignored) {
+                    // no external storage: internal file only
+                }
             }
+            List<File> files = RefreshOrder.debugFiles(internal, external, Build.VERSION.SDK_INT);
             FlutterBridge b = new FlutterBridge(a, files);
             Refresher.install(b);
             if (b.debugOrder() != null) {
@@ -77,10 +80,10 @@ public final class FlutterBridge implements Refresher.Env {
 
     @Override
     public Refresher.Messenger messenger(Refresher.DebugLog log) {
-        return (channel, message, delayMs) -> send(channel, message, delayMs, log);
+        return (channel, messages, gapMs) -> send(channel, messages, gapMs, log);
     }
 
-    private boolean send(String channel, byte[] message, long delayMs, Refresher.DebugLog log) {
+    private boolean send(String channel, List<byte[]> messages, long gapMs, Refresher.DebugLog log) {
         Activity a = activity.get();
         if (a == null || a.isFinishing() || a.isDestroyed()) {
             if (log != null) log.d("no activity for " + channel);
@@ -96,20 +99,28 @@ public final class FlutterBridge implements Refresher.Env {
             if (log != null) log.d("no Flutter engine for " + channel);
             return false;
         }
-        Runnable r = () -> {
-            try {
-                Activity now = activity.get();
-                if (now == null || now.isDestroyed()) return;
-                Object m = findMessenger(now);
-                if (m == null) return;
-                sendNow(m, channel, message);
-                if (log != null) log.d("sent " + channel + " (" + message.length + " bytes)");
-            } catch (Throwable t) {
-                if (log != null) log.d("send failed on " + channel + ": " + t.getClass().getSimpleName());
-            }
-        };
-        if (log != null) log.d("schedule " + channel + " in " + delayMs + " ms");
-        return main().postDelayed(r, Math.max(0L, delayMs));
+        if (messages.isEmpty()) return true;
+        if (log != null) log.d("schedule " + messages.size() + " message(s) on " + channel + ", gap " + gapMs + " ms");
+        // The engine object is kept for the whole sequence: once the first message went out, the next ones go to the
+        // same engine even if the activity is finishing meanwhile (a "background" is never left without "foreground").
+        Object target = messenger;
+        return main().post(() -> sendStep(target, channel, messages, 0, Math.max(0L, gapMs), log));
+    }
+
+    /** Main thread. Sends message {@code i}; when that worked, schedules {@code i + 1}. */
+    private static void sendStep(Object messenger, String channel, List<byte[]> messages, int i, long gapMs,
+            Refresher.DebugLog log) {
+        try {
+            byte[] message = messages.get(i);
+            sendNow(messenger, channel, message);
+            if (log != null) log.d("sent " + channel + " #" + (i + 1) + " (" + message.length + " bytes)");
+        } catch (Throwable t) {
+            if (log != null) log.d("send failed on " + channel + " #" + (i + 1) + ": " + t.getClass().getSimpleName());
+            return; // nothing went out, so stopping here leaves no half state
+        }
+        if (i + 1 < messages.size()) {
+            main().postDelayed(() -> sendStep(messenger, channel, messages, i + 1, gapMs, log), gapMs);
+        }
     }
 
     private static Handler main() {

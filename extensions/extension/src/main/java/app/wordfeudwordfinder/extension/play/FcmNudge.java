@@ -1,5 +1,6 @@
 package app.wordfeudwordfinder.extension.play;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -43,6 +44,11 @@ public final class FcmNudge implements Refresher.Strategy {
         message.put("messageId", "wfwf-" + now);
         message.put("sentTime", Long.valueOf(now));
         message.put("data", data);
-        return messenger.send(CHANNEL, MessageCodecs.standardMethodCall(METHOD, message), 0);
+        return messenger.send(CHANNEL, Collections.singletonList(MessageCodecs.standardMethodCall(METHOD, message)), 0);
+    }
+
+    @Override
+    public String name() {
+        return NAME;
     }
 }

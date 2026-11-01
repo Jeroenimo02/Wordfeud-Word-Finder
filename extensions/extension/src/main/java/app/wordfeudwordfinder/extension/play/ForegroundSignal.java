@@ -1,11 +1,13 @@
 package app.wordfeudwordfinder.extension.play;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
  * Candidate 1 (spec 8.4): Wordfeud's own pigeon signal {@code FlutterProcessLifecycleApi.onForegroundStateChanged}.
  * Sends "background" ([false]) and, {@link #FOREGROUND_DELAY_MS} later, "foreground" ([true]), as when the user
- * switches back to the app, which makes Wordfeud reload its games.
+ * switches back to the app, which makes Wordfeud reload its games. Both go out as one sequence, so Wordfeud is
+ * never left "backgrounded".
  *
  * <p>Channel name from spec section 8.4. Message shape: a pigeon call encodes its arguments as a
  * StandardMessageCodec list; one bool argument gives {@code 0C 01 01/02}, the same shape RouteTap decodes on
@@ -27,6 +29,11 @@ public final class ForegroundSignal implements Refresher.Strategy {
     public boolean refresh(long gameId) {
         byte[] background = MessageCodecs.standard(Collections.singletonList(Boolean.FALSE));
         byte[] foreground = MessageCodecs.standard(Collections.singletonList(Boolean.TRUE));
-        return messenger.send(CHANNEL, background, 0) && messenger.send(CHANNEL, foreground, FOREGROUND_DELAY_MS);
+        return messenger.send(CHANNEL, Arrays.asList(background, foreground), FOREGROUND_DELAY_MS);
+    }
+
+    @Override
+    public String name() {
+        return NAME;
     }
 }

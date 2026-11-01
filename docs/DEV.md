@@ -64,8 +64,8 @@ strategieën staan in `extensions/.../play/`:
 
 | Naam | Kanaal | Bericht |
 |---|---|---|
-| `ForegroundSignal` | `dev.flutter.pigeon.wordfeud.FlutterProcessLifecycleApi.onForegroundStateChanged` | StandardMessageCodec `[false]`, na 100 ms `[true]` |
-| `RouteBounce` | `flutter/navigation` | JSON `pushRouteInformation` naar `/`, na 80 ms naar `/game/<id>` (sleutels `location` én `uri`, `state: null`) |
+| `ForegroundSignal` | `dev.flutter.pigeon.wordfeud.FlutterProcessLifecycleApi.onForegroundStateChanged` | StandardMessageCodec `[false]`, na 100 ms `[true]` (één reeks: is `[false]` verstuurd, dan volgt `[true]` altijd) |
+| `RouteBounce` | `flutter/navigation` | JSON `pushRouteInformation` naar `/`, na 80 ms naar `/game/<id>` (één reeks; sleutels `location` én `uri`, `state: null`) |
 | `FcmNudge` | `plugins.flutter.io/firebase_messaging` | StandardMethodCodec `Messaging#onMessage` met `{messageId, sentTime, data: {type: "move", game_id}}` (de `data`-sleutels zijn een gok) |
 
 Kandidaat 3 (zelf `games/detail` ophalen en aanbieden) is niet gebouwd: pas na akkoord, en alleen als 1, 2 en 4
@@ -84,13 +84,16 @@ Gezocht wordt (eerste die bestaat):
 
 1. `/data/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt` (intern; met adb alleen via root of
    `run-as` bij een debuggable build);
-2. `/sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt` (extern, zonder root).
+2. `/sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt` (extern, zonder root),
+   **alleen vanaf Android 11 (API 30)**. Tot en met Android 10 kan elke app met `WRITE_EXTERNAL_STORAGE` in die map
+   schrijven en zo zonder toestemming van de gebruiker het debuggedrag aanzetten; daar telt alleen het interne
+   bestand. Op Android 10 of ouder heeft de test dus root nodig (of een debuggable build met `run-as`).
 
 ```sh
-# Zonder root (externe map van de app):
+# Zonder root (externe map van de app; alleen Android 11+):
 adb shell mkdir -p /sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf
 adb shell "echo RouteBounce > /sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt"
-# Met root (interne map):
+# Met root (interne map; nodig op Android 10 en ouder):
 adb shell su -c "'echo RouteBounce > /data/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt && chmod 644 /data/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt'"
 
 adb shell am force-stop com.hbwares.wordfeud.free   # het bestand wordt gelezen bij het starten van het scherm
@@ -113,6 +116,8 @@ bij het starten van het scherm aan- of uitgezet.
 4. Logcat toont `strategy <naam>: start`, `schedule …`, `sent …`. Kijk op het bord van Wordfeud:
    - toont het bord **binnen 2 s** het gelegde woord (en het nieuwe plankje en de score)?
    - is er **geen zichtbaar geflikker** (geen kort ander scherm, geen leeg bord, geen melding of banner)?
+   - bij `FcmNudge` in het bijzonder: verschijnt er een melding of in-app banner ("nieuwe zet", "… heeft gespeeld")?
+     Dat telt als zichtbaar geflikker.
 5. Noteer het resultaat hieronder. Herhaal voor de volgende strategie.
 
 De eerste strategie die beide haalt gaat in `Refresher.ORDER` (taak 15, stap 3). Haalt geen enkele het, dan blijft

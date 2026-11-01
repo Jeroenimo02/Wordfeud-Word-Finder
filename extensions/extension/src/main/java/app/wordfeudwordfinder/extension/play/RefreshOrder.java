@@ -60,6 +60,18 @@ public final class RefreshOrder {
     }
 
     /**
+     * The debug files to look for, in order. The external one ({@code <externalFilesDir>/wfwf/}) counts only from
+     * API 30 (scoped storage): on Android 10 and older any app with WRITE_EXTERNAL_STORAGE could write it and switch
+     * on debug behaviour without the user's opt-in.
+     */
+    public static List<File> debugFiles(File internal, File external, int sdkInt) {
+        List<File> out = new ArrayList<>();
+        out.add(internal);
+        if (external != null && sdkInt >= 30) out.add(external);
+        return out;
+    }
+
+    /**
      * Returns the text (at most {@link #MAX_DEBUG_BYTES} bytes, UTF-8) of the first existing candidate file, or null
      * when none exists or can be read. The file's presence is the debug opt-in.
      */
