@@ -1,0 +1,49 @@
+package app.wordfeudwordfinder.extension.ui;
+
+import static org.junit.Assert.*;
+
+import app.wordfeudwordfinder.extension.core.WfError;
+import app.wordfeudwordfinder.extension.ui.Strings.Key;
+import org.junit.Test;
+
+public class StringsTest {
+    @Test public void fallbackToEnglish() {
+        assertEquals("Play", Strings.get("xx", Key.PLAY));
+        assertEquals("Play", Strings.get(null, Key.PLAY));
+    }
+    @Test public void everyLanguageHasEveryKey() {
+        for (String lang : Strings.languages())
+            for (Key k : Key.values()) {
+                String s = Strings.get(lang, k);
+                assertNotNull(lang + " " + k, s);
+                assertFalse(lang + " " + k, s.trim().isEmpty());
+            }
+    }
+    @Test public void languageTagsNormalized() {
+        assertEquals(Strings.get("nl", Key.PLAY), Strings.get("nl-NL", Key.PLAY));
+        assertEquals(Strings.get("nl", Key.PLAY), Strings.get("nl_BE", Key.PLAY));
+        assertEquals(Strings.get("nb", Key.PLAY), Strings.get("no", Key.PLAY));
+        assertEquals(Strings.get("nb", Key.PLAY), Strings.get("nn", Key.PLAY));
+        assertNotEquals("Play", Strings.get("nl", Key.PLAY));
+    }
+    @Test public void placeholdersWork() {
+        for (String lang : Strings.languages()) {
+            assertEquals(lang, "12", String.format(Strings.get(lang, Key.PTS), 12).replaceAll("\\D", ""));
+            assertTrue(String.format(Strings.get(lang, Key.USES), "AB").contains("AB"));
+            assertTrue(String.format(Strings.get(lang, Key.ENDS_ON), "DW").contains("DW"));
+        }
+    }
+    @Test public void errorKeyMapping() {
+        assertEquals(Key.ERR_WL_HTTP, Strings.errorKey(WfError.wlHttp(404)));
+        assertEquals(Key.ERR_GS_EVENT, Strings.errorKey(WfError.gsEvent("swap")));
+        assertEquals(Key.ERR_MV_SERVER, Strings.errorKey(WfError.mvServer("x")));
+        assertEquals(Key.ERR_MV_SESSION, Strings.errorKey(WfError.mvSession()));
+        assertEquals(Key.ERR_GS_DATA, Strings.errorKey(WfError.gsData("d")));
+        assertEquals(Key.ERR_WL_NET, Strings.errorKey(WfError.wlNet()));
+        assertEquals(Key.ERR_WL_HASH, Strings.errorKey(WfError.wlHash()));
+        assertEquals(Key.ERR_WL_DISK, Strings.errorKey(WfError.wlDisk()));
+        assertEquals(Key.ERR_WL_NONE, Strings.errorKey(WfError.wlNone()));
+        assertEquals(Key.ERR_MV_NET, Strings.errorKey(WfError.mvNet()));
+        assertTrue(Strings.get("en", Key.ERR_MV_SESSION).contains("reopening Wordfeud"));
+    }
+}
