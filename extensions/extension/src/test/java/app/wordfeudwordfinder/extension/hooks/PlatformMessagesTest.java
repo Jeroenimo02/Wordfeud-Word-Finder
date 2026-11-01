@@ -30,6 +30,12 @@ public class PlatformMessagesTest {
     }
 
     @Test
+    public void jsonNullValues() {
+        assertNull(PlatformMessages.darkFromOverlayStyle("{\"method\":\"x\",\"args\":{\"statusBarIconBrightness\":null}}"));
+        assertNull(PlatformMessages.gameIdFromNavigation("{\"method\":\"x\",\"args\":{\"uri\":null}}"));
+    }
+
+    @Test
     public void bannerTrueFalse() {
         assertEquals(Boolean.TRUE, PlatformMessages.bannerVisible(new byte[]{0x0C, 0x01, 0x01}));
         assertEquals(Boolean.FALSE, PlatformMessages.bannerVisible(new byte[]{0x0C, 0x01, 0x02}));

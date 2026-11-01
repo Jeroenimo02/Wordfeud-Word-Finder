@@ -16,8 +16,9 @@ public final class PlatformMessages {
             if (json == null) return null;
             JSONObject args = new JSONObject(json).optJSONObject("args");
             if (args == null) return null;
-            String uri = args.optString("uri", null);
-            if (uri == null) return null;
+            Object u = args.opt("uri");
+            if (!(u instanceof String)) return null;
+            String uri = (String) u;
             Matcher m = GAME_URI.matcher(uri);
             return m.matches() ? Long.valueOf(Long.parseLong(m.group(1))) : null;
         } catch (Exception e) {
@@ -30,8 +31,9 @@ public final class PlatformMessages {
             if (json == null) return null;
             JSONObject args = new JSONObject(json).optJSONObject("args");
             if (args == null) return null;
-            String b = args.optString("statusBarIconBrightness", null);
-            if (b == null) return null;
+            Object v = args.opt("statusBarIconBrightness");
+            if (!(v instanceof String)) return null;
+            String b = (String) v;
             return Boolean.valueOf("Brightness.light".equals(b));
         } catch (Exception e) {
             return null;
