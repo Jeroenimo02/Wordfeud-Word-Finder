@@ -3,5 +3,10 @@ extension {
 }
 
 android {
-    namespace = "app.template.extension"
+    namespace = "app.wordfeudwordfinder.extension"
+}
+
+dependencies {
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

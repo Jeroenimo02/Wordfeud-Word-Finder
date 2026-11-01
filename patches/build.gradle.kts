@@ -1,14 +1,13 @@
-group = "app.template"
+group = "app.wordfeudwordfinder"
 
 patches {
-    // TODO: Update this section with your project details.
     about {
-        name = "UserXYZ Patches"
-        description = "Patches for apps I like"
-        source = "git@github.com:UserXYZ/morphe-patches.git"
-        author = "Awesome dev"
+        name = "Wordfeud Word Finder"
+        description = "Patches for Wordfeud, compatible with Morphe"
+        source = "git@github.com:jeroenimo02/morphe-patches.git"
+        author = "jeroenimo02"
         contact = "na"
-        website = "na"
+        website = "https://github.com/jeroenimo02/morphe-patches"
         license = "GPLv3"
     }
 }
