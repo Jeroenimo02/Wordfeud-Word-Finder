@@ -2,20 +2,13 @@ package app.wordfeudwordfinder.patches.network
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
-import app.wordfeudwordfinder.patches.shared.Constants.COMPATIBILITY_WORDFEUD
 
 private const val NETWORK_TAP = "Lapp/wordfeudwordfinder/extension/hooks/NetworkTap;"
 
-@Suppress("unused")
-val networkTapPatch = bytecodePatch(
-    name = "Network tap",
-    description = "Observes Wordfeud game responses so the word finder knows the current game.",
-    default = true
-) {
-    compatibleWith(COMPATIBILITY_WORDFEUD)
-
-    extendWith("extensions/extension.mpe")
-
+// Internal patch (no name): not shown in Morphe Manager or the CLI patch list. It is only applied through
+// overlayPatch's dependsOn, which also supplies compatibleWith and the extension.
+// Observes Wordfeud game responses so the word finder knows the current game.
+val networkTapPatch = bytecodePatch {
     execute {
         // All callback methods are instance methods: p0 = this, p1 = request, p2 = info, p3 = buffer/exception.
         OnResponseStartedFingerprint.method.addInstructions(
