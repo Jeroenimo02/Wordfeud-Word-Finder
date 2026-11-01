@@ -214,6 +214,36 @@ public class MoveSubmitterTest {
     }
 
     @Test
+    public void unparseable2xxBodyIsNetError() {
+        assertEquals("MV-NET", submitter(new FakePoster("<html>")).submit(GAME, 2, MoveRequestTest.mandje())
+                .error.code());
+        assertEquals("MV-NET", submitter(new FakePoster("")).submit(GAME, 2, MoveRequestTest.mandje())
+                .error.code());
+        assertEquals("MV-NET", submitter(new FakePoster((String) null)).submit(GAME, 2, MoveRequestTest.mandje())
+                .error.code());
+        assertEquals("MV-NET", submitter(new FakePoster("{\"foo\":1}")).submit(GAME, 2, MoveRequestTest.mandje())
+                .error.code());
+    }
+
+    @Test
+    public void successStatusWithBrokenGameIsSuccess() {
+        MoveSubmitter.Result r = submitter(new FakePoster("{\"status\":\"success\",\"content\":{\"game\":42}}"))
+                .submit(GAME, 2, MoveRequestTest.mandje());
+        assertEquals(MoveSubmitter.Result.Kind.SUCCESS, r.kind);
+    }
+
+    @Test
+    public void failingStoreListenerAfterSuccessIsSuccess() {
+        store.addListener(() -> {
+            throw new IllegalStateException("listener");
+        });
+        MoveSubmitter.Result r = submitter(new FakePoster(fixture("move_hoort.json")))
+                .submit(GAME, 2, MoveRequestTest.mandje());
+        assertEquals(MoveSubmitter.Result.Kind.SUCCESS, r.kind);
+        assertNotNull(store.game(GAME));
+    }
+
+    @Test
     public void unexpectedExceptionFromPosterIsNetErrorAndReleasesLock() {
         Poster boom = (u, b, h) -> {
             throw new IllegalStateException("boom");

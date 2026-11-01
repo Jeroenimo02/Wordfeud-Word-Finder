@@ -28,11 +28,14 @@ import org.json.JSONObject;
  *   <li>connection problem / time-out / any unexpected exception while sending: ERROR(MV-NET);</li>
  *   <li>a response body (2xx, or the error body of another status) is handed to
  *       {@link GameStore#onMoveResponse}: {@code status: success} gives SUCCESS (the store is updated);
+ *       a reply whose root {@code status} string is not "success" is a server error;
  *       {@code MV-SERVER-illegal_word} gives REJECTED with the words the server names in {@code content.words}
  *       (array) or {@code content.word} (string) when present, else the main word (format unconfirmed, V6), and
  *       those words go to {@link RejectedWords}; any other {@code MV-SERVER-*} gives ERROR(that code);</li>
  *   <li>a non-2xx status whose body is missing or not a Wordfeud response: ERROR(MV-SERVER-http_&lt;status&gt;);</li>
- *   <li>a 2xx body that cannot be read: ERROR(GS-DATA) (the move may or may not have been played).</li>
+ *   <li>a 2xx response that is empty or cannot be interpreted (also an unexpected exception): ERROR(MV-NET),
+ *       outcome unknown; but when its root {@code status} is "success" and only the game cannot be read (or a
+ *       store listener fails): SUCCESS, the refresh / next games/detail delivers the state.</li>
  * </ul>
  * Nothing about the cookie, the request or the response is logged.
  */
@@ -96,6 +99,9 @@ public final class MoveSubmitter {
         if (!busy.compareAndSet(false, true)) return Result.error(WfError.mvNet());
         try {
             return doSubmit(gameId, rulesetId, m);
+        } catch (RuntimeException e) {
+            // never throws: an unexpected failure means the outcome is unknown
+            return Result.error(WfError.mvNet());
         } finally {
             busy.set(false);
         }
@@ -112,7 +118,12 @@ public final class MoveSubmitter {
         }
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put("Cookie", "sessionid=" + sessionId);
-        String ua = UserAgentTap.get();
+        String ua;
+        try {
+            ua = UserAgentTap.get();
+        } catch (RuntimeException e) {
+            ua = null;
+        }
         if (ua != null) headers.put("User-Agent", ua);
         headers.put("Content-Type", "application/json");
 
@@ -126,26 +137,57 @@ public final class MoveSubmitter {
         } catch (IOException | RuntimeException e) {
             return Result.error(WfError.mvNet());
         }
-        if (response == null) {
-            return Result.error(httpError != null ? WfError.mvServer("http_" + httpError) : WfError.gsData("empty"));
-        }
+        if (response == null || response.trim().isEmpty()) return unknownOutcome(httpError);
         try {
+            // Also for a non-2xx body: the server's own JSON decides. A non-2xx with status "success" is
+            // therefore treated as SUCCESS (the server says the move was played).
             store.onMoveResponse(response);
             return Result.success();
         } catch (WfError e) {
             if (ILLEGAL_WORD.equals(e.code())) {
                 List<String> words = serverNamedWords(response);
                 if (words.isEmpty()) words = Collections.singletonList(m.word.toUpperCase(Locale.ROOT));
-                rejected.add(rulesetId, words);
+                try {
+                    rejected.add(rulesetId, words);
+                } catch (RuntimeException ignored) {
+                    // best effort: the result still reports the words
+                }
                 return Result.rejected(words);
             }
-            if (httpError != null && !e.code().startsWith("MV-SERVER-")) {
-                return Result.error(WfError.mvServer("http_" + httpError));
+            String status = statusOf(response);
+            // MV-SERVER-* only for a real Wordfeud error reply (a root "status" string); JSON without it is not one
+            if (e.code().startsWith("MV-SERVER-") && status != null && !"success".equals(status)) {
+                return Result.error(e);
             }
-            return Result.error(e);
+            return httpError == null && "success".equals(status) ? Result.success() : unknownOutcome(httpError);
         } catch (RuntimeException e) {
-            return Result.error(httpError != null ? WfError.mvServer("http_" + httpError)
-                    : WfError.gsData(e.getClass().getSimpleName()));
+            // e.g. a GameStore listener failing after the game was stored
+            return httpError == null && "success".equals(statusOf(response)) ? Result.success()
+                    : unknownOutcome(httpError);
+        }
+    }
+
+    /**
+     * A response that cannot be interpreted: for 2xx the move may or may not have been played, so MV-NET
+     * ("outcome unknown"; the Play button stays off until the next games/detail); for another status
+     * MV-SERVER-http_&lt;status&gt;.
+     */
+    private static Result unknownOutcome(Integer httpError) {
+        return Result.error(httpError != null ? WfError.mvServer("http_" + httpError) : WfError.mvNet());
+    }
+
+    /**
+     * The root {@code status} string, or null when the body is not a JSON object with one. "success" with a game
+     * that cannot be read still means the move was played: the refresh / next games/detail delivers the state.
+     */
+    static String statusOf(String json) {
+        try {
+            Object st = new JSONObject(json).opt("status");
+            return st instanceof String ? (String) st : null;
+        } catch (JSONException e) {
+            return null;
+        } catch (RuntimeException e) {
+            return null;
         }
     }
 

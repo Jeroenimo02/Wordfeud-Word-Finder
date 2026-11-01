@@ -26,7 +26,9 @@ import org.json.JSONObject;
  * {@code wordfeud.com} -&gt; {@code /} -&gt; {@code sessionid} cookie wins. Expiry: the {@code Expires} attribute
  * (RFC 1123 date, with or without weekday, "-" separated dates tolerated); when it is missing or unreadable,
  * {@code _crt} (creation, epoch seconds) + {@code Max-Age} if both are present; otherwise a session cookie (valid).
- * A cookie is expired from its expiry instant on.
+ * A cookie is expired from its expiry instant on. An {@code Expires} that cannot be read (with no usable
+ * {@code _crt}/{@code Max-Age}) is deliberately treated as valid: the server is the final judge, and an expired
+ * session then shows up as a server error rather than blocking a move on a date format we do not know.
  */
 public final class SessionReader {
     static final long MAX_FILE_BYTES = 1L << 20;
