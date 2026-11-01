@@ -111,15 +111,19 @@ public final class TileDrawable extends Drawable {
     public void drawBadge(Canvas canvas, float cx, float cy, float r, String text, int a) {
         badgeFill.setColor(theme.badgeFill);
         badgeFill.setAlpha(a);
-        float half = r;
-        badgeText.setTextSize(r * 1.05f);
-        float tw = badgeText.measureText(text);
-        if (tw > r * 1.4f) half = tw / 2f + r * 0.3f; // widen to a pill for long scores
+        float half = badgeHalfWidth(r, text);
         rect.set(cx - half, cy - r, cx + half, cy + r);
         canvas.drawRoundRect(rect, r, r, badgeFill);
         badgeText.setColor(theme.badgeText);
         badgeText.setAlpha(a);
         canvas.drawText(text, cx, cy - (badgeText.descent() + badgeText.ascent()) / 2f, badgeText);
+    }
+
+    /** Half the width of the bubble {@link #drawBadge} draws: r, or wider (a pill) for long scores. */
+    public float badgeHalfWidth(float r, String text) {
+        badgeText.setTextSize(r * 1.05f);
+        float tw = badgeText.measureText(text == null ? "" : text);
+        return tw > r * 1.4f ? tw / 2f + r * 0.3f : r;
     }
 
     @Override

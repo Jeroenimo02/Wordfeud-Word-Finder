@@ -11,18 +11,34 @@ import java.util.Locale;
 /**
  * Pure (no android.*) formatting helpers for the overlay views, unit-tested on the JVM.
  *
- * Bonus labels "DL", "TL", "DW", "TW" are the same codes the solver writes into {@link Move#bonuses};
- * they are game abbreviations (also shown by Wordfeud itself in English), not translated UI text.
+ * Bonus labels come from {@link Strings} (keys BONUS_DL..BONUS_TW). The solver's codes in
+ * {@link Move#bonuses} ("DL", "TL", "DW", "TW") are mapped to those labels, never shown as-is.
  */
 public final class OverlayFormat {
     private OverlayFormat() {}
 
-    private static final String[] BONUS = {null, "DL", "TL", "DW", "TW"};
+    /** Index = BoardLayout square code; also the solver's bonus code at that index. */
+    private static final String[] SOLVER_CODE = {null, "DL", "TL", "DW", "TW"};
+    private static final Key[] BONUS_KEY = {null, Key.BONUS_DL, Key.BONUS_TL, Key.BONUS_DW, Key.BONUS_TW};
     private static final String SEP = " · ";
 
-    /** Short label for a {@code BoardLayout} square code (0 none, 1 DL, 2 TL, 3 DW, 4 TW); null for none/unknown. */
+    /**
+     * Short label (from {@link Strings}) for a {@code BoardLayout} square code (0 none, 1 DL, 2 TL, 3 DW, 4 TW);
+     * null for none/unknown.
+     */
+    public static String bonusLabel(String lang, int code) {
+        return code > 0 && code < BONUS_KEY.length ? Strings.get(lang, BONUS_KEY[code]) : null;
+    }
+
+    /** As {@link #bonusLabel(String, int)} in the fallback language (English). */
     public static String bonusLabel(int code) {
-        return code > 0 && code < BONUS.length ? BONUS[code] : null;
+        return bonusLabel("en", code);
+    }
+
+    /** Square code (1..4) for a solver bonus code such as "TW"; 0 if unknown. */
+    static int codeForSolverBonus(String solverCode) {
+        for (int i = 1; i < SOLVER_CODE.length; i++) if (SOLVER_CODE[i].equals(solverCode)) return i;
+        return 0;
     }
 
     /**
@@ -47,17 +63,25 @@ public final class OverlayFormat {
         return String.valueOf(c).toUpperCase(Locale.ROOT);
     }
 
-    /** Distinct bonus types of a move's new tiles, in order of first appearance, space separated. */
-    public static String bonusSummary(Move m) {
+    /**
+     * Distinct bonus types of a move's new tiles ("TW:A" etc.), in order of first appearance, as
+     * {@link Strings} labels, space separated. Unknown solver codes are skipped.
+     */
+    public static String bonusSummary(String lang, Move m) {
         if (m == null) return "";
         List<String> seen = new ArrayList<>();
         for (String b : m.bonuses) {
             if (b == null) continue;
             int i = b.indexOf(':');
-            String t = i < 0 ? b : b.substring(0, i);
-            if (!t.isEmpty() && !seen.contains(t)) seen.add(t);
+            String label = bonusLabel(lang, codeForSolverBonus(i < 0 ? b : b.substring(0, i)));
+            if (label != null && !seen.contains(label)) seen.add(label);
         }
         return String.join(" ", seen);
+    }
+
+    /** As {@link #bonusSummary(String, Move)} in the fallback language (English). */
+    public static String bonusSummary(Move m) {
+        return bonusSummary("en", m);
     }
 
     /** Rack tiles a move uses, as shown in the USES text: letters in upper case, a blank as "?". */
@@ -76,7 +100,7 @@ public final class OverlayFormat {
         StringBuilder sb = new StringBuilder();
         sb.append(Strings.get(lang, m.horizontal ? Key.DIR_ACROSS : Key.DIR_DOWN));
         sb.append(SEP).append(String.format(Locale.ROOT, Strings.get(lang, Key.USES), usesText(m)));
-        String b = bonusSummary(m);
+        String b = bonusSummary(lang, m);
         if (!b.isEmpty()) sb.append(SEP).append(b);
         return sb.toString();
     }

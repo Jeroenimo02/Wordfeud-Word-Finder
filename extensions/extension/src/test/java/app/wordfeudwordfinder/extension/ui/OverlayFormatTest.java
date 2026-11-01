@@ -39,6 +39,17 @@ public class OverlayFormatTest {
         assertNull(OverlayFormat.bonusLabel(-1));
     }
 
+    @Test public void bonusLabelsComeFromStrings() {
+        for (String lang : Strings.languages()) {
+            assertEquals(Strings.get(lang, Key.BONUS_DL), OverlayFormat.bonusLabel(lang, 1));
+            assertEquals(Strings.get(lang, Key.BONUS_TL), OverlayFormat.bonusLabel(lang, 2));
+            assertEquals(Strings.get(lang, Key.BONUS_DW), OverlayFormat.bonusLabel(lang, 3));
+            assertEquals(Strings.get(lang, Key.BONUS_TW), OverlayFormat.bonusLabel(lang, 4));
+            assertNull(OverlayFormat.bonusLabel(lang, 0));
+        }
+        assertEquals("TW", OverlayFormat.bonusLabel("xx", 4));
+    }
+
     @Test public void letterPoints() {
         assertEquals(1, OverlayFormat.letterPoints(rs(), 'A'));
         assertEquals(10, OverlayFormat.letterPoints(rs(), 'Q'));
@@ -59,6 +70,11 @@ public class OverlayFormatTest {
     @Test public void bonusSummaryKeepsOrderAndDropsDuplicates() {
         Move m = move(true, Arrays.asList("A", "N", "E"), Arrays.asList("TW:A", "DL:N", "TW:E"), 30);
         assertEquals("TW DL", OverlayFormat.bonusSummary(m));
+        assertEquals(Strings.get("nl", Key.BONUS_TW) + " " + Strings.get("nl", Key.BONUS_DL),
+                OverlayFormat.bonusSummary("nl", m));
+        // Unknown solver codes are skipped, not echoed.
+        Move odd = move(true, Arrays.asList("A"), Arrays.asList("XX:A", "DW:A"), 4);
+        assertEquals("DW", OverlayFormat.bonusSummary("en", odd));
         assertEquals("", OverlayFormat.bonusSummary(move(true, Arrays.asList("A"),
                 Collections.<String>emptyList(), 2)));
     }
@@ -72,7 +88,8 @@ public class OverlayFormatTest {
 
     @Test public void scoreText() {
         assertEquals("12 pts", OverlayFormat.scoreText("en", 12));
-        assertEquals(String.format(Strings.get("de", Key.PTS), 7), OverlayFormat.scoreText("de", 7));
+        assertEquals("7 P.", OverlayFormat.scoreText("de", 7));
+        assertEquals("12 p", OverlayFormat.scoreText("nl", 12));
     }
 
     @Test public void usedRackIndicesHandlesDuplicatesAndBlanks() {
@@ -80,6 +97,15 @@ public class OverlayFormatTest {
         Move m = move(true, Arrays.asList("E", "x", "N"), Collections.<String>emptyList(), 5);
         boolean[] used = OverlayFormat.usedRackIndices(rack, m);
         assertArrayEquals(new boolean[] {true, false, false, true, true}, used);
+    }
+
+    @Test public void usedRackIndicesStarIsABlank() {
+        List<String> rack = Arrays.asList("A", "*", "E");
+        Move m = move(true, Arrays.asList("e", "A"), Collections.<String>emptyList(), 1);
+        assertArrayEquals(new boolean[] {true, true, false}, OverlayFormat.usedRackIndices(rack, m));
+        // An unmatched letter also falls back to the '*' blank.
+        Move z = move(true, Arrays.asList("Z"), Collections.<String>emptyList(), 0);
+        assertArrayEquals(new boolean[] {false, true, false}, OverlayFormat.usedRackIndices(rack, z));
     }
 
     @Test public void usedRackIndicesTwoOfTheSameLetter() {

@@ -17,6 +17,10 @@ import java.util.Map;
  * Placeholders (use String.format on the result):
  *  USES "%s" = the tiles the word uses from the rack; ENDS_ON "%s" = bonus-square label;
  *  PTS "%d" = score. All other keys have no placeholders.
+ *
+ * BONUS_DL/TL/DW/TW are the short bonus-square labels (board squares, list detail line). Assumption (like R7):
+ * Wordfeud shows DL/TL/DW/TW in every language, so all languages use those values for now; to be verified
+ * against the app's own board per language (V12 / Task 16).
  */
 public final class Strings {
     private Strings() {}
@@ -26,7 +30,8 @@ public final class Strings {
         NOT_YOUR_TURN, DIR_DOWN, DIR_ACROSS, USES, ENDS_ON,
         REJECTED, RETRY, COPY_DETAILS, DOWNLOADING, PTS,
         ERR_WL_NET, ERR_WL_HTTP, ERR_WL_HASH, ERR_WL_DISK, ERR_WL_NONE,
-        ERR_GS_EVENT, ERR_GS_DATA, ERR_MV_SESSION, ERR_MV_NET, ERR_MV_SERVER
+        ERR_GS_EVENT, ERR_GS_DATA, ERR_MV_SESSION, ERR_MV_NET, ERR_MV_SERVER,
+        BONUS_DL, BONUS_TL, BONUS_DW, BONUS_TW
     }
 
     private static final Map<String, Map<Key, String>> TEXTS = new HashMap<>();
@@ -88,7 +93,8 @@ public final class Strings {
             "The game data is missing or unreadable.",
             "No valid session found. Try reopening Wordfeud.",
             "Connection failed. The move may or may not have been played.",
-            "The server reported an error.");
+            "The server reported an error.",
+            "DL", "TL", "DW", "TW");
         add("nl", "Woordzoeker", "Jouw letters", "Score", "Lengte", "A-Z", "Speel",
             "Je bent niet aan zet", "Verticaal", "Horizontaal", "Gebruikt: %s", "Eindigt op %s",
             "Zet afgewezen", "Opnieuw", "Kopieer details", "Woordenlijst downloaden...", "%d p",
@@ -101,7 +107,8 @@ public final class Strings {
             "Gegevens van het potje ontbreken of zijn onleesbaar.",
             "Geen geldige sessie gevonden. Open Wordfeud opnieuw.",
             "Verbinding mislukt. De zet is mogelijk wel gespeeld.",
-            "De server meldt een fout.");
+            "De server meldt een fout.",
+            "DL", "TL", "DW", "TW");
         add("da", "Ordfinder", "Dine brikker", "Point", "L\u00e6ngde", "A-Z", "Spil",
             "Det er ikke din tur", "Nedad", "Vandret", "Bruger: %s", "Slutter p\u00e5 %s",
             "Tr\u00e6k afvist", "Pr\u00f8v igen", "Kopi\u00e9r detaljer", "Henter ordliste...", "%d p",
@@ -114,7 +121,8 @@ public final class Strings {
             "Spildata mangler eller kan ikke l\u00e6ses.",
             "Ingen gyldig session fundet. Pr\u00f8v at \u00e5bne Wordfeud igen.",
             "Forbindelsen mislykkedes. Tr\u00e6kket er muligvis spillet.",
-            "Serveren meldte en fejl.");
+            "Serveren meldte en fejl.",
+            "DL", "TL", "DW", "TW");
         add("sv", "Ords\u00f6kare", "Dina brickor", "Po\u00e4ng", "L\u00e4ngd", "A-Z", "Spela",
             "Det \u00e4r inte din tur", "Ned\u00e5t", "V\u00e5gr\u00e4tt", "Anv\u00e4nder: %s", "Slutar p\u00e5 %s",
             "Draget nekades", "F\u00f6rs\u00f6k igen", "Kopiera detaljer", "Laddar ner ordlista...", "%d p",
@@ -127,7 +135,8 @@ public final class Strings {
             "Speldata saknas eller kan inte l\u00e4sas.",
             "Ingen giltig session hittades. Prova att \u00f6ppna Wordfeud igen.",
             "Anslutningen misslyckades. Draget kan ha spelats.",
-            "Servern rapporterade ett fel.");
+            "Servern rapporterade ett fel.",
+            "DL", "TL", "DW", "TW");
         add("nb", "Ords\u00f8ker", "Brikkene dine", "Poeng", "Lengde", "A-Z", "Spill",
             "Det er ikke din tur", "Nedover", "Vannrett", "Bruker: %s", "Slutter p\u00e5 %s",
             "Trekket ble avvist", "Pr\u00f8v igjen", "Kopier detaljer", "Laster ned ordliste...", "%d p",
@@ -140,7 +149,8 @@ public final class Strings {
             "Spilldata mangler eller er uleselige.",
             "Fant ingen gyldig sesjon. Pr\u00f8v \u00e5 \u00e5pne Wordfeud p\u00e5 nytt.",
             "Forbindelsen mislyktes. Trekket kan ha blitt spilt.",
-            "Serveren meldte en feil.");
+            "Serveren meldte en feil.",
+            "DL", "TL", "DW", "TW");
         add("es", "Buscador de palabras", "Tus fichas", "Puntos", "Longitud", "A-Z", "Jugar",
             "No es tu turno", "Vertical", "Horizontal", "Usa: %s", "Termina en %s",
             "Jugada rechazada", "Reintentar", "Copiar detalles", "Descargando lista de palabras...", "%d pts",
@@ -153,7 +163,8 @@ public final class Strings {
             "Faltan datos de la partida o no se pueden leer.",
             "No se encontr\u00f3 una sesi\u00f3n v\u00e1lida. Prueba a reabrir Wordfeud.",
             "Fallo de conexi\u00f3n. Puede que la jugada se haya realizado.",
-            "El servidor notific\u00f3 un error.");
+            "El servidor notific\u00f3 un error.",
+            "DL", "TL", "DW", "TW");
         add("fr", "Chercheur de mots", "Vos lettres", "Score", "Longueur", "A-Z", "Jouer",
             "Ce n'est pas votre tour", "Vertical", "Horizontal", "Lettres utilis\u00e9es : %s", "Fin sur %s",
             "Coup refus\u00e9", "R\u00e9essayer", "Copier les d\u00e9tails", "T\u00e9l\u00e9chargement de la liste de mots...", "%d pts",
@@ -166,7 +177,8 @@ public final class Strings {
             "Les donn\u00e9es de la partie sont absentes ou illisibles.",
             "Aucune session valide. Veuillez rouvrir Wordfeud.",
             "\u00c9chec de la connexion. Le coup a peut-\u00eatre \u00e9t\u00e9 jou\u00e9.",
-            "Le serveur a signal\u00e9 une erreur.");
+            "Le serveur a signal\u00e9 une erreur.",
+            "DL", "TL", "DW", "TW");
         add("de", "Wortfinder", "Deine Buchstaben", "Punkte", "L\u00e4nge", "A-Z", "Spielen",
             "Du bist nicht am Zug", "Senkrecht", "Waagerecht", "Nutzt: %s", "Endet auf %s",
             "Zug abgelehnt", "Erneut versuchen", "Details kopieren", "Wortliste wird geladen...", "%d P.",
@@ -179,6 +191,7 @@ public final class Strings {
             "Spieldaten fehlen oder sind nicht lesbar.",
             "Keine g\u00fcltige Sitzung gefunden. \u00d6ffne Wordfeud erneut.",
             "Verbindung fehlgeschlagen. Der Zug wurde eventuell gespielt.",
-            "Der Server hat einen Fehler gemeldet.");
+            "Der Server hat einen Fehler gemeldet.",
+            "DL", "TL", "DW", "TW");
     }
 }

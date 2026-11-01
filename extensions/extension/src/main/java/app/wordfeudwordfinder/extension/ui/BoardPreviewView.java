@@ -29,6 +29,7 @@ public final class BoardPreviewView extends View {
     private int[][] squares;
     private Ruleset ruleset;
     private Move move;
+    private String lang = "en";
     /** New-tile letters of {@link #move}, indexed [y][x]; '\0' = none. */
     private final char[][] newTiles = new char[N][N];
 
@@ -49,6 +50,12 @@ public final class BoardPreviewView extends View {
         this.board = copy(board);
         this.squares = layout == null ? null : layout.getSquares();
         this.ruleset = rs;
+        invalidate();
+    }
+
+    /** Language for the bonus-square labels (from {@link Strings}); null means the fallback (English). */
+    public void setLanguage(String lang) {
+        this.lang = lang;
         invalidate();
     }
 
@@ -89,7 +96,19 @@ public final class BoardPreviewView extends View {
     protected void onDraw(Canvas canvas) {
         int size = Math.min(getWidth(), getHeight());
         if (size <= 0) return;
-        canvas.drawColor(theme.boardBackground);
+        // Centre the square board when the view is larger than it in one direction.
+        int save = canvas.save();
+        canvas.translate((getWidth() - size) / 2f, (getHeight() - size) / 2f);
+        try {
+            drawBoard(canvas, size);
+        } finally {
+            canvas.restoreToCount(save);
+        }
+    }
+
+    private void drawBoard(Canvas canvas, int size) {
+        squarePaint.setColor(theme.boardBackground);
+        canvas.drawRect(0, 0, size, size, squarePaint);
         float c = (size - gap * (N + 1)) / N;
         if (c <= 0) return;
         labelPaint.setTextSize(c * 0.36f);
@@ -117,7 +136,7 @@ public final class BoardPreviewView extends View {
                     int code = squareAt(x, y);
                     squarePaint.setColor(theme.bonusColor(code));
                     canvas.drawRoundRect(cell, c * 0.12f, c * 0.12f, squarePaint);
-                    String label = OverlayFormat.bonusLabel(code);
+                    String label = OverlayFormat.bonusLabel(lang, code);
                     if (label != null) canvas.drawText(label, cell.centerX(), cell.centerY() + labelDy, labelPaint);
                 }
             }
@@ -127,10 +146,12 @@ public final class BoardPreviewView extends View {
             float r = c * 0.42f;
             float left = gap + lastX * (c + gap);
             float top = gap + lastY * (c + gap);
-            // Top-right corner of the last tile, kept inside the view.
-            float cx = Math.min(left + c, size - r);
+            String text = String.valueOf(move.score);
+            float half = tile.badgeHalfWidth(r, text);
+            // Top-right corner of the last tile, kept inside the board (pill width included).
+            float cx = Math.min(left + c, size - half);
             float cy = Math.max(top, r);
-            tile.drawBadge(canvas, cx, cy, r, String.valueOf(move.score), 255);
+            tile.drawBadge(canvas, cx, cy, r, text, 255);
         }
     }
 
