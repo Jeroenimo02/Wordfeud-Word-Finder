@@ -32,6 +32,8 @@ sourceSets {
     main {
         java {
             srcDir("../../extensions/extension/src/main/java")
+            // BuildInfo is generated in the real build; this is a fixed "dev" stand-in.
+            srcDir("src/buildinfo/java")
             exclude(androidOnly)
         }
     }

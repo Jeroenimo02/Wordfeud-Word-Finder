@@ -1067,7 +1067,8 @@ public final class OverlayController {
         }
         if (sameSession) {
             if (a == PlayState.Action.SHOW_REJECTED) {
-                showStatus(String.format(Strings.get(lang, Key.REJECTED_WORDS), TextUtils.join(", ", words)));
+                showStatus(words.isEmpty() ? Strings.get(lang, Key.REJECTED)
+                        : String.format(Strings.get(lang, Key.REJECTED_WORDS), TextUtils.join(", ", words)));
                 keepStatusForNextList = true;
                 moves = null;
                 selected = null; // the rejected move must not be played again while the list is recomputed

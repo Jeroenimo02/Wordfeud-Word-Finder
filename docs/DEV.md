@@ -34,6 +34,15 @@ gradle -p tools/jvm-tests test
   Het script downloadt `android.jar` eenmalig naar `tools/jvm-tests/.cache/` (genegeerd door git) en
   draait `javac` over alle bronnen. Dit controleert alleen of het compileert, niet of het draait.
 
+## Patchversie (BuildInfo)
+
+`core/BuildInfo.java` staat niet in `src/main`: de taak `generateBuildInfo` in
+`extensions/extension/build.gradle.kts` schrijft hem naar `build/generated/source/buildinfo/` met
+`PATCH_VERSION = project.version` (uit `gradle.properties`; semantic-release zet daar de releaseversie in
+voordat hij bouwt). De map is een Android-bronmap van `main` en `preBuild` hangt van de taak af. "Kopieer
+details" (spec §10) toont deze versie. De JVM-testbuild en `android-compile-check.sh` gebruiken in plaats
+daarvan `tools/jvm-tests/src/buildinfo/java/.../BuildInfo.java` met `"dev"`.
+
 ## Lokaal patchen
 
 **Nog niet geverifieerd op een toestel.** Volgens de README en documentatie van Morphe Desktop
