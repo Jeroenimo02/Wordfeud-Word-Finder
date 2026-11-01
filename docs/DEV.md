@@ -1,5 +1,8 @@
 # Ontwikkelen
 
+De extensie vereist **Android 7.0 (API 24) of nieuwer** (o.a. `java.util.function`, `Comparator.comparing`,
+`List.sort`, `URLConnection.getContentLengthLong`, `Math.addExact`). Gebruik geen API's boven 24 zonder versiecheck.
+
 ## Reguliere commando's (CI en machines met Android SDK)
 
 ```sh

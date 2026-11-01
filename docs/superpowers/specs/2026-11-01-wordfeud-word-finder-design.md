@@ -88,7 +88,7 @@ Vingerafdrukken gebruiken klasse- en methodenamen, die bij alle vier niet versle
 | `OverlayUI` | Knopje, overlay, voorbeeldbord, lijst (§9) |
 | `ErrorReporter` | Foutcodes en kopieerbare details (§10) |
 
-Alle bestanden van de patch staan in `files/wfwz/` van de app. De patch maakt alleen verbinding met de vaste woordenlijst-URL's en met `api.wordfeud.com`, en verzamelt of verstuurt geen andere gegevens.
+Alle bestanden van de patch staan in `files/wfwf/` van de app (gewijzigd: wfwf, zie plan). De patch maakt alleen verbinding met de vaste woordenlijst-URL's en met `api.wordfeud.com`, en verzamelt of verstuurt geen andere gegevens.
 
 ## 5. GameStore
 

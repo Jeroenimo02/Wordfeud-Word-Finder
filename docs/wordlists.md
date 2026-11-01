@@ -1,6 +1,6 @@
 # Woordenlijsten per regelset (onderzoek taak 9, stappen 1 en 2)
 
-Status: **ter goedkeuring**. Er is nog niets ingevuld in `WordListSources`; dat gebeurt pas na akkoord van de opdrachtgever (stap 3).
+Status: **besloten** (zie [Besluit](#besluit)). Regelset 2 (Nederlands) is goedgekeurd en ingevuld in `WordListSources`; alle andere regelsets blijven leeg (`WL-NONE`).
 Onderzoeksdatum: 2026-11-01.
 
 ## Werkwijze

@@ -23,8 +23,9 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1**. Other versions are experim
 
 ## Word lists
 
-The word finder needs a word list per ruleset. Lists are downloaded on first use from a pinned commit and verified
-against a SHA-256 before use.
+The word finder needs a word list per ruleset. A list is downloaded in the background from a pinned commit as soon as
+a game in that ruleset is seen (opening the overlay retries a failed download), and verified against a SHA-256
+before use.
 
 | Ruleset id | Language | Source (pinned commit) | License |
 |---|---|---|---|
@@ -58,6 +59,7 @@ Every message shows a short text and a code.
 
 ## Status and limitations
 
+- Requires Android 7.0 (API 24) or newer.
 - Not yet verified on a device (checks V1-V12 are pending).
 - Blank tiles are disabled until V2 is verified.
 - After a move, the game refreshes through Wordfeud's own polling (about 20 s).

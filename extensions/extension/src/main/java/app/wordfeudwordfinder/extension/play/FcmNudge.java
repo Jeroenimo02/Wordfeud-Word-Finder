@@ -20,7 +20,7 @@ public final class FcmNudge implements Refresher.Strategy {
     private final Refresher.Messenger messenger;
     private final Clock clock;
 
-    /** Wall clock in ms (own interface: java.util.function is not on every Android version Wordfeud supports). */
+    /** Wall clock in ms (own interface so tests can supply a fake clock; the extension needs API 24 or newer). */
     interface Clock {
         long nowMs();
     }
