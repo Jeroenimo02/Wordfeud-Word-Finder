@@ -127,6 +127,8 @@ public final class GameStore {
         try {
             if (!newRulesets.isEmpty()) storage.writeTextAtomic(RULESETS_FILE, rulesetsJson().toString());
             if (!newBoards.isEmpty()) storage.writeTextAtomic(BOARDS_FILE, boardsJson().toString());
+        } catch (org.json.JSONException e) {
+            // best effort: the in-memory copy is still valid for this session
         } catch (IOException | RuntimeException e) {
             // best effort: the in-memory copy is still valid for this session
         }
