@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,5 +115,42 @@ public class WordGraphTest {
             fail();
         } catch (IOException expected) {
         }
+    }
+
+    private static byte[] header(int nodes, int edges) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        DataOutputStream d = new DataOutputStream(out);
+        d.writeInt(0x57465747);
+        d.writeInt(1);
+        d.writeInt(nodes);
+        d.writeInt(edges);
+        d.writeInt(0);
+        d.flush();
+        return out.toByteArray();
+    }
+
+    @Test
+    public void hugeNodeCountIsIOExceptionNotOutOfMemory() throws IOException {
+        for (int nodes : new int[] {Integer.MAX_VALUE, (1 << 26) + 1}) {
+            try {
+                WordGraph.read(new ByteArrayInputStream(header(nodes, nodes - 1)));
+                fail("accepted " + nodes);
+            } catch (IOException expected) {
+            }
+        }
+    }
+
+    @Test
+    public void headerLargerThanAvailableBytesIsRejected() throws IOException {
+        byte[] h = header(1_000_000, 999_999);
+        try {
+            WordGraph.read(new ByteArrayInputStream(h), h.length);
+            fail();
+        } catch (IOException expected) {
+        }
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        WordGraph.build(Arrays.asList("AB", "AC")).write(out);
+        byte[] b = out.toByteArray();
+        assertTrue(WordGraph.read(new ByteArrayInputStream(b), b.length).contains("AC"));
     }
 }

@@ -1,7 +1,13 @@
 package app.wordfeudwordfinder.extension.core;
 
 import app.wordfeudwordfinder.extension.game.GameStore;
+import app.wordfeudwordfinder.extension.words.UrlConnectionFetcher;
+import app.wordfeudwordfinder.extension.words.WordListManager;
 import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /** Lazy, thread-safe singleton wiring all word finder components together. */
 public final class WordFinder {
@@ -10,11 +16,28 @@ public final class WordFinder {
 
     private final Storage storage;
     private final GameStore gameStore;
+    private final WordListManager wordLists;
 
     /** Also used by tests: builds an instance rooted at the given directory without Android. */
     public WordFinder(File root) {
         this.storage = new Storage(root);
         this.gameStore = new GameStore(storage);
+        this.wordLists = new WordListManager(storage, new UrlConnectionFetcher(), wordListExecutor());
+        GameStore gs = gameStore;
+        WordListManager wl = wordLists;
+        gameStore.addListener(() -> wl.onRulesetsSeen(gs.seenRulesets(), gs::ruleset));
+    }
+
+    /** Background threads for word list downloads: daemon, low priority, idle threads end after 30 s. */
+    private static ExecutorService wordListExecutor() {
+        ThreadPoolExecutor ex = new ThreadPoolExecutor(2, 2, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r -> {
+            Thread t = new Thread(r, "wfwf-wordlists");
+            t.setDaemon(true);
+            t.setPriority(Thread.MIN_PRIORITY);
+            return t;
+        });
+        ex.allowCoreThreadTimeOut(true);
+        return ex;
     }
 
     /** Returns the singleton, or null when no application context is available (yet). Never throws. */
@@ -48,5 +71,9 @@ public final class WordFinder {
 
     public GameStore gameStore() {
         return gameStore;
+    }
+
+    public WordListManager wordLists() {
+        return wordLists;
     }
 }

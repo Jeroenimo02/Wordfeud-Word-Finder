@@ -23,6 +23,8 @@ public final class WordGraph {
     /** "WFWG" */
     private static final int MAGIC = 0x57465747;
     private static final int VERSION = 1;
+    /** Upper bound on the node count accepted by {@link #read}; far above any real word list. */
+    static final int MAX_NODES = 1 << 26;
 
     private final int[] edgeFirst;   // nodeCount + 1 entries
     private final long[] terminal;   // bitset over nodes
@@ -185,13 +187,27 @@ public final class WordGraph {
 
     /** Reads a graph written by {@link #write}; throws IOException for a foreign, newer or corrupt stream. */
     public static WordGraph read(InputStream in) throws IOException {
+        return read(in, -1);
+    }
+
+    /**
+     * As {@link #read(InputStream)}, but when {@code availableBytes >= 0} (e.g. the file length) a header that
+     * implies a larger stream is rejected before any array is allocated, so a corrupt file cannot cause a huge
+     * allocation. A node count above {@link #MAX_NODES} is always rejected.
+     */
+    public static WordGraph read(InputStream in, long availableBytes) throws IOException {
         DataInputStream d = new DataInputStream(new BufferedInputStream(in, 1 << 16));
         if (d.readInt() != MAGIC) throw new IOException("not a word graph");
         int version = d.readInt();
         if (version != VERSION) throw new IOException("unsupported word graph version " + version);
         int nodes = d.readInt();
         int edges = d.readInt();
-        if (nodes < 1 || edges < 0 || edges != nodes - 1) throw new IOException("corrupt word graph header");
+        if (nodes < 1 || nodes > MAX_NODES || edges < 0 || edges != nodes - 1) {
+            throw new IOException("corrupt word graph header");
+        }
+        if (availableBytes >= 0 && serializedSize(nodes, edges) > availableBytes) {
+            throw new IOException("corrupt word graph header");
+        }
         int[] first = new int[nodes + 1];
         int prev = 0;
         for (int i = 0; i <= nodes; i++) {
@@ -213,5 +229,11 @@ public final class WordGraph {
             targets[i] = t;
         }
         return new WordGraph(first, term, chars, targets);
+    }
+
+    /** Exact byte size of the stream {@link #write} produces for a graph of this shape. */
+    private static long serializedSize(int nodes, int edges) {
+        long termLen = (nodes >> 6) + 1L;
+        return 16L + 4L * (nodes + 1L) + 4L + 8L * termLen + 2L * edges + 4L * edges;
     }
 }
