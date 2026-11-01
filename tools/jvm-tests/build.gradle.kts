@@ -15,9 +15,9 @@ repositories {
 
 // Sources that need Android (android.*) and cannot compile on the plain JVM.
 // Keep this list explicit and short; add files here when a class starts using android.*.
-val androidOnly = listOf(
-    "**/ui/**",
-)
+// Find candidates with: grep -rl '^import android\.' extensions/extension/src/main/java
+// Currently empty: no main source imports android.* (WordFinder uses reflection on a string only).
+val androidOnly = listOf<String>()
 
 sourceSets {
     main {
