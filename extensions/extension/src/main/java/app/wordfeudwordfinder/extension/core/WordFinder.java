@@ -1,6 +1,7 @@
 package app.wordfeudwordfinder.extension.core;
 
 import app.wordfeudwordfinder.extension.game.GameStore;
+import app.wordfeudwordfinder.extension.words.RejectedWords;
 import app.wordfeudwordfinder.extension.words.UrlConnectionFetcher;
 import app.wordfeudwordfinder.extension.words.WordListManager;
 import java.io.File;
@@ -17,11 +18,13 @@ public final class WordFinder {
     private final Storage storage;
     private final GameStore gameStore;
     private final WordListManager wordLists;
+    private final RejectedWords rejected;
 
     /** Also used by tests: builds an instance rooted at the given directory without Android. */
     public WordFinder(File root) {
         this.storage = new Storage(root);
         this.gameStore = new GameStore(storage);
+        this.rejected = new RejectedWords(storage);
         this.wordLists = new WordListManager(storage, new UrlConnectionFetcher(), wordListExecutor());
         GameStore gs = gameStore;
         WordListManager wl = wordLists;
@@ -75,5 +78,9 @@ public final class WordFinder {
 
     public WordListManager wordLists() {
         return wordLists;
+    }
+
+    public RejectedWords rejected() {
+        return rejected;
     }
 }
