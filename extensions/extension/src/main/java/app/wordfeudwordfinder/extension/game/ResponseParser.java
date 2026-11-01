@@ -24,11 +24,15 @@ public final class ResponseParser {
         public final List<RawGame> games;
         public final List<Ruleset> rulesets;
         public final List<BoardLayout> boards;
+        /** Games whose header could not be parsed but whose id could: id to the reason (GS-DATA). */
+        public final Map<Long, WfError> failedGames;
 
-        Parsed(List<RawGame> games, List<Ruleset> rulesets, List<BoardLayout> boards) {
+        Parsed(List<RawGame> games, List<Ruleset> rulesets, List<BoardLayout> boards,
+               Map<Long, WfError> failedGames) {
             this.games = Collections.unmodifiableList(games);
             this.rulesets = Collections.unmodifiableList(rulesets);
             this.boards = Collections.unmodifiableList(boards);
+            this.failedGames = Collections.unmodifiableMap(failedGames);
         }
     }
 
@@ -39,20 +43,24 @@ public final class ResponseParser {
             JSONObject content = obj(root, "content");
             List<RawGame> games = new ArrayList<>();
             JSONArray ga = arr(content, "games");
+            Map<Long, WfError> failed = new LinkedHashMap<>();
+            // Tolerant per game: one malformed game must not make the whole response unusable.
             for (int i = 0; i < ga.length(); i++) {
-                games.add(parseGame(asObj(ga.opt(i), "games[]")));
+                Object go = ga.opt(i);
+                try {
+                    games.add(parseGame(asObj(go, "games[]")));
+                } catch (WfError e) {
+                    Long id = go instanceof JSONObject ? tryId((JSONObject) go) : null;
+                    if (id != null) failed.put(id, e); // else: no id, nothing to attach the error to; skipped
+                }
             }
             List<Ruleset> rulesets = new ArrayList<>();
             JSONArray ra = optArr(content, "rulesets");
-            if (ra != null) {
-                for (int i = 0; i < ra.length(); i++) rulesets.add(parseRuleset(asObj(ra.opt(i), "rulesets[]")));
-            }
+            if (ra != null) rulesets.addAll(parseRulesets(ra));
             List<BoardLayout> boards = new ArrayList<>();
             JSONArray ba = optArr(content, "boards");
-            if (ba != null) {
-                for (int i = 0; i < ba.length(); i++) boards.add(parseBoard(asObj(ba.opt(i), "boards[]")));
-            }
-            return new Parsed(games, rulesets, boards);
+            if (ba != null) boards.addAll(parseBoards(ba));
+            return new Parsed(games, rulesets, boards, failed);
         } catch (JSONException e) {
             throw WfError.gsData("json: " + e.getMessage());
         }
@@ -70,6 +78,40 @@ public final class ResponseParser {
             return parseGame(obj(obj(root, "content"), "game"));
         } catch (JSONException e) {
             throw WfError.gsData("json: " + e.getMessage());
+        }
+    }
+
+    /** Tolerant: malformed entries are skipped. */
+    static List<Ruleset> parseRulesets(JSONArray ra) {
+        List<Ruleset> out = new ArrayList<>();
+        for (int i = 0; i < ra.length(); i++) {
+            try {
+                out.add(parseRuleset(asObj(ra.opt(i), "rulesets[]")));
+            } catch (WfError e) {
+                // skipped
+            }
+        }
+        return out;
+    }
+
+    /** Tolerant: malformed entries are skipped. */
+    static List<BoardLayout> parseBoards(JSONArray ba) {
+        List<BoardLayout> out = new ArrayList<>();
+        for (int i = 0; i < ba.length(); i++) {
+            try {
+                out.add(parseBoard(asObj(ba.opt(i), "boards[]")));
+            } catch (WfError e) {
+                // skipped
+            }
+        }
+        return out;
+    }
+
+    private static Long tryId(JSONObject g) {
+        try {
+            return lng(g, "id");
+        } catch (WfError e) {
+            return null;
         }
     }
 
