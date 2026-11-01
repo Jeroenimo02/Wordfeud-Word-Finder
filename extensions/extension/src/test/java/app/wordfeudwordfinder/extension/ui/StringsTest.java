@@ -19,6 +19,11 @@ public class StringsTest {
                 assertFalse(lang + " " + k, s.trim().isEmpty());
             }
     }
+    @Test public void closeLabel() {
+        assertEquals("Close", Strings.get("en", Key.CLOSE));
+        assertEquals("Sluiten", Strings.get("nl", Key.CLOSE));
+        assertEquals("Close", Strings.get("xx", Key.CLOSE));
+    }
     @Test public void languageTagsNormalized() {
         assertEquals(Strings.get("nl", Key.PLAY), Strings.get("nl-NL", Key.PLAY));
         assertEquals(Strings.get("nl", Key.PLAY), Strings.get("nl_BE", Key.PLAY));

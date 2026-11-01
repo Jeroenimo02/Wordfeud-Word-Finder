@@ -2,13 +2,11 @@ package app.wordfeudwordfinder.patches.ui
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
-import app.morphe.patcher.extensions.InstructionExtensions.replaceInstruction
 import app.morphe.patcher.patch.bytecodePatch
 import app.wordfeudwordfinder.patches.network.networkTapPatch
 import app.wordfeudwordfinder.patches.platform.platformTapPatch
 import app.wordfeudwordfinder.patches.platform.userAgentPatch
 import app.wordfeudwordfinder.patches.shared.Constants.COMPATIBILITY_WORDFEUD
-import com.android.tools.smali.dexlib2.Opcode
 
 private const val OVERLAY_CONTROLLER = "Lapp/wordfeudwordfinder/extension/ui/OverlayController;"
 
@@ -33,23 +31,12 @@ val overlayPatch = bytecodePatch(
     extendWith("extensions/extension.mpe")
 
     execute {
-        val method = MainActivityOnCreateFingerprint.method
-        val returns = method.implementation!!.instructions
-            .withIndex()
-            .filter { it.value.opcode == Opcode.RETURN_VOID }
-            .map { it.index }
-        if (returns.isEmpty()) throw IllegalStateException("MainActivity.onCreate has no return-void")
-
-        // Instance method: p0 = this activity. Each return-void becomes the call followed by a new return-void.
-        // The call REPLACES the return instruction (instead of being inserted before it) so that branch labels
-        // pointing at the return now point at the call, and every exit path runs it. Work from the last
-        // return backwards so the earlier indices stay valid.
-        for (index in returns.reversed()) {
-            method.replaceInstruction(
-                index,
-                "invoke-static {p0}, $OVERLAY_CONTROLLER->attach(Landroid/app/Activity;)V"
-            )
-            method.addInstruction(index + 1, "return-void")
-        }
+        // Injected at index 0, where p0 is guaranteed to hold `this` (at a later return the optimiser may have
+        // reused p0). attach() only posts to the main looper, so the views are built after onCreate has
+        // returned and the content view is in place. The /range form works for any register number.
+        MainActivityOnCreateFingerprint.method.addInstruction(
+            0,
+            "invoke-static/range {p0 .. p0}, $OVERLAY_CONTROLLER->attach(Landroid/app/Activity;)V"
+        )
     }
 }

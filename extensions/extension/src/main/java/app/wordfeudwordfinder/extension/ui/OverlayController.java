@@ -54,8 +54,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * The floating button and the overlay (spec section 9), hook H3. {@link #attach} is called at the end of
- * {@code MainActivity.onCreate}. One controller per activity; it is dropped when that activity is destroyed.
+ * The floating button and the overlay (spec section 9), hook H3. {@link #attach} is called at the start of
+ * {@code MainActivity.onCreate} and defers all work to the main looper. One controller per activity; it is dropped when that activity is destroyed.
  *
  * <p>Threading: every view is touched on the main thread only. Listener calls from {@code GameStore},
  * {@code RouteTap} and the word list manager arrive on other threads and are posted to the main thread. Move
@@ -78,7 +78,11 @@ public final class OverlayController {
     private static final float BOARD_MAX_HEIGHT_FRACTION = 0.5f;
     private static final int SCRIM = 0x99000000;
 
-    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    /**
+     * Created lazily (not in the static initializer): attach() runs inside the app's onCreate, and an error thrown
+     * while initialising this class would escape attach()'s try/catch.
+     */
+    private static volatile Handler main;
     private static final AtomicBoolean LISTENERS_ADDED = new AtomicBoolean(false);
     private static volatile ExecutorService executor;
     /** The controller of the live MainActivity; null when none. Main thread writes only. */
@@ -146,12 +150,17 @@ public final class OverlayController {
     // Entry point
     // =====================================================================================================
 
-    /** Hook H3 (end of {@code MainActivity.onCreate}). Never throws; on any failure the app is left as it is. */
+    /**
+     * Hook H3, called at the START of {@code MainActivity.onCreate} (before super.onCreate). It must only post:
+     * nothing here may touch the window or the content view synchronously. The posted work runs after onCreate
+     * has returned. Never throws; on any failure the app is left as it is.
+     */
     public static void attach(Activity a) {
         try {
             if (a == null) return;
-            // Build the views after onCreate has returned, when the content view is certainly in place.
-            MAIN.post(() -> {
+            // Called before super.onCreate: build the views later, once onCreate has returned and the content
+            // view is in place.
+            main().post(() -> {
                 try {
                     attachNow(a);
                 } catch (Throwable ignored) {
@@ -193,10 +202,19 @@ public final class OverlayController {
     }
 
     private static void postRefreshCurrent() {
-        MAIN.post(() -> {
+        main().post(() -> {
             OverlayController c = current;
             if (c != null) c.refresh();
         });
+    }
+
+    private static Handler main() {
+        Handler h = main;
+        if (h == null) {
+            h = new Handler(Looper.getMainLooper());
+            main = h;
+        }
+        return h;
     }
 
     private static ExecutorService executor() {
@@ -232,7 +250,7 @@ public final class OverlayController {
 
     /** Runs {@code r} on the main thread if this controller is still attached, swallowing everything it throws. */
     private void ui(Runnable r) {
-        MAIN.post(() -> {
+        main().post(() -> {
             if (activity == null) return;
             try {
                 r.run();
@@ -637,7 +655,7 @@ public final class OverlayController {
         TextView x = text(ctx, 26, theme.textPrimary, Fonts.inter(ctx));
         x.setText("×");
         x.setGravity(Gravity.CENTER);
-        x.setContentDescription("close");
+        x.setContentDescription(Strings.get(lang, Key.CLOSE));
         x.setClickable(true);
         x.setOnClickListener(v -> close());
         h.addView(x, new LinearLayout.LayoutParams(dp(HEADER_HEIGHT_DP), dp(HEADER_HEIGHT_DP)));
@@ -973,7 +991,11 @@ public final class OverlayController {
         background(() -> {
             MoveSubmitter.Result r = submitter.submit(id, rulesetId, m);
             ui(() -> {
-                if (open && session == s) onPlayResult(r);
+                if (open && session == s) {
+                    onPlayResult(r);
+                } else if (open) {
+                    updatePlayEnabled(); // a later overlay session waited for this request to finish
+                }
             });
         });
     }
