@@ -46,4 +46,13 @@ public class StringsTest {
         assertEquals(Key.ERR_MV_NET, Strings.errorKey(WfError.mvNet()));
         assertTrue(Strings.get("en", Key.ERR_MV_SESSION).contains("reopening Wordfeud"));
     }
+    @Test public void realDiacritics() {
+        assertEquals("L\u00e6ngde", Strings.get("da", Key.SORT_LENGTH));
+        assertEquals("Ords\u00f6kare", Strings.get("sv", Key.TITLE));
+        assertEquals("Ords\u00f8ker", Strings.get("nb", Key.TITLE));
+        assertEquals("L\u00e4nge", Strings.get("de", Key.SORT_LENGTH));
+        assertEquals("R\u00e9essayer", Strings.get("fr", Key.RETRY));
+        assertTrue(Strings.get("es", Key.ERR_WL_HASH).contains("est\u00e1 da\u00f1ada"));
+        assertTrue(Strings.get("fr", Key.ERR_MV_NET).contains("\u00c9chec"));
+    }
 }
