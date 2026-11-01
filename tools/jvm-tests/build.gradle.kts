@@ -16,8 +16,13 @@ repositories {
 // Sources that need Android (android.*) and cannot compile on the plain JVM.
 // Keep this list explicit and short; add files here when a class starts using android.*.
 // Find candidates with: grep -rl '^import android\.' extensions/extension/src/main/java
-// Currently empty: no main source imports android.* (WordFinder uses reflection on a string only).
-val androidOnly = listOf<String>()
+// Pure helpers used by these views (Theme, OverlayFormat) stay on the JVM and are unit-tested.
+val androidOnly = listOf(
+    "app/wordfeudwordfinder/extension/ui/Fonts.java",
+    "app/wordfeudwordfinder/extension/ui/TileDrawable.java",
+    "app/wordfeudwordfinder/extension/ui/BoardPreviewView.java",
+    "app/wordfeudwordfinder/extension/ui/MoveListAdapter.java",
+)
 
 sourceSets {
     main {
