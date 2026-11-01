@@ -34,6 +34,12 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Unit tests always run before the release, so a failing test blocks publishing.
+      - name: Unit tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :extensions:extension:testDebugUnitTest --no-daemon
+
       # Semantic release runs its own Gradle build command.
       # Only dev and main branch will generate a release as specified by .releaserc
       - name: Release
@@ -47,15 +53,8 @@ jobs:
         if: steps.release.outputs.new_release_published == 'true'
         uses: actions/attest-build-provenance@v4
         with:
-          subject-name: 'Morphe Patches ${{ steps.release.outputs.new_release_git_tag }}'
+          subject-name: 'Wordfeud Word Finder ${{ steps.release.outputs.new_release_git_tag }}'
           subject-path: patches/build/libs/patches-*.mpp
-
-      # Run extension unit tests before the build, under the same condition as the build step.
-      - name: Unit tests
-        if: steps.release.outputs.new_release_published != 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :extensions:extension:testDebugUnitTest --no-daemon
 
       # Always verify compilation when semantic-release did not publish a release.
       # This covers non-main/dev branches, chore commits, docs commits, etc.
