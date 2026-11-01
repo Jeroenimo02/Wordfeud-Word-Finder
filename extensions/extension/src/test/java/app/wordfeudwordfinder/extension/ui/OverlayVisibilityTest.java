@@ -24,6 +24,9 @@ public class OverlayVisibilityTest {
     @Test public void visibleWhenUnreadable() {
         assertTrue(OverlayVisibility.fabVisible(1L, st(false, false, WfError.gsData("x"))));
     }
+    @Test public void hiddenWhenEndedAndUnreadable() {
+        assertFalse(OverlayVisibility.fabVisible(1L, st(false, true, WfError.gsEvent("x"))));
+    }
     @Test public void visibleWhenNotMyTurn() {
         assertTrue(OverlayVisibility.fabVisible(1L, st(false, false, null)));
     }

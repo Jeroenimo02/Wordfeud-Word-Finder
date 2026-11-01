@@ -8,7 +8,7 @@ public final class OverlayVisibility {
 
     public static boolean fabVisible(Long routeGameId, GameState st) {
         if (routeGameId == null || st == null) return false;
-        if (st.unreadable() != null) return true;
+        // Ended games hide the button even when unreadable; an unreadable running game shows it (with the error).
         return !st.ended();
     }
 }
