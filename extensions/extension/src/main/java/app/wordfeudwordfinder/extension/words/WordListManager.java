@@ -36,8 +36,14 @@ import java.util.regex.Pattern;
  * ruleset is already running, in which case its callback is attached to that download. At most one download per
  * ruleset runs at a time.
  *
+ * <p>Memory: at most one graph is kept loaded (the one most recently requested via {@link #getOrNull} or
+ * {@link #ensureForOverlay}); a background attempt only checks that the current file exists and does not keep a
+ * graph it downloads. Use a single-thread executor so that at most one graph is built at a time.
+ *
  * <p>Threading: all disk and network work runs on the injected executor; {@link Callback} methods are invoked on
- * the executor thread (the UI layer posts them to the main thread). Exceptions thrown by callbacks are swallowed.
+ * the executor thread (the UI layer posts them to the main thread), except the progress replayed to a callback that
+ * attaches to a running download, which is reported on the calling thread. Exceptions thrown by callbacks are
+ * swallowed.
  * {@link #getOrNull} may read from disk and should not be called on the main thread.
  */
 public final class WordListManager {
@@ -66,16 +72,25 @@ public final class WordListManager {
     private final Executor executor;
     private final Function<Integer, WordListSources.Source> sources;
 
-    // Guarded by this.
-    private final Map<Integer, Loaded> loaded = new HashMap<>();
+    /** Reads a stored graph; replaceable by tests (e.g. to simulate OutOfMemoryError). */
+    interface GraphReader {
+        WordGraph read(InputStream in, long length) throws IOException;
+    }
+
+    volatile GraphReader reader = WordGraph::read;
+
+    // Guarded by this. The single loaded graph (null when none).
+    private Loaded loaded;
     private final Set<Integer> backgroundTried = new HashSet<>();
     private final Map<Integer, Job> running = new HashMap<>();
 
     private static final class Loaded {
+        final int id;
         final int version;
         final WordGraph graph;
 
-        Loaded(int version, WordGraph graph) {
+        Loaded(int id, int version, WordGraph graph) {
+            this.id = id;
             this.version = version;
             this.graph = graph;
         }
@@ -85,6 +100,19 @@ public final class WordListManager {
     private static final class Job {
         final List<Callback> callbacks = new ArrayList<>();
         int lastPct = -1;
+    }
+
+    /** Outcome of reading the current file from disk. */
+    private enum LoadStatus { OK, MISSING, OUT_OF_MEMORY }
+
+    private static final class LoadResult {
+        final LoadStatus status;
+        final WordGraph graph;
+
+        LoadResult(LoadStatus status, WordGraph graph) {
+            this.status = status;
+            this.graph = graph;
+        }
     }
 
     public WordListManager(Storage storage, HttpFetcher fetcher, Executor executor) {
@@ -113,8 +141,7 @@ public final class WordListManager {
             synchronized (this) {
                 if (!backgroundTried.add(id)) continue;
                 if (src == null || running.containsKey(id)) continue;
-                Loaded l = loaded.get(id);
-                if (l != null && l.version == src.version) continue;
+                if (isLoaded(id, src.version)) continue;
                 job = new Job();
                 running.put(id, job);
             }
@@ -135,52 +162,89 @@ public final class WordListManager {
             return;
         }
         Job job;
+        WordGraph ready = null;
+        int replay = -1;
         synchronized (this) {
-            Loaded l = loaded.get(id);
-            if (l != null && l.version == src.version) {
-                WordGraph g = l.graph;
-                executor.execute(() -> deliverReady(cb, g));
-                return;
+            if (isLoaded(id, src.version)) {
+                ready = loaded.graph;
+                job = null;
+            } else {
+                Job existing = running.get(id);
+                if (existing != null) {
+                    existing.callbacks.add(cb);
+                    replay = existing.lastPct;
+                    job = null;
+                } else {
+                    job = new Job();
+                    job.callbacks.add(cb);
+                    running.put(id, job);
+                    backgroundTried.add(id); // an overlay attempt also counts as this session's background attempt
+                }
             }
-            Job existing = running.get(id);
-            if (existing != null) {
-                existing.callbacks.add(cb);
-                return;
+        }
+        if (job == null && ready == null) {
+            // Attached to a running download: report its progress so far right away (on this thread, since the
+            // executor may be busy with that download). Best effort: in a race this can arrive after a later
+            // progress value or after onReady; the UI ignores progress once a result is shown.
+            if (replay >= 0) {
+                try {
+                    cb.onProgress(replay);
+                } catch (RuntimeException ignored) {
+                    // callbacks never break the manager
+                }
             }
-            job = new Job();
-            job.callbacks.add(cb);
-            running.put(id, job);
-            backgroundTried.add(id); // an overlay attempt also counts as this session's background attempt
+            return;
+        }
+        if (job == null) {
+            WordGraph g = ready;
+            executor.execute(() -> deliverReady(cb, g));
+            return;
         }
         submit(id, rs, src, job);
     }
 
     /**
-     * The graph for {@code id} when the current version is in memory or on disk, else null. A file that cannot be
-     * read is deleted (it will be downloaded again). May read from disk.
+     * The graph for {@code id} when the current version is in memory or on disk, else null. The returned graph
+     * becomes the one loaded graph (any other is released). A file that cannot be parsed is deleted (it will be
+     * downloaded again); a file that does not fit in memory is kept. May read from disk.
      */
     public WordGraph getOrNull(int id) {
         WordListSources.Source src = sources.apply(id);
         if (src == null) return null;
+        return load(id, src).graph;
+    }
+
+    private LoadResult load(int id, WordListSources.Source src) {
         synchronized (this) {
-            Loaded l = loaded.get(id);
-            if (l != null && l.version == src.version) return l.graph;
+            if (isLoaded(id, src.version)) return new LoadResult(LoadStatus.OK, loaded.graph);
         }
         File f = file(id, src.version);
-        if (!f.isFile()) return null;
+        if (!f.isFile()) return new LoadResult(LoadStatus.MISSING, null);
         WordGraph g;
-        try (InputStream in = new FileInputStream(f)) {
-            g = WordGraph.read(in, f.length());
-        } catch (IOException | RuntimeException | OutOfMemoryError e) {
-            f.delete();
-            return null;
-        }
         synchronized (this) {
-            Loaded l = loaded.get(id);
-            if (l != null && l.version == src.version) return l.graph; // a concurrent load won
-            loaded.put(id, new Loaded(src.version, g));
+            // Release the previous graph before reading the next one, so two are never resident at once.
+            loaded = null;
         }
+        try (InputStream in = new FileInputStream(f)) {
+            g = reader.read(in, f.length());
+        } catch (IOException | RuntimeException e) {
+            f.delete(); // corrupt or foreign file
+            return new LoadResult(LoadStatus.MISSING, null);
+        } catch (OutOfMemoryError e) {
+            return new LoadResult(LoadStatus.OUT_OF_MEMORY, null); // the file may be fine: keep it
+        }
+        return new LoadResult(LoadStatus.OK, keep(id, src.version, g));
+    }
+
+    /** Makes {@code g} the loaded graph unless the same version is already loaded; returns the loaded one. */
+    private synchronized WordGraph keep(int id, int version, WordGraph g) {
+        if (isLoaded(id, version)) return loaded.graph; // a concurrent load won
+        loaded = new Loaded(id, version, g);
         return g;
+    }
+
+    private boolean isLoaded(int id, int version) {
+        return loaded != null && loaded.id == id && loaded.version == version;
     }
 
     // ------------------------------------------------------------------ job
@@ -190,25 +254,34 @@ public final class WordListManager {
             executor.execute(() -> run(id, rs, src, job));
         } catch (RuntimeException e) {
             // e.g. a rejected execution: never leave the job registered
-            finish(id, job, null, WfError.wlNet());
+            finish(id, src, job, null, WfError.wlNet());
         }
     }
 
     private void run(int id, Ruleset rs, WordListSources.Source src, Job job) {
         WordGraph g = null;
         WfError err = null;
+        boolean present = false;
         try {
             if (file(id, src.version).isFile()) {
-                g = getOrNull(id); // null when the file was corrupt (and is now deleted)
+                if (!hasCallbacks(job)) {
+                    // Background attempt: a valid local list exists; it is loaded lazily when needed. A callback
+                    // that attaches meanwhile gets it loaded in finish().
+                    present = true;
+                } else {
+                    LoadResult r = load(id, src);
+                    if (r.status == LoadStatus.OUT_OF_MEMORY) throw WfError.wlDisk();
+                    g = r.graph; // null when the file was corrupt (and is now deleted)
+                }
             }
-            if (g == null) g = download(id, rs, src, job);
+            if (g == null && !present) g = download(id, rs, src, job);
         } catch (WfError e) {
             err = e;
         } catch (RuntimeException | OutOfMemoryError e) {
             // Unexpected failure while preparing the list locally (e.g. too little memory for the graph).
             err = WfError.wlDisk();
         }
-        finish(id, job, g, err);
+        finish(id, src, job, g, err);
     }
 
     private WordGraph download(int id, Ruleset rs, WordListSources.Source src, Job job) throws WfError {
@@ -238,18 +311,32 @@ public final class WordListManager {
         words = null;
         progress(job, BUILT);
         store(id, src.version, g);
-        synchronized (this) {
-            loaded.put(id, new Loaded(src.version, g));
-        }
         deleteOtherVersions(id, src.version);
         return g;
     }
 
-    private void finish(int id, Job job, WordGraph g, WfError err) {
+    private synchronized boolean hasCallbacks(Job job) {
+        return !job.callbacks.isEmpty();
+    }
+
+    /**
+     * Ends the job and notifies its callbacks. {@code g == null && err == null} means a background check found the
+     * current file; a callback that attached meanwhile then gets the graph loaded from disk.
+     */
+    private void finish(int id, WordListSources.Source src, Job job, WordGraph g, WfError err) {
         List<Callback> cbs;
         synchronized (this) {
             if (running.get(id) == job) running.remove(id);
             cbs = new ArrayList<>(job.callbacks);
+        }
+        if (cbs.isEmpty()) return; // background only: do not keep the graph in memory
+        if (err == null) {
+            if (g != null) {
+                g = keep(id, src.version, g);
+            } else {
+                g = load(id, src).graph;
+                if (g == null) err = WfError.wlDisk();
+            }
         }
         for (Callback cb : cbs) {
             if (err != null) deliverError(cb, err);

@@ -46,11 +46,13 @@ public class WordListManagerTest {
         final List<String> urls = new ArrayList<>();
         byte[] body;
         WfError error;
+        Runnable duringFetch;
 
         @Override
         public byte[] fetch(String url, ProgressListener progress) throws WfError {
             urls.add(url);
             if (error != null) throw error;
+            if (duringFetch != null) duringFetch.run();
             if (progress != null) {
                 progress.onProgress(body.length / 2, body.length);
                 progress.onProgress(body.length, body.length);
@@ -270,6 +272,102 @@ public class WordListManagerTest {
             @Override public void onError(WfError e) { throw new RuntimeException("boom"); }
         });
         assertNotNull(m.getOrNull(ID));
+    }
+
+    /** Counts graph reads from disk and optionally simulates running out of memory. */
+    private static final class CountingReader implements WordListManager.GraphReader {
+        int reads;
+        boolean oom;
+
+        @Override
+        public WordGraph read(java.io.InputStream in, long length) throws IOException {
+            reads++;
+            if (oom) throw new OutOfMemoryError("simulated");
+            return WordGraph.read(in, length);
+        }
+    }
+
+    @Test
+    public void backgroundDoesNotPreloadExistingFile() {
+        manager().ensureForOverlay(ID, ruleset(), new Rec());
+        WordListManager m = manager();
+        CountingReader r = new CountingReader();
+        m.reader = r;
+        m.onRulesetsSeen(Collections.singleton(ID), rulesets());
+        assertEquals(0, r.reads);
+        assertEquals(1, fetcher.urls.size());
+        assertNotNull(m.getOrNull(ID));
+        assertEquals(1, r.reads);
+    }
+
+    @Test
+    public void backgroundDownloadDoesNotKeepGraph() {
+        WordListManager m = manager();
+        CountingReader r = new CountingReader();
+        m.reader = r;
+        m.onRulesetsSeen(Collections.singleton(ID), rulesets());
+        assertEquals(1, fetcher.urls.size());
+        assertEquals(Arrays.asList(ID + "-v2.graph"), listFiles());
+        assertEquals(0, r.reads);
+        assertTrue(m.getOrNull(ID).contains("AAP"));
+        assertEquals(1, r.reads);
+    }
+
+    @Test
+    public void keepsOnlyOneGraphLoaded() throws Exception {
+        int other = 8;
+        byte[] list2 = "zus\njet\n".getBytes(StandardCharsets.UTF_8);
+        table.put(other, new WordListSources.Source("https://example.org/b.txt", sha256(list2), 1, "UTF-8"));
+        WordListManager m = manager();
+        m.ensureForOverlay(ID, ruleset(), new Rec());
+        fetcher.body = list2;
+        m.ensureForOverlay(other, ruleset(), new Rec());
+        CountingReader r = new CountingReader();
+        m.reader = r;
+        assertTrue(m.getOrNull(other).contains("JET"));
+        assertEquals(0, r.reads); // most recent one is still loaded
+        assertTrue(m.getOrNull(ID).contains("AAP"));
+        assertEquals(1, r.reads); // the first was released
+        assertTrue(m.getOrNull(other).contains("ZUS"));
+        assertEquals(2, r.reads); // and loading the first released the second
+    }
+
+    @Test
+    public void outOfMemoryKeepsFileAndReportsWlDisk() {
+        manager().ensureForOverlay(ID, ruleset(), new Rec());
+        File f = new File(listDir(), ID + "-v2.graph");
+        WordListManager m = manager();
+        CountingReader r = new CountingReader();
+        r.oom = true;
+        m.reader = r;
+        assertNull(m.getOrNull(ID));
+        assertTrue(f.isFile());
+        Rec rec = new Rec();
+        m.ensureForOverlay(ID, ruleset(), rec);
+        assertEquals("WL-DISK", rec.error.code());
+        assertTrue(f.isFile());
+        assertEquals(1, fetcher.urls.size());
+    }
+
+    @Test
+    public void attachedCallbackGetsCurrentProgress() {
+        List<Runnable> queued = new ArrayList<>();
+        WordListManager m = new WordListManager(storage, fetcher, queued::add, sources);
+        Rec first = new Rec();
+        Rec late = new Rec();
+        m.ensureForOverlay(ID, ruleset(), first);
+        fetcher.duringFetch = () -> m.ensureForOverlay(ID, ruleset(), late);
+        queued.remove(0).run();
+        assertTrue(queued.isEmpty());
+        assertEquals(1, fetcher.urls.size());
+        // Attached after progress 0 was reported: gets 0 immediately, then the remaining ticks.
+        assertEquals(Integer.valueOf(0), late.progress.get(0));
+        assertTrue(late.progress.size() > 1);
+        for (int i = 1; i < late.progress.size(); i++) {
+            assertTrue(late.progress.get(i) >= late.progress.get(i - 1));
+        }
+        assertTrue(late.ready.contains("NOOT"));
+        assertSame(first.ready, late.ready);
     }
 
     @Test

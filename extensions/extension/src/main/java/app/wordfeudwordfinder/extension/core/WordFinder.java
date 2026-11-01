@@ -31,9 +31,12 @@ public final class WordFinder {
         gameStore.addListener(() -> wl.onRulesetsSeen(gs.seenRulesets(), gs::ruleset));
     }
 
-    /** Background threads for word list downloads: daemon, low priority, idle threads end after 30 s. */
+    /**
+     * One background thread for word list downloads and builds (so at most one graph is built at a time): daemon,
+     * low priority, ends after 30 s idle.
+     */
     private static ExecutorService wordListExecutor() {
-        ThreadPoolExecutor ex = new ThreadPoolExecutor(2, 2, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r -> {
+        ThreadPoolExecutor ex = new ThreadPoolExecutor(1, 1, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), r -> {
             Thread t = new Thread(r, "wfwf-wordlists");
             t.setDaemon(true);
             t.setPriority(Thread.MIN_PRIORITY);
