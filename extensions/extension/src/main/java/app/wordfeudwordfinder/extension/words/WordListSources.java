@@ -5,8 +5,7 @@ package app.wordfeudwordfinder.extension.words;
  * api.wordfeud.com, that the patch may contact. Each entry pins an exact file version (commit URL), its SHA-256
  * and a list version; raising the version makes clients re-download.
  *
- * <p>The table is empty until the sources are chosen and approved (plan task 9); until then every ruleset
- * reports WL-NONE.
+ * <p>Only client-approved sources are listed (plan task 9); every other ruleset reports WL-NONE.
  */
 public final class WordListSources {
 
@@ -34,9 +33,11 @@ public final class WordListSources {
     /** The source for a ruleset id, or null when there is none (WL-NONE). */
     public static Source get(int rulesetId) {
         switch (rulesetId) {
-            // Real entries follow in plan task 9, e.g.:
-            // case 1: return new Source("https://raw.githubusercontent.com/<owner>/<repo>/<commit>/<file>",
-            //         "<sha256>", 1, "UTF-8");
+            case 2: // Dutch: jensanjo/wordfeud-wordlists (OpenTaal), approved 2026-11-01
+                return new Source(
+                        "https://raw.githubusercontent.com/jensanjo/wordfeud-wordlists/"
+                                + "9e8bbff63d7ebd80e2d91b9a33bd69d5d9c2bd06/nl/wordlist-nl.txt",
+                        "414075805ca9b76fba3cbdaab7dd5ff7cbf1f851c3580b06f1001e2fca97b287", 1, "UTF-8");
             default:
                 return null;
         }

@@ -147,3 +147,11 @@ De opdrachtgever moet bevestigen of kiezen (per regelset; zonder akkoord blijft 
 9. **Licentie-eisen:** CC BY 4.0 / CC BY 3.0 / CC BY-SA 3.0 vragen bronvermelding in de README ("Word lists"-sectie); CC BY-SA vraagt dat de lijst onder dezelfde voorwaarden beschikbaar blijft.
 
 De juridische beoordeling hierboven is een lezing van de licentieteksten in de repo's, geen juridisch advies. Lijsten van commerciële woordenboeken (Collins, ODS, RAE, DSL) zijn alleen gemarkeerd, niet beoordeeld.
+
+## Besluit
+
+Datum: 2026-11-01.
+
+- **Regelset 2 (Nederlands): goedgekeurd.** `jensanjo/wordfeud-wordlists` @ `9e8bbff63d7ebd80e2d91b9a33bd69d5d9c2bd06`, `nl/wordlist-nl.txt`, versie 1, UTF-8 (bestand is zuivere ASCII), SHA-256 `414075805ca9b76fba3cbdaab7dd5ff7cbf1f851c3580b06f1001e2fca97b287` (opnieuw berekend na download, komt overeen). Bronvermelding OpenTaal in de README.
+- **Regelset 0 (EN-US ENABLE), 1 (Noors), 4 (Zweeds): afgewezen** voor nu.
+- **Regelsets 3, 5, 6, 7, 8-12:** geen akkoord/bron; blijven leeg (`WL-NONE`).
