@@ -1,6 +1,9 @@
 package app.wordfeudwordfinder.extension.core;
 
 import app.wordfeudwordfinder.extension.game.GameStore;
+import app.wordfeudwordfinder.extension.play.MoveSubmitter;
+import app.wordfeudwordfinder.extension.play.SessionReader;
+import app.wordfeudwordfinder.extension.play.UrlConnectionPoster;
 import app.wordfeudwordfinder.extension.words.RejectedWords;
 import app.wordfeudwordfinder.extension.words.UrlConnectionFetcher;
 import app.wordfeudwordfinder.extension.words.WordListManager;
@@ -19,13 +22,21 @@ public final class WordFinder {
     private final GameStore gameStore;
     private final WordListManager wordLists;
     private final RejectedWords rejected;
+    private final MoveSubmitter submitter;
 
-    /** Also used by tests: builds an instance rooted at the given directory without Android. */
+    /**
+     * Also used by tests: builds an instance rooted at the given directory without Android. The app's own files
+     * directory (where its {@code .cookies} live) is taken to be the parent of {@code root}, which is
+     * {@code <filesDir>/wfwf} in production.
+     */
     public WordFinder(File root) {
         this.storage = new Storage(root);
         this.gameStore = new GameStore(storage);
         this.rejected = new RejectedWords(storage);
         this.wordLists = new WordListManager(storage, new UrlConnectionFetcher(), wordListExecutor());
+        File appFiles = root.getAbsoluteFile().getParentFile();
+        this.submitter = new MoveSubmitter(new SessionReader(appFiles, System::currentTimeMillis),
+                new UrlConnectionPoster(), gameStore, rejected);
         GameStore gs = gameStore;
         WordListManager wl = wordLists;
         gameStore.addListener(() -> wl.onRulesetsSeen(gs.seenRulesets(), gs::ruleset));
@@ -85,5 +96,10 @@ public final class WordFinder {
 
     public RejectedWords rejected() {
         return rejected;
+    }
+
+    /** Sends moves to the Wordfeud API (blocking; call off the main thread). */
+    public MoveSubmitter submitter() {
+        return submitter;
     }
 }
