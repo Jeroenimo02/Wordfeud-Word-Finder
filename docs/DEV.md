@@ -56,3 +56,72 @@ java -jar morphe-desktop-*-all.jar patch -p patches/build/libs/patches-*.mpp \
 
 De GUI kan dezelfde `.mpp` laden (lokale bron) en accepteert `.apk`, `.apkm`, `.xapk` en `.apks`.
 Het resultaat is `*-patched.apk`, getekend met de gedeelde `morphe.keystore`.
+
+## V4 — verversen
+
+Na een geslaagde zet via de Play-knop roept de overlay `Refresher.refresh(gameId)` aan (spec §8.4). De
+strategieën staan in `extensions/.../play/`:
+
+| Naam | Kanaal | Bericht |
+|---|---|---|
+| `ForegroundSignal` | `dev.flutter.pigeon.wordfeud.FlutterProcessLifecycleApi.onForegroundStateChanged` | StandardMessageCodec `[false]`, na 100 ms `[true]` |
+| `RouteBounce` | `flutter/navigation` | JSON `pushRouteInformation` naar `/`, na 80 ms naar `/game/<id>` (sleutels `location` én `uri`, `state: null`) |
+| `FcmNudge` | `plugins.flutter.io/firebase_messaging` | StandardMethodCodec `Messaging#onMessage` met `{messageId, sentTime, data: {type: "move", game_id}}` (de `data`-sleutels zijn een gok) |
+
+Kandidaat 3 (zelf `games/detail` ophalen en aanbieden) is niet gebouwd: pas na akkoord, en alleen als 1, 2 en 4
+alle drie falen.
+
+`Refresher.ORDER` is leeg: zonder debugbestand gebeurt er na een zet niets en ververst Wordfeud zelf (~20 s).
+
+### Debugbestand
+
+Het bestand `debug_refresh_order.txt` in `wfwf/` is de opt-in (er is geen BuildConfig van de app om te lezen).
+Bestaat het, dan vervangt de inhoud `ORDER` en logt de patch onder tag `WFWF-Refresh` (alleen namen van
+strategieën en kanalen, nooit inhoud van berichten). Bestaat het niet, dan wordt er niets gelogd. Inhoud:
+strategienamen gescheiden door komma's of regels, hoofdletterongevoelig, `#` begint commentaar.
+
+Gezocht wordt (eerste die bestaat):
+
+1. `/data/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt` (intern; met adb alleen via root of
+   `run-as` bij een debuggable build);
+2. `/sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt` (extern, zonder root).
+
+```sh
+# Zonder root (externe map van de app):
+adb shell mkdir -p /sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf
+adb shell "echo RouteBounce > /sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt"
+# Met root (interne map):
+adb shell su -c "'echo RouteBounce > /data/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt && chmod 644 /data/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt'"
+
+adb shell am force-stop com.hbwares.wordfeud.free   # het bestand wordt gelezen bij het starten van het scherm
+adb logcat -s WFWF-Refresh
+
+# Na de test: bestand weer weghalen (dan stopt ook het loggen)
+adb shell rm /sdcard/Android/data/com.hbwares.wordfeud.free/files/wfwf/debug_refresh_order.txt
+```
+
+De volgorde zelf wordt bij elke zet opnieuw gelezen; alleen het loggen van kanaalnamen (`channel seen: …`) wordt
+bij het starten van het scherm aan- of uitgezet.
+
+### Testprocedure (per strategie)
+
+1. Zet precies één naam in het debugbestand en start Wordfeud opnieuw.
+2. Controleer in logcat de regels `channel seen: …`: komt `dev.flutter.pigeon.wordfeud.…` voor (het voorvoegsel van
+   de pigeon-kanalen) en `plugins.flutter.io/firebase_messaging`? Wijkt een naam af van de tabel hierboven, noteer
+   dan de echte naam.
+3. Open een potje waarin je aan de beurt bent, open de overlay en speel een zet via de Play-knop.
+4. Logcat toont `strategy <naam>: start`, `schedule …`, `sent …`. Kijk op het bord van Wordfeud:
+   - toont het bord **binnen 2 s** het gelegde woord (en het nieuwe plankje en de score)?
+   - is er **geen zichtbaar geflikker** (geen kort ander scherm, geen leeg bord, geen melding of banner)?
+5. Noteer het resultaat hieronder. Herhaal voor de volgende strategie.
+
+De eerste strategie die beide haalt gaat in `Refresher.ORDER` (taak 15, stap 3). Haalt geen enkele het, dan blijft
+`ORDER` leeg.
+
+| Strategie | Kanaalnaam bevestigd (logcat) | Bord binnen 2 s | Geen geflikker | Opmerkingen | Datum / toestel |
+|---|---|---|---|---|---|
+| `ForegroundSignal` | | | | | |
+| `RouteBounce` | | | | | |
+| `FcmNudge` | | | | | |
+
+Stand 2026-11-01: nog niet op een toestel getest; `ORDER` is daarom leeg (terugval uit spec §8.4).

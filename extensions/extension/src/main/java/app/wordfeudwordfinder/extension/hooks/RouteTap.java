@@ -2,7 +2,10 @@ package app.wordfeudwordfinder.extension.hooks;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /** Observes Flutter platform messages (route, theme, banner state). Thread-safe; never throws. */
@@ -11,12 +14,30 @@ public final class RouteTap {
     private static volatile boolean dark = true;
     private static volatile boolean banner;
     private static final List<Runnable> LISTENERS = new CopyOnWriteArrayList<>();
+    /** Debug only (V4): receives each distinct channel name once. Null in normal use: nothing is recorded. */
+    private static volatile ChannelLogger channelLogger;
+    private static final Set<String> SEEN_CHANNELS = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private static final int MAX_SEEN_CHANNELS = 256;
+
+    /** Receives channel names only, never message contents. */
+    public interface ChannelLogger {
+        void seen(String channel);
+    }
 
     private RouteTap() {
     }
 
     public static void addListener(Runnable r) {
         if (r != null) LISTENERS.add(r);
+    }
+
+    /**
+     * Debug only: set when {@code wfwf/debug_refresh_order.txt} exists (FlutterBridge), so the channel names used by
+     * Wordfeud can be read from logcat for the V4 test. Null switches it off. Resets the set of names already seen.
+     */
+    public static void setChannelLogger(ChannelLogger l) {
+        SEEN_CHANNELS.clear();
+        channelLogger = l;
     }
 
     public static Long currentGameId() {
@@ -35,6 +56,14 @@ public final class RouteTap {
     public static void onPlatformMessage(String channel, ByteBuffer msg) {
         try {
             if (channel == null || msg == null) return;
+            ChannelLogger cl = channelLogger;
+            if (cl != null && SEEN_CHANNELS.size() < MAX_SEEN_CHANNELS && SEEN_CHANNELS.add(channel)) {
+                try {
+                    cl.seen(channel);
+                } catch (Throwable ignored) {
+                    // debug logging must not affect the app
+                }
+            }
             boolean changed = false;
             if ("flutter/navigation".equals(channel)) {
                 String json = readJson(msg);

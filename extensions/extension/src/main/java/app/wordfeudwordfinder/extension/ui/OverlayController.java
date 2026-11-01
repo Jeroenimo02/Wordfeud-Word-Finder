@@ -35,6 +35,7 @@ import app.wordfeudwordfinder.extension.game.GameState;
 import app.wordfeudwordfinder.extension.game.RawGame;
 import app.wordfeudwordfinder.extension.game.Ruleset;
 import app.wordfeudwordfinder.extension.hooks.RouteTap;
+import app.wordfeudwordfinder.extension.play.FlutterBridge;
 import app.wordfeudwordfinder.extension.play.MoveSubmitter;
 import app.wordfeudwordfinder.extension.play.Refresher;
 import app.wordfeudwordfinder.extension.solver.Move;
@@ -198,6 +199,8 @@ public final class OverlayController {
             return;
         }
         current = c;
+        // Refresher sends its platform messages to this activity's Flutter engine (Task 15); never throws.
+        FlutterBridge.install(a);
         if (LISTENERS_ADDED.compareAndSet(false, true)) {
             // GameStore and RouteTap have no removeListener, so these are added once and forward to `current`.
             Runnable r = OverlayController::postRefreshCurrent;
