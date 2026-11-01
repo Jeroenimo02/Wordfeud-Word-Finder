@@ -22,6 +22,7 @@ val androidOnly = listOf(
     "app/wordfeudwordfinder/extension/ui/TileDrawable.java",
     "app/wordfeudwordfinder/extension/ui/BoardPreviewView.java",
     "app/wordfeudwordfinder/extension/ui/MoveListAdapter.java",
+    "app/wordfeudwordfinder/extension/ui/OverlayController.java",
 )
 
 sourceSets {
