@@ -84,7 +84,10 @@ volgorde (via het debugbestand) betekent: er gebeurt niets en Wordfeud ververst 
 | RouteBounce | testbuild 2 2026-11-02, uitkomst: geen effect, ook geen navigatie zichtbaar → vermoedelijk komt het bericht niet aan |
 | RouteBounce | testbuild 3 2026-11-02 (diagnose-toast + FlutterJNI-pad), uitkomst: berichten komen aan via FlutterJNI (engine-pad: `NoSuchMethodException getFlutterEngine`), maar geen verversing; extra /game-pagina op de stapel (twee keer terug nodig) → ongeschikt |
 | ForegroundSignal | testbuild 4 2026-11-02 (FlutterJNI-pad als hoofdpad, korte toast), uitkomst: komt aan (jni 2/2 OK), geen verversing; Wordfeud ververst zelf na 20–30 s |
-| LifecycleBounce | testbuild 5 2026-11-02 (app-levenscyclus via `flutter/lifecycle`, toast `WFWF LifecycleBounce: jni 6/6 OK`), uitkomst: open |
+| LifecycleBounce | testbuild 5 2026-11-02 (app-levenscyclus via `flutter/lifecycle`, toast `WFWF LifecycleBounce: jni 6/6 OK`), uitkomst: werkt (1× getest): bord ververst direct |
+
+`Refresher.ORDER` blijft `[LifecycleBounce]`. De diagnose-toast blijft voorlopig staan en gaat er pas uit na meer
+bevestigingen op een toestel.
 
 ### Diagnose en verzendpaden (tijdelijk, sinds testbuild 3)
 
