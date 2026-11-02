@@ -6,6 +6,8 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.view.Choreographer;
 import android.view.PixelCopy;
 import android.view.SurfaceView;
 import android.view.View;
@@ -14,48 +16,54 @@ import android.view.Window;
 import java.lang.ref.WeakReference;
 
 /**
- * Samples a few pixels of Wordfeud's Flutter surface (main thread, only while the button may show) to see whether a
- * menu or dialog scrim covers the screen, and which board colours the app uses. Our own views are not in the Flutter
- * surface, so the overlay never sees itself. Every failure leaves the last result in place; never throws.
+ * Samples pixels of Wordfeud's Flutter surface (main thread, only while the button may show) so the button looks as
+ * if it lies under Wordfeud's menus and dialogs (see {@link ScreenShade}), and to read the board colours. Our own
+ * views are not in the Flutter surface, so the button never sees itself.
+ *
+ * <p>Idle it samples every {@link #IDLE_MS}. After a touch, and for as long as the button is dimmed or cut off, it
+ * samples every frame, so menus that open or close move over the button frame by frame. Every failure leaves the
+ * last result in place; never throws.
  */
 final class ScreenSampler {
     interface Listener {
-        void onChanged();
+        /** The button's look changed; {@code cover} is never null. */
+        void onCover(ScreenShade.Cover cover);
     }
 
-    private static final long INTERVAL_MS = 300;
-    /** Every n-th tick also samples a row through the board. */
+    private static final long IDLE_MS = 300;
+    /** Frame-by-frame sampling lasts this long after a touch (a menu opens on release, then animates). */
+    private static final long FAST_AFTER_TOUCH_MS = 1500;
+    /** Every n-th idle tick samples a row through the board instead. */
     private static final int BOARD_EVERY = 5;
     private static final float[] BOARD_ROWS = {0.42f, 0.5f, 0.58f};
-    private static final int APP_BAR_X_DP = 6;
-    private static final int APP_BAR_Y_DP = 10;
+    /** Column right of the button, in the middle of its right margin. */
+    private static final float COLUMN_GAP_DP = FabPlacement.FAB_MARGIN_RIGHT_DP / 2f;
 
     private final Activity activity;
+    private final View fab;
     private final float density;
     private final Listener listener;
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final ScreenShade shade = new ScreenShade();
-    private final Runnable tick = this::tick;
+    private final Runnable idleTick = this::idleTick;
+    private final Choreographer.FrameCallback frame = t -> frameTick();
 
     private WeakReference<SurfaceView> surface = new WeakReference<>(null);
     private boolean active;
     private boolean stopped;
     private boolean inFlight;
+    private boolean frameScheduled;
+    private long fastUntil;
     private int ticks;
-    private int topInset;
-    private boolean covered;
+    private int base = ScreenShade.PAGE_LIGHT;
+    private ScreenShade.Cover cover;
     private Boolean boardDark;
-    private Bitmap barBitmap;
+    private Bitmap column;
 
-    ScreenSampler(Activity a, float density, Listener l) {
+    ScreenSampler(Activity a, View fab, float density, Listener l) {
         this.activity = a;
+        this.fab = fab;
         this.density = density;
         this.listener = l;
-    }
-
-    /** Whether a scrim covers the screen (false while inactive). */
-    boolean covered() {
-        return active && covered;
     }
 
     /** The board colours last seen, or the app theme when no board was classified yet. */
@@ -64,59 +72,110 @@ final class ScreenSampler {
         return b == null ? appDark : b.booleanValue();
     }
 
-    /** Another game, route or theme: forget the app bar baseline. */
-    void reset() {
-        shade.reset();
-        covered = false;
+    /** The page background behind the button for the app theme. */
+    void setAppDark(boolean dark) {
+        base = dark ? ScreenShade.PAGE_DARK : ScreenShade.PAGE_LIGHT;
     }
 
-    void setActive(boolean on, int topInsetPx) {
-        topInset = topInsetPx;
+    void setActive(boolean on) {
         if (on == active || stopped) return;
         active = on;
-        covered = false;
-        main.removeCallbacks(tick);
-        if (on) main.postDelayed(tick, INTERVAL_MS);
+        main.removeCallbacks(idleTick);
+        if (on) {
+            main.postDelayed(idleTick, IDLE_MS);
+        } else {
+            setCover(null);
+        }
+    }
+
+    /** A touch on the screen: sample frame by frame for a while. */
+    void onTouch() {
+        if (!active || stopped) return;
+        fastUntil = SystemClock.uptimeMillis() + FAST_AFTER_TOUCH_MS;
+        scheduleFrame();
     }
 
     void stop() {
         stopped = true;
         active = false;
-        main.removeCallbacks(tick);
+        main.removeCallbacks(idleTick);
+        if (frameScheduled) Choreographer.getInstance().removeFrameCallback(frame);
+        frameScheduled = false;
     }
 
-    private void tick() {
+    private boolean fast() {
+        ScreenShade.Cover c = cover;
+        return SystemClock.uptimeMillis() < fastUntil || (c != null && !c.untouched(fab.getHeight()));
+    }
+
+    private void scheduleFrame() {
+        if (frameScheduled || !active || stopped) return;
+        frameScheduled = true;
+        Choreographer.getInstance().postFrameCallback(frame);
+    }
+
+    private void frameTick() {
+        frameScheduled = false;
+        if (!active || stopped || !fast()) return;
+        scheduleFrame();
+        if (!inFlight) safely(this::sampleColumn);
+    }
+
+    private void idleTick() {
         if (!active || stopped) return;
-        main.postDelayed(tick, INTERVAL_MS);
-        if (inFlight || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        main.postDelayed(idleTick, IDLE_MS);
+        if (fast()) {
+            scheduleFrame();
+            return;
+        }
+        if (inFlight) return;
+        ticks++;
+        if (ticks % BOARD_EVERY == 0) safely(() -> sampleBoard(BOARD_ROWS[(ticks / BOARD_EVERY) % BOARD_ROWS.length]));
+        else safely(this::sampleColumn);
+    }
+
+    private void safely(Runnable r) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         try {
-            ticks++;
-            if (ticks % BOARD_EVERY == 0) sampleBoard(BOARD_ROWS[(ticks / BOARD_EVERY) % BOARD_ROWS.length]);
-            else sampleAppBar();
+            r.run();
         } catch (Throwable ignored) {
             inFlight = false;
         }
     }
 
-    private void sampleAppBar() {
-        int x = Math.round(APP_BAR_X_DP * density);
-        int y = topInset + Math.round(APP_BAR_Y_DP * density);
-        if (barBitmap == null) barBitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
-        final Bitmap bmp = barBitmap;
-        copy(new Rect(x, y, x + 2, y + 2), bmp, () -> {
-            boolean c = shade.update(bmp.getPixel(0, 0) & 0xFFFFFF);
-            if (c != covered) {
-                covered = c;
-                listener.onChanged();
-            }
+    private void sampleColumn() {
+        int h = fab.getHeight();
+        if (h <= 0 || fab.getVisibility() != View.VISIBLE) return;
+        int[] loc = new int[2];
+        fab.getLocationInWindow(loc);
+        int x = loc[0] + fab.getWidth() + Math.round(COLUMN_GAP_DP * density);
+        if (column == null || column.getHeight() != h) column = Bitmap.createBitmap(1, h, Bitmap.Config.ARGB_8888);
+        final Bitmap bmp = column;
+        copy(new Rect(x, loc[1], x + 1, loc[1] + h), bmp, () -> {
+            int[] px = new int[h];
+            bmp.getPixels(px, 0, 1, 0, 0, 1, h);
+            ScreenShade.Cover c = ScreenShade.analyse(px, base);
+            if (c != null) setCover(c);
         });
+    }
+
+    private void setCover(ScreenShade.Cover c) {
+        ScreenShade.Cover old = cover;
+        cover = c;
+        ScreenShade.Cover shown = c != null ? c : new ScreenShade.Cover(Integer.MAX_VALUE, 1f);
+        if (old != null && c != null && old.visibleRows == c.visibleRows && Math.abs(old.factor - c.factor) < 0.01f) {
+            return;
+        }
+        listener.onCover(shown);
+        if (c != null && !c.untouched(fab.getHeight())) scheduleFrame();
     }
 
     private void sampleBoard(float row) {
         View root = activity.getWindow().getDecorView();
         int w = root.getWidth();
         int h = root.getHeight();
-        if (w <= 0 || h <= 0 || covered) return;
+        ScreenShade.Cover c = cover;
+        if (w <= 0 || h <= 0 || (c != null && !c.untouched(fab.getHeight()))) return;
         int y = Math.round(h * row);
         int n = Math.max(15, w / 3);
         final Bitmap bmp = Bitmap.createBitmap(n, 1, Bitmap.Config.ARGB_8888);
@@ -142,19 +201,17 @@ final class ScreenSampler {
                 // keep the last result
             }
         };
-        inFlight = true;
         if (sv != null) {
             int[] loc = new int[2];
             sv.getLocationInWindow(loc);
             Rect r = new Rect(windowRect);
             r.offset(-loc[0], -loc[1]);
-            if (!r.intersect(0, 0, sv.getWidth(), sv.getHeight()) || r.isEmpty()) {
-                inFlight = false;
-                return;
-            }
+            if (r.left < 0 || r.top < 0 || r.right > sv.getWidth() || r.bottom > sv.getHeight() || r.isEmpty()) return;
+            inFlight = true;
             PixelCopy.request(sv, r, dest, l, main);
         } else {
             Window w = activity.getWindow();
+            inFlight = true;
             PixelCopy.request(w, windowRect, dest, l, main);
         }
     }

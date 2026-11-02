@@ -5,6 +5,7 @@ import android.app.Application;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.LightingColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
@@ -98,10 +99,11 @@ public final class OverlayController {
     private final Application.ActivityLifecycleCallbacks lifecycle;
     private FrameLayout layer;
     private View fab;
-    /** Hides the button under a menu/dialog scrim and reads the board colours; null before build(). */
+    /** Makes the button look as if it lies under Wordfeud's menus, and reads the board colours; null before build(). */
     private ScreenSampler sampler;
-    private Long sampledGameId;
-    private boolean sampledDark;
+    /** Rows of the button not covered by a Wordfeud menu, and whether it takes touches (not under a scrim). */
+    private int fabVisibleRows = Integer.MAX_VALUE;
+    private boolean fabTouchable = true;
     private final View.OnLayoutChangeListener fabRelayout = (v, l, t, r, b, ol, ot, or, ob) -> positionFab();
 
     // ---- open overlay session (main thread) ----
@@ -276,7 +278,14 @@ public final class OverlayController {
 
     private void build(ViewGroup content) {
         Context ctx = activity;
-        layer = new FrameLayout(ctx);
+        layer = new FrameLayout(ctx) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent e) {
+                // Only notices touches: the layer consumes nothing, so they still reach the game underneath.
+                if (e.getActionMasked() == MotionEvent.ACTION_DOWN && sampler != null) sampler.onTouch();
+                return super.dispatchTouchEvent(e);
+            }
+        };
         // The layer itself never consumes touches, so the game underneath stays usable while the overlay is closed.
         layer.setClickable(false);
         layer.setFocusable(false);
@@ -284,7 +293,14 @@ public final class OverlayController {
                 ViewGroup.LayoutParams.MATCH_PARENT));
 
         int size = FabPlacement.dp(density, FabPlacement.FAB_SIZE_DP);
-        View b = new View(ctx);
+        View b = new View(ctx) {
+            @Override
+            public boolean dispatchTouchEvent(MotionEvent e) {
+                // Under a menu or scrim the button lets touches through to Wordfeud, as if it lay beneath them.
+                if (!fabTouchable || e.getY() >= fabVisibleRows) return false;
+                return super.dispatchTouchEvent(e);
+            }
+        };
         b.setBackground(new FabDrawable(theme));
         b.setElevation(dp(FAB_ELEVATION_DP));
         b.setContentDescription(Strings.get(language(), Key.TITLE));
@@ -300,7 +316,7 @@ public final class OverlayController {
         fab = b;
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size, Gravity.BOTTOM | Gravity.END);
         layer.addView(fab, lp);
-        sampler = new ScreenSampler(activity, density, () -> ui(this::refresh));
+        sampler = new ScreenSampler(activity, fab, density, this::applyCover);
         layer.addOnLayoutChangeListener(fabRelayout);
         layer.setOnApplyWindowInsetsListener((v, insets) -> {
             ui(this::positionFab);
@@ -328,18 +344,29 @@ public final class OverlayController {
             }
         }
         boolean eligible = visible && !open;
-        if (sampler != null) {
-            boolean dark = RouteTap.isDark();
-            if (!java.util.Objects.equals(id, sampledGameId) || dark != sampledDark) {
-                sampledGameId = id;
-                sampledDark = dark;
-                sampler.reset();
-            }
-            sampler.setActive(eligible, insets().contentTopInWindow);
-            if (sampler.covered()) eligible = false;
-        }
         fab.setVisibility(eligible ? View.VISIBLE : View.GONE);
+        if (sampler != null) {
+            sampler.setAppDark(RouteTap.isDark());
+            sampler.setActive(eligible);
+        }
         positionFab();
+    }
+
+    /** Main thread (sampler callbacks): cut off and darken the button like the Wordfeud menu over it. */
+    private void applyCover(ScreenShade.Cover c) {
+        if (fab == null) return;
+        int h = fab.getHeight();
+        boolean untouched = h <= 0 || c.untouched(h);
+        fabVisibleRows = c.visibleRows;
+        fabTouchable = untouched;
+        fab.setClipBounds(c.visibleRows < h ? new Rect(0, 0, fab.getWidth(), Math.max(0, c.visibleRows)) : null);
+        Drawable d = fab.getBackground();
+        if (d != null) {
+            int g = Math.round(Math.max(0f, Math.min(1f, c.factor)) * 255);
+            d.setColorFilter(c.factor < 0.98f ? new LightingColorFilter(0xFF000000 | g << 16 | g << 8 | g, 0) : null);
+        }
+        // The shadow is drawn outside the clip; drop it while anything lies over the button.
+        fab.setElevation(untouched ? dp(FAB_ELEVATION_DP) : 0);
     }
 
     private void positionFab() {
@@ -379,7 +406,6 @@ public final class OverlayController {
             out.bottom = FabPlacement.effectiveBottomInset(bottom, windowHeight, loc[1] + layer.getHeight());
             out.top = FabPlacement.effectiveTopInset(top, loc[1]);
         }
-        out.contentTopInWindow = loc[1] + out.top;
         return out;
     }
 
@@ -396,8 +422,6 @@ public final class OverlayController {
     private static final class Insets {
         int top;
         int bottom;
-        /** Window y where the app draws below the status bar (the top of Wordfeud's app bar). */
-        int contentTopInWindow;
     }
 
     // =====================================================================================================
