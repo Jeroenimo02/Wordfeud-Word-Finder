@@ -30,18 +30,49 @@ public final class ScreenShade {
     /** Below this brightness (0..255) the app bar is too dark to measure a scrim on. */
     static final double MIN_BAR = 12;
 
-    /** How the button should look: rows [0, visibleRows) shown, multiplied by {@code factor} (1 = untouched). */
+    /** Without a scrim of at least this strength nothing is cut: Wordfeud's menus always come with a scrim. */
+    static final double NO_SCRIM = 0.97;
+
+    /**
+     * How the button should look: per pixel column the rows [0, rows[x]) are shown (null: all), multiplied by
+     * {@code factor} (1 = untouched).
+     */
     public static final class Cover {
+        /** Shown rows of the most covered column. */
         public final int visibleRows;
+        /** Shown rows per pixel column of the button, or null when no column is cut. */
+        public final int[] columnRows;
         public final float factor;
 
         Cover(int visibleRows, float factor) {
             this.visibleRows = visibleRows;
+            this.columnRows = null;
             this.factor = factor;
+        }
+
+        Cover(int[] columnRows, int rows, float factor) {
+            int min = Integer.MAX_VALUE;
+            for (int r : columnRows) min = Math.min(min, r);
+            boolean cut = min < rows;
+            this.visibleRows = cut ? min : Integer.MAX_VALUE;
+            this.columnRows = cut ? columnRows : null;
+            this.factor = factor;
+        }
+
+        /** Shown rows of pixel column {@code x}. */
+        public int rowsAt(int x) {
+            if (columnRows == null) return visibleRows;
+            if (columnRows.length == 0) return Integer.MAX_VALUE;
+            return columnRows[Math.max(0, Math.min(columnRows.length - 1, x))];
         }
 
         public boolean untouched(int rows) {
             return visibleRows >= rows && factor >= 0.98f;
+        }
+
+        public boolean sameLook(Cover o) {
+            return o != null && visibleRows == o.visibleRows && Math.abs(factor - o.factor) < 0.01f
+                    && java.util.Arrays.equals(columnRows, o.columnRows);
         }
     }
 
@@ -75,6 +106,29 @@ public final class ScreenShade {
             if (!scaledFrom(column[i] & 0xFFFFFF, base, s)) return new Cover(i, factor);
         }
         return new Cover(column.length, factor);
+    }
+
+    /**
+     * Like {@link #analyse} for the whole area under the button ({@code w} x {@code h} pixels, row-major), column by
+     * column, so the button is cut along the real edge of a menu, rounded corners included. Columns are classified
+     * every {@code step} pixels; the ones in between take the value of the nearest classified one. Without a scrim
+     * nothing is cut (the area under the button may hold other things on some screens, never a menu without scrim).
+     */
+    public static Cover analyseArea(int[] px, int w, int h, int base, double s, int step) {
+        if (px == null || w <= 0 || h <= 0 || px.length < w * h) return null;
+        float factor = (float) Math.max(0.0, Math.min(1.0, s));
+        if (s >= NO_SCRIM) return new Cover(Integer.MAX_VALUE, factor);
+        step = Math.max(1, step);
+        int[] rows = new int[w];
+        int[] sampled = new int[(w - 1) / step + 1];
+        for (int i = 0; i < sampled.length; i++) {
+            int x = Math.min(w - 1, i * step);
+            int y = 0;
+            while (y < h && scaledFrom(px[y * w + x] & 0xFFFFFF, base, s)) y++;
+            sampled[i] = y;
+        }
+        for (int x = 0; x < w; x++) rows[x] = sampled[Math.min(sampled.length - 1, Math.round(x / (float) step))];
+        return new Cover(rows, h, factor);
     }
 
     private static boolean scaledFrom(int p, int base, double r) {

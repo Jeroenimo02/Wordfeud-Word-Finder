@@ -36,10 +36,11 @@ final class ScreenSampler {
     /** Every n-th idle tick samples a row through the board instead. */
     private static final int BOARD_EVERY = 5;
     private static final float[] BOARD_ROWS = {0.42f, 0.5f, 0.58f};
-    /** Column right of the button, in the middle of its right margin. */
-    private static final float COLUMN_GAP_DP = FabPlacement.FAB_MARGIN_RIGHT_DP / 2f;
-    /** The scrim reference: the app bar, this far below the status bar (in the same pixel column). */
+    /** The scrim reference: the app bar, this far below the status bar, in the middle of the button's right margin. */
     private static final int APP_BAR_Y_DP = 10;
+    private static final float APP_BAR_X_GAP_DP = FabPlacement.FAB_MARGIN_RIGHT_DP / 2f;
+    /** Columns under the button are classified every this many pixels. */
+    private static final int COLUMN_STEP = 2;
 
     private final Activity activity;
     private final View fab;
@@ -62,7 +63,12 @@ final class ScreenSampler {
     private final ScreenShade shade = new ScreenShade();
     private ScreenShade.Cover cover;
     private Boolean boardDark;
-    private Bitmap column;
+    private Bitmap area;
+    private Bitmap bar;
+    /** Pending results of the two copies of one sample (app bar pixel, area under the button). */
+    private int pending;
+    private double pendingScrim;
+    private int[] pendingArea;
 
     ScreenSampler(Activity a, View fab, float density, Listener l) {
         this.activity = a;
@@ -161,34 +167,51 @@ final class ScreenSampler {
     }
 
     private void sampleColumn() {
+        int w = fab.getWidth();
         int h = fab.getHeight();
-        if (h <= 0 || fab.getVisibility() != View.VISIBLE) return;
+        if (w <= 0 || h <= 0 || fab.getVisibility() != View.VISIBLE) return;
         int[] loc = new int[2];
         fab.getLocationInWindow(loc);
-        int x = loc[0] + fab.getWidth() + Math.round(COLUMN_GAP_DP * density);
-        // One column from the app bar (scrim reference) down to the bottom of the button.
-        int top = contentTop + Math.round(APP_BAR_Y_DP * density);
-        int skip = loc[1] - top;
-        if (skip <= 0) return;
-        int n = skip + h;
-        if (column == null || column.getHeight() != n) column = Bitmap.createBitmap(1, n, Bitmap.Config.ARGB_8888);
-        final Bitmap bmp = column;
-        copy(new Rect(x, top, x + 1, top + n), bmp, () -> {
-            int[] px = new int[n];
-            bmp.getPixels(px, 0, 1, 0, 0, 1, n);
-            double s = shade.scrim(px[0]);
-            int[] rows = new int[h];
-            System.arraycopy(px, skip, rows, 0, h);
-            ScreenShade.Cover c = ScreenShade.analyse(rows, base, s);
-            if (c != null) setCover(c);
-        });
+        int bx = loc[0] + w + Math.round(APP_BAR_X_GAP_DP * density);
+        int by = contentTop + Math.round(APP_BAR_Y_DP * density);
+        if (by >= loc[1]) return;
+        if (bar == null) bar = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+        if (area == null || area.getWidth() != w || area.getHeight() != h) {
+            area = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        }
+        final Bitmap barBmp = bar;
+        final Bitmap areaBmp = area;
+        // The button itself is not in Wordfeud's surface, so this is what Wordfeud draws under it.
+        Rect under = new Rect(loc[0], loc[1], loc[0] + w, loc[1] + h);
+        Rect barRect = new Rect(bx, by, bx + 1, by + 1);
+        pending = 2;
+        pendingArea = null;
+        if (!copy(barRect, barBmp, () -> {
+            pendingScrim = shade.scrim(barBmp.getPixel(0, 0));
+            finishSample(w, h);
+        }) || !copy(under, areaBmp, () -> {
+            int[] px = new int[w * h];
+            areaBmp.getPixels(px, 0, w, 0, 0, w, h);
+            pendingArea = px;
+            finishSample(w, h);
+        })) {
+            pending = 0;
+        }
+    }
+
+    private void finishSample(int w, int h) {
+        if (--pending > 0) return;
+        inFlight = false;
+        ScreenShade.Cover c = ScreenShade.analyseArea(pendingArea, w, h, base, pendingScrim, COLUMN_STEP);
+        pendingArea = null;
+        if (c != null) setCover(c);
     }
 
     private void setCover(ScreenShade.Cover c) {
         ScreenShade.Cover old = cover;
         cover = c;
         ScreenShade.Cover shown = c != null ? c : new ScreenShade.Cover(Integer.MAX_VALUE, 1f);
-        if (old != null && c != null && old.visibleRows == c.visibleRows && Math.abs(old.factor - c.factor) < 0.01f) {
+        if (old != null && c != null && old.sameLook(c)) {
             return;
         }
         listener.onCover(shown);
@@ -205,6 +228,7 @@ final class ScreenSampler {
         int n = Math.max(15, w / 3);
         final Bitmap bmp = Bitmap.createBitmap(n, 1, Bitmap.Config.ARGB_8888);
         copy(new Rect(0, y, w, y + 1), bmp, () -> {
+            inFlight = false;
             int[] px = new int[n];
             bmp.getPixels(px, 0, n, 0, 0, n, 1);
             for (int i = 0; i < n; i++) px[i] &= 0xFFFFFF;
@@ -214,16 +238,23 @@ final class ScreenSampler {
         });
     }
 
-    /** Copies {@code windowRect} (window coordinates) into {@code dest}; {@code done} runs on success only. */
-    private void copy(Rect windowRect, Bitmap dest, Runnable done) {
+    /**
+     * Copies {@code windowRect} (window coordinates) into {@code dest}; {@code done} runs on success only. Returns
+     * false when nothing was requested. A failed copy ends the sample ({@code inFlight} cleared).
+     */
+    private boolean copy(Rect windowRect, Bitmap dest, Runnable done) {
         SurfaceView sv = findSurface();
         PixelCopy.OnPixelCopyFinishedListener l = result -> {
-            inFlight = false;
-            if (result != PixelCopy.SUCCESS || !active || stopped) return;
+            if (result != PixelCopy.SUCCESS || !active || stopped) {
+                inFlight = false;
+                pending = 0;
+                return;
+            }
             try {
                 done.run();
             } catch (Throwable ignored) {
-                // keep the last result
+                inFlight = false;
+                pending = 0;
             }
         };
         if (sv != null) {
@@ -231,7 +262,9 @@ final class ScreenSampler {
             sv.getLocationInWindow(loc);
             Rect r = new Rect(windowRect);
             r.offset(-loc[0], -loc[1]);
-            if (r.left < 0 || r.top < 0 || r.right > sv.getWidth() || r.bottom > sv.getHeight() || r.isEmpty()) return;
+            if (r.left < 0 || r.top < 0 || r.right > sv.getWidth() || r.bottom > sv.getHeight() || r.isEmpty()) {
+                return false;
+            }
             inFlight = true;
             PixelCopy.request(sv, r, dest, l, main);
         } else {
@@ -239,6 +272,7 @@ final class ScreenSampler {
             inFlight = true;
             PixelCopy.request(w, windowRect, dest, l, main);
         }
+        return true;
     }
 
     /** Flutter's FlutterSurfaceView (the largest visible SurfaceView), or null when Flutter draws into the window. */

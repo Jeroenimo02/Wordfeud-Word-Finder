@@ -102,7 +102,9 @@ public final class OverlayController {
     /** Makes the button look as if it lies under Wordfeud's menus, and reads the board colours; null before build(). */
     private ScreenSampler sampler;
     /** Rows of the button not covered by a Wordfeud menu, and whether it takes touches (not under a scrim). */
-    private int fabVisibleRows = Integer.MAX_VALUE;
+    private ScreenShade.Cover fabCover = new ScreenShade.Cover(Integer.MAX_VALUE, 1f);
+    /** The part of the button not under a Wordfeud menu, or null when nothing is cut. */
+    private android.graphics.Path fabClip;
     private Long sampledGameId;
     private boolean fabTouchable = true;
     private final View.OnLayoutChangeListener fabRelayout = (v, l, t, r, b, ol, ot, or, ob) -> positionFab();
@@ -298,8 +300,21 @@ public final class OverlayController {
             @Override
             public boolean dispatchTouchEvent(MotionEvent e) {
                 // Under a menu or scrim the button lets touches through to Wordfeud, as if it lay beneath them.
-                if (!fabTouchable || e.getY() >= fabVisibleRows) return false;
+                if (!fabTouchable || e.getY() >= fabCover.rowsAt((int) e.getX())) return false;
                 return super.dispatchTouchEvent(e);
+            }
+
+            @Override
+            public void draw(Canvas c) {
+                android.graphics.Path clip = fabClip;
+                if (clip == null) {
+                    super.draw(c);
+                    return;
+                }
+                int save = c.save();
+                c.clipPath(clip);
+                super.draw(c);
+                c.restoreToCount(save);
             }
         };
         b.setBackground(new FabDrawable(theme));
@@ -363,9 +378,10 @@ public final class OverlayController {
         if (fab == null) return;
         int h = fab.getHeight();
         boolean untouched = h <= 0 || c.untouched(h);
-        fabVisibleRows = c.visibleRows;
+        fabCover = c;
         fabTouchable = untouched;
-        fab.setClipBounds(c.visibleRows < h ? new Rect(0, 0, fab.getWidth(), Math.max(0, c.visibleRows)) : null);
+        fabClip = clipPath(c, fab.getWidth(), h);
+        fab.invalidate();
         Drawable d = fab.getBackground();
         if (d != null) {
             int g = Math.round(Math.max(0f, Math.min(1f, c.factor)) * 255);
@@ -386,6 +402,21 @@ public final class OverlayController {
             lp.bottomMargin = bottom;
             fab.setLayoutParams(lp);
         }
+    }
+
+    /** The region above a menu's edge, per pixel column; null when no column is cut. */
+    private static android.graphics.Path clipPath(ScreenShade.Cover c, int w, int h) {
+        if (c.visibleRows >= h || w <= 0) return null;
+        android.graphics.Path p = new android.graphics.Path();
+        p.moveTo(0, 0);
+        p.lineTo(w, 0);
+        for (int x = w - 1; x >= 0; x--) {
+            float y = Math.min(h, Math.max(0, c.rowsAt(x)));
+            p.lineTo(x + 1, y);
+            p.lineTo(x, y);
+        }
+        p.close();
+        return p;
     }
 
     /** Window y where the app draws below the status bar: the top of Wordfeud's app bar. */

@@ -68,4 +68,29 @@ public class ScreenShadeTest {
         assertNull(ScreenShade.boardDark(col(30, 0x5A5F62)));
         assertNull(ScreenShade.boardDark(null));
     }
+
+    @Test public void areaFollowsARoundedMenuEdge() {
+        int w = 10;
+        int h = 20;
+        int[] px = new int[w * h];
+        for (int x = 0; x < w; x++) {
+            int edge = x < 6 ? 8 : 8 + (x - 5) * 2; // flat top, then a rounded corner going down
+            for (int y = 0; y < h; y++) px[y * w + x] = y < edge ? 0x181B20 : 0x2C3137;
+        }
+        ScreenShade.Cover c = ScreenShade.analyseArea(px, w, h, ScreenShade.PAGE_DARK, 0.46, 1);
+        assertEquals(8, c.visibleRows);
+        assertEquals(8, c.rowsAt(0));
+        assertEquals(16, c.rowsAt(9));
+        assertFalse(c.untouched(h));
+    }
+
+    @Test public void areaIsNeverCutWithoutScrim() {
+        int[] px = col(10 * 20, 0xF2EFEA); // a board tile under the button on some screen
+        ScreenShade.Cover c = ScreenShade.analyseArea(px, 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2);
+        assertTrue(c.untouched(20));
+        assertTrue(ScreenShade.analyseArea(col(200, 0xD0D5DB), 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2).untouched(20));
+        ScreenShade.Cover open = ScreenShade.analyseArea(col(200, 0x5E6265), 10, 20, ScreenShade.PAGE_LIGHT, 0.46, 2);
+        assertEquals(Integer.MAX_VALUE, open.visibleRows);
+        assertEquals(0.46, open.factor, 0.01);
+    }
 }
