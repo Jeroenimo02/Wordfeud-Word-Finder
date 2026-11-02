@@ -105,4 +105,14 @@ public class ScreenShadeTest {
         assertEquals(Integer.MAX_VALUE, open.visibleRows);
         assertEquals(0.46, open.factor, 0.01);
     }
+
+    @Test public void historyAtMoveZeroIsNotTheGameScreen() {
+        // Measured: game screen has the rack bar (app bar colour) below the button, the history the plain page.
+        int[] page = col(200, 0x343B45);
+        assertFalse(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, 0x232429, 0x232429).elsewhere);
+        assertTrue(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, 0x232429, 0x343B45).elsewhere);
+        int[] light = col(200, 0xD0D5DB);
+        assertFalse(ScreenShade.analyseArea(light, 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2, 0xDEE3E7, 0xDEE3E7).elsewhere);
+        assertFalse(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, -1, -1).elsewhere);
+    }
 }

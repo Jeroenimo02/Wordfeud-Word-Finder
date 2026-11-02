@@ -128,6 +128,16 @@ public final class ScreenShade {
      * nothing is cut (the area under the button may hold other things on some screens, never a menu without scrim).
      */
     public static Cover analyseArea(int[] px, int w, int h, int base, double s, int step) {
+        return analyseArea(px, w, h, base, s, step, -1, -1);
+    }
+
+    /**
+     * As {@link #analyseArea(int[], int, int, int, double, int)}, and without a scrim also checks the pixel just
+     * below the button ({@code rack}): on the game screen that is the rack bar, which has the app bar's colour
+     * ({@code bar}). The move history at move 0 has the plain page under the button as well, but page there too.
+     * Negative values skip the check.
+     */
+    public static Cover analyseArea(int[] px, int w, int h, int base, double s, int step, int bar, int rack) {
         if (px == null || w <= 0 || h <= 0 || px.length < w * h) return null;
         float factor = (float) Math.max(0.0, Math.min(1.0, s));
         step = Math.max(1, step);
@@ -144,6 +154,9 @@ public final class ScreenShade {
                 }
             }
             if (match < total * ON_GAME_SCREEN) return new Cover(0, 1f, true);
+            if (bar >= 0 && rack >= 0 && !scaledFrom(rack & 0xFFFFFF, bar & 0xFFFFFF, 1.0)) {
+                return new Cover(0, 1f, true);
+            }
             return new Cover(Integer.MAX_VALUE, factor);
         }
         int[] rows = new int[w];
