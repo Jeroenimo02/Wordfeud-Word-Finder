@@ -282,12 +282,11 @@ public class MoveGeneratorTest {
 
     @Test
     public void noBlankMovesWhileDisabled() {
-        assertFalse(Rules.BLANKS_ENABLED);
         char[][] b = boardAfterNeigen();
         WordGraph wg = words("NEIGENS", "SNEIGEN", "VET", "VEST", "ES", "NA");
         for (String blank : new String[] {"?", "*"}) {
             List<String> r = new ArrayList<>(Arrays.asList(blank, "V", "T"));
-            List<Move> moves = MoveGenerator.generate(b, r, layout, nl, wg, new AtomicBoolean(false));
+            List<Move> moves = MoveGenerator.generate(b, r, layout, nl, wg, new AtomicBoolean(false), false);
             assertFalse(moves.isEmpty()); // VET via the E of NEIGEN
             for (Move m : moves) {
                 for (String l : m.placedLetters) {
@@ -296,7 +295,16 @@ public class MoveGeneratorTest {
             }
         }
         // Only a blank on the rack: nothing.
-        assertTrue(MoveGenerator.generate(b, rack("?"), layout, nl, wg, new AtomicBoolean(false)).isEmpty());
+        assertTrue(MoveGenerator.generate(b, rack("?"), layout, nl, wg, new AtomicBoolean(false), false).isEmpty());
+    }
+
+    @Test
+    public void blanksOnByDefaultForTheV2Experiment() {
+        assertTrue(Rules.BLANKS_ENABLED); // testbuild 5
+        char[][] b = boardAfterNeigen();
+        Move m = find(MoveGenerator.generate(b, rack("?"), layout, nl, words("NEIGENS"), new AtomicBoolean(false)),
+                "NEIGENS", 7, 7, true);
+        assertEquals(Arrays.asList("s"), m.placedLetters);
     }
 
     @Test
@@ -459,6 +467,72 @@ public class MoveGeneratorTest {
         long ms = (System.nanoTime() - t0) / 1_000_000;
         assertTrue("took " + ms + " ms", ms < 2000);
         assertNotNull(moves);
+    }
+
+    /**
+     * Two blanks on a busy board (V2 experiment): the search grows a lot, it must still finish in time. The board is
+     * filled by playing the best move for random racks a number of times.
+     */
+    @Test
+    public void performanceWithTwoBlanksOnABusyBoard() {
+        WordGraph wg = randomWords(50000, 11);
+        char[][] b = busyBoard(wg, 12, 5);
+        int tiles = 0;
+        for (char[] row : b) for (char c : row) if (c != '\0') tiles++;
+        assertTrue("board has " + tiles + " tiles", tiles >= 30);
+        long t0 = System.nanoTime();
+        List<Move> moves = MoveGenerator.generate(b, rack("??ENRTA"), layout, nl, wg, new AtomicBoolean(false), true);
+        long ms = (System.nanoTime() - t0) / 1_000_000;
+        System.out.println("two blanks, " + tiles + " tiles: " + moves.size() + " moves in " + ms + " ms");
+        assertTrue("took " + ms + " ms", ms < 5000);
+        boolean usesBlank = false;
+        for (Move m : moves) for (String l : m.placedLetters) usesBlank |= Character.isLowerCase(l.charAt(0));
+        assertTrue(usesBlank);
+    }
+
+    @Test
+    public void cancelStopsInsideTheSearch() throws Exception {
+        WordGraph wg = randomWords(50000, 11);
+        char[][] b = busyBoard(wg, 12, 5);
+        AtomicBoolean cancel = new AtomicBoolean(false);
+        long[] stoppedAt = new long[1];
+        int[] found = {-1};
+        Thread t = new Thread(() -> {
+            found[0] = MoveGenerator.generate(b, rack("???ENRT"), layout, nl, wg, cancel, true).size();
+            stoppedAt[0] = System.nanoTime();
+        });
+        t.start();
+        Thread.sleep(20);
+        long cancelledAt = System.nanoTime();
+        cancel.set(true);
+        t.join(5000);
+        assertFalse(t.isAlive());
+        assertEquals(0, found[0]); // a cancelled search returns nothing
+        if (stoppedAt[0] > cancelledAt) {
+            long ms = (stoppedAt[0] - cancelledAt) / 1_000_000;
+            assertTrue("stopped " + ms + " ms after cancel", ms < 100);
+        }
+    }
+
+    /** Plays the best (blank-free) move for {@code turns} random racks, starting on an empty board. */
+    private static char[][] busyBoard(WordGraph wg, int turns, long seed) {
+        Random rnd = new Random(seed);
+        String bag = "EEEEENNNNAAIIOORRTTDSGKLMVWJHUBPZ";
+        char[][] b = empty();
+        for (int turn = 0; turn < turns; turn++) {
+            StringBuilder r = new StringBuilder();
+            for (int i = 0; i < 7; i++) r.append(bag.charAt(rnd.nextInt(bag.length())));
+            List<Move> moves = MoveGenerator.generate(b, rack(r.toString()), layout, nl, wg, new AtomicBoolean(false),
+                    false);
+            Move best = null;
+            for (Move m : moves) if (best == null || m.score > best.score) best = m;
+            if (best == null) continue;
+            for (int i = 0; i < best.placed.size(); i++) {
+                int[] xy = best.placed.get(i);
+                b[xy[1]][xy[0]] = best.placedLetters.get(i).charAt(0);
+            }
+        }
+        return b;
     }
 
     private static WordGraph randomWords(int count, long seed) {

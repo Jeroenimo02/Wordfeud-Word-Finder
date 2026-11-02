@@ -231,7 +231,7 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 | ID | Vraag | Gedrag tot bevestiging |
 |---|---|---|
 | V1 | Wordt een zet geaccepteerd met alleen cookie, User-Agent en Content-Type? | De Play-knop wordt direct volledig gebouwd; de eerste publieke release volgt pas na één geslaagde zet via de knop op het toestel van de beheerder |
-| V2 | Formaat van blanco tegels in de zet en in `game_log` (hint: 4e element) | game_log-formaat bevestigd (2026-11-02): blanco als "*X" in packed_move.tiles, "*" op het rek; formaat in de eigen zet nog onbevestigd, blanco-zetten blijven uit |
+| V2 | Formaat van blanco tegels in de zet en in `game_log` (hint: 4e element) | game_log-formaat bevestigd (2026-11-02): blanco als "*X" in packed_move.tiles, "*" op het rek; formaat in de eigen zet nog onbevestigd. testbuild 5: blanco in zet als [x,y,"X",true] — uitkomst open (blanco-zetten staan aan; weigert de server, dan `MV-SERVER-<type>`) |
 | V3 | Moeten dwarswoorden in `words`? | Alle woorden worden meegestuurd |
 | V4 | Welke verversmethode werkt? | Terugval: overlay sluiten |
 | V5 | Bonus voor zeven tegels en de middenvakregel | Score zonder bonus, gemarkeerd als niet geverifieerd in debugbuilds |

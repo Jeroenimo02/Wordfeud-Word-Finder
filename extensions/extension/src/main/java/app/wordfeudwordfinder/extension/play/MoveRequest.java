@@ -17,17 +17,23 @@ public final class MoveRequest {
 
     /**
      * {@code {"move":[[x,y,"L"],...],"words":[...],"ruleset":n}} without spaces: tiles in the order of
-     * {@link Move#placed} (a blank is its letter in lower case), {@code words} = {@link Move#allWords} (main word
-     * first). Built by hand so the key order is fixed.
+     * {@link Move#placed}, {@code words} = {@link Move#allWords} (main word first). Built by hand so the key order is
+     * fixed.
+     *
+     * <p>A blank (lower-case letter in {@link Move#placedLetters}) goes out as {@code [x,y,"L",true]} with the letter
+     * in upper case. V2 experiment (testbuild 5): this shape follows the [column, row, letter, blank] tiles of a
+     * third-party client and is not confirmed; normal tiles stay {@code [x,y,"L"]} (confirmed).
      */
     public static String body(Move m, int rulesetId) {
         StringBuilder sb = new StringBuilder("{\"move\":[");
         for (int i = 0; i < m.placed.size(); i++) {
             if (i > 0) sb.append(',');
             int[] xy = m.placed.get(i);
+            String letter = m.placedLetters.get(i);
+            boolean blank = isBlank(letter);
             sb.append('[').append(xy[0]).append(',').append(xy[1]).append(',');
-            quote(sb, m.placedLetters.get(i));
-            sb.append(']');
+            quote(sb, blank ? letter.toUpperCase(Locale.ROOT) : letter);
+            sb.append(blank ? ",true]" : "]");
         }
         sb.append("],\"words\":[");
         List<String> words = m.allWords;
@@ -36,6 +42,11 @@ public final class MoveRequest {
             quote(sb, words.get(i));
         }
         return sb.append("],\"ruleset\":").append(rulesetId).append('}').toString();
+    }
+
+    /** A placed letter that stands for a blank: lower case (Move's convention). */
+    static boolean isBlank(String letter) {
+        return letter != null && !letter.isEmpty() && Character.isLowerCase(letter.charAt(0));
     }
 
     /** JSON string literal; non-ASCII letters are kept as-is (the body is sent as UTF-8). */

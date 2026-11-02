@@ -272,6 +272,7 @@ public final class MoveGenerator {
 
         /** Builds left parts of up to {@code limit} tiles on the empty, non-anchor squares left of the anchor. */
         private void leftPart(int node, int len, int limit) {
+            if (cancel.get()) return; // checked per step: with blanks one anchor can take long
             extendRight(anchorCol - len, anchorCol, node, len);
             if (limit <= 0) return;
             for (int e = wg.edgeStart(node); e < wg.edgeEnd(node); e++) {
@@ -308,6 +309,7 @@ public final class MoveGenerator {
         }
 
         private void extendRight(int start, int col, int node, int len) {
+            if (cancel.get()) return;
             if (col < n && g[row][col] != '\0') {
                 char ch = g[row][col];
                 int child = wg.child(node, ch);

@@ -7,8 +7,11 @@ public final class Rules {
     /** Bonus for using all seven rack tiles. Stays 0 until check V5 confirms the value (task 16). */
     public static final int BINGO_BONUS = 0;
 
-    /** Moves that use a blank are hidden until check V2 is confirmed (task 16). */
-    public static final boolean BLANKS_ENABLED = false;
+    /**
+     * Moves that use a blank. V2 experiment (testbuild 5): on; a blank goes out as {@code [x,y,"X",true]}
+     * (play/MoveRequest), whether the server accepts that is still open.
+     */
+    public static final boolean BLANKS_ENABLED = true;
 
     /** Centre square (x = y = CENTER) that the first move must cover. */
     public static final int CENTER = 7;
