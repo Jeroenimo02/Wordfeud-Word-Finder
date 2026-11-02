@@ -84,21 +84,6 @@ public class ScreenShadeTest {
         assertFalse(c.untouched(h));
     }
 
-    @Test public void anotherPageOverTheGameHidesTheButton() {
-        // Measured: dark chat background, and the move history (list cards) under the button.
-        ScreenShade.Cover chat = ScreenShade.analyseArea(col(200, 0x232429), 10, 20, ScreenShade.PAGE_DARK, 1.0, 2);
-        assertTrue(chat.elsewhere);
-        assertEquals(0, chat.visibleRows);
-        int[] history = col(200, 0x343B45);
-        for (int i = 100; i < 200; i++) history[i] = 0x455467;
-        assertTrue(ScreenShade.analyseArea(history, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2).elsewhere);
-        int[] game = col(200, 0x343B45);
-        for (int i = 180; i < 200; i++) game[i] = 0x333A42; // slight shade near the rack
-        ScreenShade.Cover g = ScreenShade.analyseArea(game, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2);
-        assertFalse(g.elsewhere);
-        assertTrue(g.untouched(20));
-    }
-
     @Test public void areaIsNeverCutWithoutScrim() {
         assertTrue(ScreenShade.analyseArea(col(200, 0xD0D5DB), 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2).untouched(20));
         ScreenShade.Cover open = ScreenShade.analyseArea(col(200, 0x5E6265), 10, 20, ScreenShade.PAGE_LIGHT, 0.46, 2);
@@ -106,13 +91,49 @@ public class ScreenShadeTest {
         assertEquals(0.46, open.factor, 0.01);
     }
 
-    @Test public void historyAtMoveZeroIsNotTheGameScreen() {
-        // Measured: game screen has the rack bar (app bar colour) below the button, the history the plain page.
+    /** A rack row as measured: tiles across the width with bar colour at the ends and small gaps. */
+    private static int[] rackRow(int tile, int bar) {
+        int[] r = col(40, tile);
+        r[0] = bar;
+        r[39] = bar;
+        r[12] = 0x2F3237;
+        return r;
+    }
+
+    @Test public void rackTilesMeanTheGameScreen() {
         int[] page = col(200, 0x343B45);
-        assertFalse(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, 0x232429, 0x232429).elsewhere);
-        assertTrue(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, 0x232429, 0x343B45).elsewhere);
-        int[] light = col(200, 0xD0D5DB);
-        assertFalse(ScreenShade.analyseArea(light, 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2, 0xDEE3E7, 0xDEE3E7).elsewhere);
-        assertFalse(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, -1, -1).elsewhere);
+        // Measured rack rows: dark theme, light theme (new tiles) and light theme.
+        assertFalse(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2,
+                rackRow(0xF1EEE9, 0x232429)).elsewhere);
+        assertFalse(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2,
+                rackRow(0xFFF8F0, 0xDEE3E7)).elsewhere);
+        // Zoomed in: the board lies under the button, the rack is still there.
+        int[] board = col(200, 0x2A2D32);
+        ScreenShade.Cover zoomed = ScreenShade.analyseArea(board, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2,
+                rackRow(0xF1EEE9, 0x232429));
+        assertFalse(zoomed.elsewhere);
+        assertTrue(zoomed.untouched(20));
+        // One tile left (1 of 7).
+        int[] one = col(40, 0x232429);
+        for (int i = 0; i < 5; i++) one[i + 2] = 0xF1EEE9;
+        assertTrue(ScreenShade.rackVisible(one));
+    }
+
+    @Test public void otherPagesHaveNoRack() {
+        int[] page = col(200, 0x343B45);
+        // Measured: chat (all background), history at move 0 (page), history list (highlighted row with text).
+        assertTrue(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, col(40, 0x232429)).elsewhere);
+        assertTrue(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, col(40, 0x343B45)).elsewhere);
+        int[] list = col(40, 0x455467);
+        list[6] = 0xAA9F83;
+        list[7] = 0xC3C3C3;
+        list[14] = 0xEDF2F6;
+        list[20] = 0xEDF2F8;
+        list[24] = 0xEEF2F5;
+        assertTrue(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, list).elsewhere);
+        // The light rack bar alone is not a tile.
+        assertTrue(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2, col(40, 0xDEE3E7)).elsewhere);
+        // No rack row known: no check.
+        assertFalse(ScreenShade.analyseArea(page, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2, null).elsewhere);
     }
 }

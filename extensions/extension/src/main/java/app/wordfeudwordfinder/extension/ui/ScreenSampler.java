@@ -39,8 +39,8 @@ final class ScreenSampler {
     /** The scrim reference: the app bar, this far below the status bar, in the middle of the button's right margin. */
     private static final int APP_BAR_Y_DP = 10;
     private static final float APP_BAR_X_GAP_DP = FabPlacement.FAB_MARGIN_RIGHT_DP / 2f;
-    /** The rack bar check: this far below the button, in the middle of its right margin. */
-    private static final int RACK_BELOW_DP = 20;
+    /** The rack check: a pixel row this far below the button runs through the middle of the rack tiles. */
+    private static final int RACK_BELOW_DP = 40;
     /** Columns under the button are classified every this many pixels. */
     private static final int COLUMN_STEP = 2;
 
@@ -71,7 +71,7 @@ final class ScreenSampler {
     private int pending;
     private double pendingScrim;
     private int pendingBar;
-    private int pendingRack;
+    private int[] pendingRack;
     private Bitmap rack;
     private int[] pendingArea;
 
@@ -181,10 +181,14 @@ final class ScreenSampler {
         int by = contentTop + Math.round(APP_BAR_Y_DP * density);
         if (by >= loc[1]) return;
         if (bar == null) bar = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
-        if (rack == null) rack = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888);
+        View root = activity.getWindow().getDecorView();
+        int sw = root.getWidth();
+        if (sw <= 0) return;
+        int rn = Math.max(14, sw / 4);
+        if (rack == null || rack.getWidth() != rn) rack = Bitmap.createBitmap(rn, 1, Bitmap.Config.ARGB_8888);
         final Bitmap rackBmp = rack;
         int ry = loc[1] + h + Math.round(RACK_BELOW_DP * density);
-        Rect rackRect = new Rect(bx, ry, bx + 1, ry + 1);
+        Rect rackRect = new Rect(0, ry, sw, ry + 1);
         if (area == null || area.getWidth() != w || area.getHeight() != h) {
             area = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         }
@@ -195,13 +199,15 @@ final class ScreenSampler {
         Rect barRect = new Rect(bx, by, bx + 1, by + 1);
         pending = 3;
         pendingArea = null;
-        pendingRack = -1;
+        pendingRack = null;
         if (!copy(barRect, barBmp, () -> {
             pendingBar = barBmp.getPixel(0, 0) & 0xFFFFFF;
             pendingScrim = shade.scrim(pendingBar);
             finishSample(w, h);
         }) || !copy(rackRect, rackBmp, () -> {
-            pendingRack = rackBmp.getPixel(0, 0) & 0xFFFFFF;
+            int[] row = new int[rn];
+            rackBmp.getPixels(row, 0, rn, 0, 0, rn, 1);
+            pendingRack = row;
             finishSample(w, h);
         }) || !copy(under, areaBmp, () -> {
             int[] px = new int[w * h];
@@ -217,7 +223,8 @@ final class ScreenSampler {
         if (--pending > 0) return;
         inFlight = false;
         ScreenShade.Cover c = ScreenShade.analyseArea(pendingArea, w, h, base, pendingScrim, COLUMN_STEP,
-                pendingBar, pendingRack);
+                pendingRack);
+        pendingRack = null;
         pendingArea = null;
         if (c != null) setCover(c);
     }

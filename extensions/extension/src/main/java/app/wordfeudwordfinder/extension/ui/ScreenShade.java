@@ -13,8 +13,9 @@ package app.wordfeudwordfinder.extension.ui;
  * <p>Board: Wordfeud has a "dark board" option in light mode, so the board colours are classified from a pixel row
  * through the board (empty squares and grid gaps of either palette).
  *
- * <p>Elsewhere: without a scrim, the area under the button must be the plain page background; otherwise another
- * page (chat, move history) lies over the game and the button is hidden.
+ * <p>Elsewhere: without a scrim, a pixel row through the rack below the button must show rack tiles; otherwise
+ * another page (chat, move history) lies over the game, which Wordfeud does not always report as a route, and the
+ * button is hidden. The board may lie under the button (zoomed in); the rack is always there on the game screen.
  */
 public final class ScreenShade {
     // Stateful only for the app bar baseline (see scrim()); everything else is static.
@@ -35,8 +36,8 @@ public final class ScreenShade {
 
     /** Without a scrim of at least this strength nothing is cut: Wordfeud's menus always come with a scrim. */
     static final double NO_SCRIM = 0.97;
-    /** Share of the area under the button that must be the page background to count as the game screen. */
-    static final double ON_GAME_SCREEN = 0.85;
+    /** Share of the rack row that must be tile colour (one of seven tiles is about 14%). */
+    static final double RACK_SHARE = 0.08;
 
     /**
      * How the button should look: per pixel column the rows [0, rows[x]) are shown (null: all), multiplied by
@@ -128,35 +129,20 @@ public final class ScreenShade {
      * nothing is cut (the area under the button may hold other things on some screens, never a menu without scrim).
      */
     public static Cover analyseArea(int[] px, int w, int h, int base, double s, int step) {
-        return analyseArea(px, w, h, base, s, step, -1, -1);
+        return analyseArea(px, w, h, base, s, step, null);
     }
 
     /**
-     * As {@link #analyseArea(int[], int, int, int, double, int)}, and without a scrim also checks the pixel just
-     * below the button ({@code rack}): on the game screen that is the rack bar, which has the app bar's colour
-     * ({@code bar}). The move history at move 0 has the plain page under the button as well, but page there too.
-     * Negative values skip the check.
+     * As {@link #analyseArea(int[], int, int, int, double, int)}, and without a scrim also checks {@code rackRow}, a
+     * pixel row through the rack below the button: the game screen always shows the rack tiles there (also with
+     * the board zoomed in), other pages over the game (chat, move history) do not. Null skips the check.
      */
-    public static Cover analyseArea(int[] px, int w, int h, int base, double s, int step, int bar, int rack) {
+    public static Cover analyseArea(int[] px, int w, int h, int base, double s, int step, int[] rackRow) {
         if (px == null || w <= 0 || h <= 0 || px.length < w * h) return null;
         float factor = (float) Math.max(0.0, Math.min(1.0, s));
         step = Math.max(1, step);
         if (s >= NO_SCRIM) {
-            // No scrim: the game screen has its plain page background under the button. Anything else means
-            // another page (chat, move history) lies over the game, which Wordfeud does not always report as a
-            // route change.
-            int match = 0;
-            int total = 0;
-            for (int y = 0; y < h; y += step) {
-                for (int x = 0; x < w; x += step) {
-                    total++;
-                    if (scaledFrom(px[y * w + x] & 0xFFFFFF, base, 1.0)) match++;
-                }
-            }
-            if (match < total * ON_GAME_SCREEN) return new Cover(0, 1f, true);
-            if (bar >= 0 && rack >= 0 && !scaledFrom(rack & 0xFFFFFF, bar & 0xFFFFFF, 1.0)) {
-                return new Cover(0, 1f, true);
-            }
+            if (rackRow != null && !rackVisible(rackRow)) return new Cover(0, 1f, true);
             return new Cover(Integer.MAX_VALUE, factor);
         }
         int[] rows = new int[w];
@@ -169,6 +155,25 @@ public final class ScreenShade {
         }
         for (int x = 0; x < w; x++) rows[x] = sampled[Math.min(sampled.length - 1, Math.round(x / (float) step))];
         return new Cover(rows, h, factor);
+    }
+
+    /** Whether a pixel row shows rack tiles: at least {@link #RACK_SHARE} of it in the warm cream tile colour. */
+    public static boolean rackVisible(int[] row) {
+        if (row == null || row.length == 0) return false;
+        int tiles = 0;
+        for (int p : row) if (tileColour(p & 0xFFFFFF)) tiles++;
+        return tiles >= row.length * RACK_SHARE;
+    }
+
+    /**
+     * Wordfeud's tile face: bright, nearly grey but warm (#F1EEE9, #FFF8F0). Cool whites (text, #EDF2F6) and the
+     * light rack bar (#DEE3E7) have more blue than red and do not count.
+     */
+    static boolean tileColour(int p) {
+        int r = (p >> 16) & 0xFF;
+        int g = (p >> 8) & 0xFF;
+        int b = p & 0xFF;
+        return brightness(p) >= 205 && r - b >= 4 && r - b <= 48 && Math.abs(r - g) <= 16;
     }
 
     private static boolean scaledFrom(int p, int base, double r) {
