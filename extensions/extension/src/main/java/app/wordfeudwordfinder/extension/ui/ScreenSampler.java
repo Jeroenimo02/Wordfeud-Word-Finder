@@ -38,6 +38,8 @@ final class ScreenSampler {
     private static final float[] BOARD_ROWS = {0.42f, 0.5f, 0.58f};
     /** Column right of the button, in the middle of its right margin. */
     private static final float COLUMN_GAP_DP = FabPlacement.FAB_MARGIN_RIGHT_DP / 2f;
+    /** The scrim reference: the app bar, this far below the status bar (in the same pixel column). */
+    private static final int APP_BAR_Y_DP = 10;
 
     private final Activity activity;
     private final View fab;
@@ -55,6 +57,9 @@ final class ScreenSampler {
     private long fastUntil;
     private int ticks;
     private int base = ScreenShade.PAGE_LIGHT;
+    private boolean appDark;
+    private int contentTop;
+    private final ScreenShade shade = new ScreenShade();
     private ScreenShade.Cover cover;
     private Boolean boardDark;
     private Bitmap column;
@@ -74,7 +79,19 @@ final class ScreenSampler {
 
     /** The page background behind the button for the app theme. */
     void setAppDark(boolean dark) {
+        if (dark != appDark) shade.resetScrim();
+        appDark = dark;
         base = dark ? ScreenShade.PAGE_DARK : ScreenShade.PAGE_LIGHT;
+    }
+
+    /** Window y where the app draws below the status bar (the top of Wordfeud's app bar). */
+    void setContentTop(int y) {
+        contentTop = y;
+    }
+
+    /** Another game: forget the app bar baseline. */
+    void resetScrim() {
+        shade.resetScrim();
     }
 
     void setActive(boolean on) {
@@ -149,12 +166,20 @@ final class ScreenSampler {
         int[] loc = new int[2];
         fab.getLocationInWindow(loc);
         int x = loc[0] + fab.getWidth() + Math.round(COLUMN_GAP_DP * density);
-        if (column == null || column.getHeight() != h) column = Bitmap.createBitmap(1, h, Bitmap.Config.ARGB_8888);
+        // One column from the app bar (scrim reference) down to the bottom of the button.
+        int top = contentTop + Math.round(APP_BAR_Y_DP * density);
+        int skip = loc[1] - top;
+        if (skip <= 0) return;
+        int n = skip + h;
+        if (column == null || column.getHeight() != n) column = Bitmap.createBitmap(1, n, Bitmap.Config.ARGB_8888);
         final Bitmap bmp = column;
-        copy(new Rect(x, loc[1], x + 1, loc[1] + h), bmp, () -> {
-            int[] px = new int[h];
-            bmp.getPixels(px, 0, 1, 0, 0, 1, h);
-            ScreenShade.Cover c = ScreenShade.analyse(px, base);
+        copy(new Rect(x, top, x + 1, top + n), bmp, () -> {
+            int[] px = new int[n];
+            bmp.getPixels(px, 0, 1, 0, 0, 1, n);
+            double s = shade.scrim(px[0]);
+            int[] rows = new int[h];
+            System.arraycopy(px, skip, rows, 0, h);
+            ScreenShade.Cover c = ScreenShade.analyse(rows, base, s);
             if (c != null) setCover(c);
         });
     }

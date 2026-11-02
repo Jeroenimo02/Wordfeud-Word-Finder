@@ -103,6 +103,7 @@ public final class OverlayController {
     private ScreenSampler sampler;
     /** Rows of the button not covered by a Wordfeud menu, and whether it takes touches (not under a scrim). */
     private int fabVisibleRows = Integer.MAX_VALUE;
+    private Long sampledGameId;
     private boolean fabTouchable = true;
     private final View.OnLayoutChangeListener fabRelayout = (v, l, t, r, b, ol, ot, or, ob) -> positionFab();
 
@@ -346,7 +347,12 @@ public final class OverlayController {
         boolean eligible = visible && !open;
         fab.setVisibility(eligible ? View.VISIBLE : View.GONE);
         if (sampler != null) {
+            if (!java.util.Objects.equals(id, sampledGameId)) {
+                sampledGameId = id;
+                sampler.resetScrim();
+            }
             sampler.setAppDark(RouteTap.isDark());
+            sampler.setContentTop(contentTopInWindow());
             sampler.setActive(eligible);
         }
         positionFab();
@@ -380,6 +386,13 @@ public final class OverlayController {
             lp.bottomMargin = bottom;
             fab.setLayoutParams(lp);
         }
+    }
+
+    /** Window y where the app draws below the status bar: the top of Wordfeud's app bar. */
+    private int contentTopInWindow() {
+        int[] loc = new int[2];
+        layer.getLocationInWindow(loc);
+        return loc[1] + insets().top;
     }
 
     /** The parts of the system bar insets that lie over the layer (zero when the app is not drawn edge to edge). */

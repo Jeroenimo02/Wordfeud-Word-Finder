@@ -16,36 +16,45 @@ public class ScreenShadeTest {
     }
 
     @Test public void plainBackgroundLeavesTheButtonUntouched() {
-        ScreenShade.Cover c = ScreenShade.analyse(col(40, 0xD0D5DB), ScreenShade.PAGE_LIGHT);
-        assertTrue(c.untouched(40));
-        c = ScreenShade.analyse(col(40, 0xCED3D9), ScreenShade.PAGE_LIGHT); // slight shade near the rack
-        assertTrue(c.untouched(40));
-        c = ScreenShade.analyse(col(40, 0x343B45), ScreenShade.PAGE_DARK);
-        assertTrue(c.untouched(40));
+        assertTrue(ScreenShade.analyse(col(40, 0xD0D5DB), ScreenShade.PAGE_LIGHT, 1.0).untouched(40));
+        assertTrue(ScreenShade.analyse(col(40, 0xCED3D9), ScreenShade.PAGE_LIGHT, 1.0).untouched(40));
+        assertTrue(ScreenShade.analyse(col(40, 0x343B45), ScreenShade.PAGE_DARK, 1.0).untouched(40));
+    }
+
+    @Test public void scrimMeasuredOnTheAppBar() {
+        ScreenShade sh = new ScreenShade();
+        assertEquals(1.0, sh.scrim(0xDEE3E7), 1e-9);
+        assertEquals(0.46, sh.scrim(0x67686A), 0.03); // measured light app bar under the scrim
+        sh.resetScrim();
+        assertEquals(1.0, sh.scrim(0x67686A), 1e-9);
+        ScreenShade black = new ScreenShade();
+        assertEquals(1.0, black.scrim(0x050505), 1e-9);
     }
 
     @Test public void scrimDimsWithoutCutting() {
-        // Measured: light page under the menu scrim.
-        ScreenShade.Cover c = ScreenShade.analyse(col(40, 0x5E6265), ScreenShade.PAGE_LIGHT);
+        ScreenShade.Cover c = ScreenShade.analyse(col(40, 0x5E6265), ScreenShade.PAGE_LIGHT, 0.46);
         assertEquals(40, c.visibleRows);
-        assertEquals(0.46, c.factor, 0.03);
-        assertFalse(c.untouched(40));
+        assertEquals(0.46, c.factor, 0.01);
+        c = ScreenShade.analyse(col(40, 0x181B20), ScreenShade.PAGE_DARK, 0.46); // measured dark page under scrim
+        assertEquals(40, c.visibleRows);
     }
 
     @Test public void sheetCutsFromItsTopEdge() {
         int[] a = col(40, 0x5E6265);
-        for (int i = 25; i < 40; i++) a[i] = 0xE6EBEF; // measured sheet colour
-        ScreenShade.Cover c = ScreenShade.analyse(a, ScreenShade.PAGE_LIGHT);
-        assertEquals(25, c.visibleRows);
-        assertEquals(0.46, c.factor, 0.03);
-        assertEquals(0, ScreenShade.analyse(col(40, 0xE6EBEF), ScreenShade.PAGE_LIGHT).visibleRows);
+        for (int i = 25; i < 40; i++) a[i] = 0xE6EBEF; // measured light sheet
+        assertEquals(25, ScreenShade.analyse(a, ScreenShade.PAGE_LIGHT, 0.46).visibleRows);
+        // Measured dark sheet: close to the dark page at 82%, but not at the app bar's scrim.
+        int[] d = col(40, 0x181B20);
+        for (int i = 3; i < 40; i++) d[i] = 0x2C3137;
+        assertEquals(3, ScreenShade.analyse(d, ScreenShade.PAGE_DARK, 0.46).visibleRows);
+        assertEquals(0, ScreenShade.analyse(col(40, 0x2C3137), ScreenShade.PAGE_DARK, 0.46).visibleRows);
     }
 
     @Test public void otherColoursCover() {
-        assertEquals(0, ScreenShade.analyse(col(10, 0x2F7DE1), ScreenShade.PAGE_LIGHT).visibleRows);
-        assertEquals(0, ScreenShade.analyse(col(10, 0x404751), ScreenShade.PAGE_DARK).visibleRows);
-        assertNull(ScreenShade.analyse(new int[0], ScreenShade.PAGE_LIGHT));
-        assertNull(ScreenShade.analyse(null, ScreenShade.PAGE_LIGHT));
+        assertEquals(0, ScreenShade.analyse(col(10, 0x2F7DE1), ScreenShade.PAGE_LIGHT, 1.0).visibleRows);
+        assertEquals(0, ScreenShade.analyse(col(10, 0x404751), ScreenShade.PAGE_DARK, 1.0).visibleRows);
+        assertNull(ScreenShade.analyse(new int[0], ScreenShade.PAGE_LIGHT, 1.0));
+        assertNull(ScreenShade.analyse(null, ScreenShade.PAGE_LIGHT, 1.0));
     }
 
     @Test public void boardShadeFromSampledRow() {

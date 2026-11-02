@@ -6,21 +6,20 @@ package app.wordfeudwordfinder.extension.ui;
  *
  * <p>Under: Flutter draws the board and its menus into one surface, so the button cannot sit between them. It is
  * made to look as if it lies under them instead: a pixel column of Wordfeud's screen just right of the button (the
- * page background, #D0D5DB light / #343B45 dark) is classified row by row. A row that is the background darkened
- * (a menu or dialog scrim, #D0D5DB becomes #5E6265) dims the button by the same amount; a row that is not (the
- * sheet of the "..." menu, #E6EBEF) covers it, and the button is cut off from the first such row down.
+ * page background, #D0D5DB light / #343B45 dark) is classified row by row. The scrim of a menu or dialog is
+ * measured on the app bar (no menu comes there) and dims the button by the same amount; a row that is not the
+ * background darkened by exactly that scrim (a menu sheet) covers the button, which is cut off from that row down.
  *
  * <p>Board: Wordfeud has a "dark board" option in light mode, so the board colours are classified from a pixel row
  * through the board (empty squares and grid gaps of either palette).
  */
 public final class ScreenShade {
+    // Stateful only for the app bar baseline (see scrim()); everything else is static.
     /** Page background behind the button, light and dark theme. */
     public static final int PAGE_LIGHT = 0xD0D5DB;
     public static final int PAGE_DARK = 0x343B45;
     /** Max per-channel distance for a pixel to count as the (darkened) background. */
     static final int SCALED_TOLERANCE = 10;
-    /** A row brighter than the background by more than this share is something drawn over it. */
-    static final double BRIGHTER = 1.04;
     /** Max per-channel distance for a pixel to count as a board colour. */
     static final int TOLERANCE = 14;
     static final int MIN_VOTES = 6;
@@ -28,7 +27,8 @@ public final class ScreenShade {
     private static final int[] LIGHT_BOARD = {0xC6D1D7, 0xACC0C7};
     private static final int[] DARK_BOARD = {0x2A2D32, 0x171A1F};
 
-    private ScreenShade() {}
+    /** Below this brightness (0..255) the app bar is too dark to measure a scrim on. */
+    static final double MIN_BAR = 12;
 
     /** How the button should look: rows [0, visibleRows) shown, multiplied by {@code factor} (1 = untouched). */
     public static final class Cover {
@@ -46,19 +46,33 @@ public final class ScreenShade {
     }
 
     /**
-     * Classifies the column beside the button (one pixel per button row, top to bottom) against the page background
-     * {@code base}. Null when nothing is known (no pixels), meaning: leave the button as it is.
+     * Scrim strength (0..1 multiplier) from the app bar, where no menu ever comes: the sample against the brightest
+     * app bar value seen on this screen. Call {@link #resetScrim()} for another game or theme.
      */
-    public static Cover analyse(int[] column, int base) {
+    private double brightestBar = -1;
+
+    public void resetScrim() {
+        brightestBar = -1;
+    }
+
+    public double scrim(int barRgb) {
+        double b = brightness(barRgb & 0xFFFFFF);
+        if (b > brightestBar) brightestBar = b;
+        if (brightestBar < MIN_BAR) return 1.0;
+        return Math.min(1.0, b / brightestBar);
+    }
+
+    /**
+     * Classifies the column beside the button (one pixel per button row, top to bottom): a row that is the page
+     * background {@code base} darkened by exactly the scrim {@code s} is free, anything else covers the button from
+     * that row down. (A darkened-background test alone is not enough: the dark theme's menu sheet #2C3137 is close
+     * to #343B45 at 82%.) Null when nothing is known.
+     */
+    public static Cover analyse(int[] column, int base, double s) {
         if (column == null || column.length == 0) return null;
-        double baseB = brightness(base);
-        if (baseB <= 0) return null;
-        float factor = 1f;
+        float factor = (float) Math.max(0.0, Math.min(1.0, s));
         for (int i = 0; i < column.length; i++) {
-            int p = column[i] & 0xFFFFFF;
-            double r = brightness(p) / baseB;
-            if (r > BRIGHTER || !scaledFrom(p, base, r)) return new Cover(i, i == 0 ? 1f : factor);
-            if (i == 0) factor = (float) Math.min(1.0, r);
+            if (!scaledFrom(column[i] & 0xFFFFFF, base, s)) return new Cover(i, factor);
         }
         return new Cover(column.length, factor);
     }
