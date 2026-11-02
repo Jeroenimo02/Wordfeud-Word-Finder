@@ -3,13 +3,12 @@ package app.wordfeudwordfinder.extension.ui;
 /**
  * Every colour the overlay uses (spec section 9), as ARGB ints. No android.* imports so it stays JVM-testable.
  *
- * IMPORTANT (controller ruling R13): the approved mockup and the Wordfeud screenshots were not available
- * when these values were chosen. They approximate Wordfeud's dark UI (navy/charcoal background,
- * DL light blue, TL dark blue, DW orange/peach, TW red, cream tiles with dark letters, new tiles white
- * with a blue border and a blue score badge). They MUST be checked against the client's screenshots /
- * mockup {@code woordenboek_voorbeeldbord.jpg} (task 13 step 4) and adjusted here only.
+ * The values are measured on a screenshot of Wordfeud 5.7.1's dark game screen (screen #343B45, empty square
+ * #2A2D32, grid gaps #171A1F, TL #1F6191, DL #6A8E50 (green), DW #C8720F, TW #93282E, board tile #F2EFEA with
+ * #191816 letters, rack area #2E3138, header card #404751, accent #2F7DE1). New tiles keep the spec's white with a
+ * blue border. Wordfeud's yellow last-played highlight (#EFE495) is deliberately not used.
  *
- * The light theme is the same as the dark one until check V8.
+ * The light theme is the same as the dark one for now (V8).
  */
 public final class Theme {
     // Overlay chrome
@@ -71,23 +70,23 @@ public final class Theme {
     }
 
     public static final Theme DARK = new Theme(new int[] {
-        0xFF1B1F2A, // background: dark navy
-        0xFF252B38, // surface: list rows, panels
-        0xFF34425E, // surfaceSelected: selected list row
+        0xFF343B45, // background: Wordfeud 5.7.1 dark screen
+        0xFF404751, // surface: list rows, panels (header card)
+        0xFF2E3138, // surfaceSelected: selected list row (rack area)
         0xFF343A48, // divider
         0xFFFFFFFF, // textPrimary
         0xFFAEB4C2, // textSecondary
         0xFF2F7DE1, // accent: Play button
         0xFFFFFFFF, // onAccent
-        0xFF12151C, // boardBackground (grid lines)
-        0xFF2B303B, // squareEmpty
-        0xFF6FA9C9, // squareDL: light blue
-        0xFF2E5A96, // squareTL: dark blue
-        0xFFE29A63, // squareDW: orange/peach
-        0xFFC64A43, // squareTW: red
+        0xFF171A1F, // boardBackground (grid gaps)
+        0xFF2A2D32, // squareEmpty
+        0xFF6A8E50, // squareDL: green
+        0xFF1F6191, // squareTL: blue
+        0xFFC8720F, // squareDW: orange
+        0xFF93282E, // squareTW: dark red
         0xFFFFFFFF, // squareLabel
-        0xFFF2E6C8, // tileFill: cream
-        0xFF262626, // tileText: dark letters and points
+        0xFFF2EFEA, // tileFill (board tile)
+        0xFF191816, // tileText: dark letters and points
         0xFFFFFFFF, // tileNewFill: white
         0xFF2F7DE1, // tileNewBorder: blue
         0xFF262626, // tileNewText

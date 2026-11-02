@@ -11,20 +11,26 @@ public class FabPlacementTest {
         assertEquals(40, FabPlacement.FAB_SIZE_DP);
         assertEquals(10, FabPlacement.FAB_MARGIN_RIGHT_DP);
         assertEquals(165, FabPlacement.RACK_TOP_FROM_BOTTOM_DP);
+        assertEquals(117, FabPlacement.RACK_TOP_MIN_DP);
         assertEquals(10, FabPlacement.FAB_GAP_ABOVE_RACK_DP);
     }
 
     @Test
     public void bottomMarginWithoutBanner() {
-        // (165 + 10) dp at density 2 = 350 px, plus a 48 px navigation bar inset.
-        assertEquals(398, FabPlacement.bottomMarginPx(2f, 48, false));
+        // Density 2, inset 96 px (48 dp): rack top = max(330 - 96, 234) = 234 px, plus inset 96, plus gap 20 = 350.
+        assertEquals(350, FabPlacement.bottomMarginPx(2f, 96, false));
+        // Small inset: rack top = 330 - 48 = 282, + 48 + 20 = 350 as well (165 dp physical).
+        assertEquals(350, FabPlacement.bottomMarginPx(2f, 48, false));
+        // No inset: the full 165 dp + gap.
         assertEquals(175, FabPlacement.bottomMarginPx(1f, 0, false));
+        // Huge inset: the 117 dp minimum applies: 117 + 200 + 10.
+        assertEquals(327, FabPlacement.bottomMarginPx(1f, 200, false));
     }
 
     @Test
     public void bannerShiftsTheButtonUp() {
-        int without = FabPlacement.bottomMarginPx(2f, 48, false);
-        int with = FabPlacement.bottomMarginPx(2f, 48, true);
+        int without = FabPlacement.bottomMarginPx(2f, 96, false);
+        int with = FabPlacement.bottomMarginPx(2f, 96, true);
         assertEquals(FabPlacement.BANNER_SHIFT_DP * 2, with - without);
     }
 

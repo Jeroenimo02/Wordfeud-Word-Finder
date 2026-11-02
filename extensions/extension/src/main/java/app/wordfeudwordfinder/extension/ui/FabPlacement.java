@@ -11,8 +11,13 @@ public final class FabPlacement {
     public static final int FAB_SIZE_DP = 40;
     /** Margin between the button and the right edge of the content. */
     public static final int FAB_MARGIN_RIGHT_DP = 10;
-    /** Measured distance from the bottom of the Flutter screen to the top edge of the rack (V7). */
+    /**
+     * Measured distance from the PHYSICAL screen bottom to the top edge of the rack (V7), including a 3-button
+     * navigation bar of about 48 dp: it already contains the system bottom inset.
+     */
     public static final int RACK_TOP_FROM_BOTTOM_DP = 165;
+    /** Lower bound of the rack top above the Flutter view bottom (165 dp minus a 48 dp navigation bar). */
+    public static final int RACK_TOP_MIN_DP = 117;
     /** Gap between the button and the top edge of the rack. */
     public static final int FAB_GAP_ABOVE_RACK_DP = 10;
     /** Extra upward shift while the ad banner is visible (standard 50 dp banner; to be confirmed in V7). */
@@ -30,8 +35,10 @@ public final class FabPlacement {
      *                      {@link #effectiveBottomInset}
      */
     public static int bottomMarginPx(float density, int bottomInsetPx, boolean bannerVisible) {
-        int dp = RACK_TOP_FROM_BOTTOM_DP + FAB_GAP_ABOVE_RACK_DP + (bannerVisible ? BANNER_SHIFT_DP : 0);
-        return dp(density, dp) + Math.max(0, bottomInsetPx);
+        int inset = Math.max(0, bottomInsetPx);
+        int rackTop = Math.max(dp(density, RACK_TOP_FROM_BOTTOM_DP) - inset, dp(density, RACK_TOP_MIN_DP));
+        int dp = FAB_GAP_ABOVE_RACK_DP + (bannerVisible ? BANNER_SHIFT_DP : 0);
+        return rackTop + inset + dp(density, dp);
     }
 
     /**
