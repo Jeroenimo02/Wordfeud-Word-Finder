@@ -22,7 +22,8 @@ public final class MoveRequest {
      *
      * <p>A blank (lower-case letter in {@link Move#placedLetters}) goes out as {@code [x,y,"L",true]} with the letter
      * in upper case. V2 experiment (testbuild 5): this shape follows the [column, row, letter, blank] tiles of a
-     * third-party client and is not confirmed; normal tiles stay {@code [x,y,"L"]} (confirmed).
+     * third-party client; the server rejected it (MV-SERVER-protocol, 2026-11-02), so it is unused while
+     * {@code Rules.BLANKS_ENABLED} is off. Normal tiles stay {@code [x,y,"L"]} (confirmed).
      */
     public static String body(Move m, int rulesetId) {
         StringBuilder sb = new StringBuilder("{\"move\":[");

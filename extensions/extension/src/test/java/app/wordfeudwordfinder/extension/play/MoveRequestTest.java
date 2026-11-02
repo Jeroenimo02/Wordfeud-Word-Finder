@@ -34,7 +34,8 @@ public class MoveRequestTest {
 
     @Test
     public void blanksAreUpperCaseWithTrueAndNormalTilesUnchanged() {
-        // V2 experiment (testbuild 5): blank as [x,y,"X",true]; normal tiles stay [x,y,"X"]
+        // V2 experiment (testbuild 5): blank as [x,y,"X",true] (rejected: MV-SERVER-protocol; unused while blanks are
+        // off); normal tiles stay [x,y,"X"]
         Move m = new Move("ZEE", 3, 7, true, Arrays.asList(new int[] {3, 7}, new int[] {4, 7}, new int[] {5, 7}),
                 Arrays.asList("z", "E", "e"), 2, Collections.singletonList("ZEE"), Collections.emptyList(), false);
         assertEquals("{\"move\":[[3,7,\"Z\",true],[4,7,\"E\"],[5,7,\"E\",true]],\"words\":[\"ZEE\"],"

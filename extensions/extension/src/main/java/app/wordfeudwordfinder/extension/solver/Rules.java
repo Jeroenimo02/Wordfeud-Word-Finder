@@ -8,10 +8,11 @@ public final class Rules {
     public static final int BINGO_BONUS = 0;
 
     /**
-     * Moves that use a blank. V2 experiment (testbuild 5): on; a blank goes out as {@code [x,y,"X",true]}
-     * (play/MoveRequest), whether the server accepts that is still open.
+     * Moves that use a blank. Off again: the V2 experiment (testbuild 5) sent a blank as {@code [x,y,"X",true]}
+     * (play/MoveRequest) and the server answered MV-SERVER-protocol (2026-11-02). Stays off until the format the app
+     * itself sends is known (hooks/UploadTap); the MoveRequest blank code path stays, unused.
      */
-    public static final boolean BLANKS_ENABLED = true;
+    public static final boolean BLANKS_ENABLED = false;
 
     /** Centre square (x = y = CENTER) that the first move must cover. */
     public static final int CENTER = 7;

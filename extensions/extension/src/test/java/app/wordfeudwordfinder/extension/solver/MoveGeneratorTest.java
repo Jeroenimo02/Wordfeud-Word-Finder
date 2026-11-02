@@ -299,12 +299,13 @@ public class MoveGeneratorTest {
     }
 
     @Test
-    public void blanksOnByDefaultForTheV2Experiment() {
-        assertTrue(Rules.BLANKS_ENABLED); // testbuild 5
+    public void blanksOffByDefaultUntilV2() {
+        // [x,y,"X",true] gave MV-SERVER-protocol (2026-11-02)
+        assertFalse(Rules.BLANKS_ENABLED);
         char[][] b = boardAfterNeigen();
-        Move m = find(MoveGenerator.generate(b, rack("?"), layout, nl, words("NEIGENS"), new AtomicBoolean(false)),
-                "NEIGENS", 7, 7, true);
-        assertEquals(Arrays.asList("s"), m.placedLetters);
+        for (Move m : MoveGenerator.generate(b, rack("?"), layout, nl, words("NEIGENS"), new AtomicBoolean(false))) {
+            fail("blank move generated: " + m);
+        }
     }
 
     @Test
