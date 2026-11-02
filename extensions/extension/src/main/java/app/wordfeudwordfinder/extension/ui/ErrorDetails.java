@@ -29,16 +29,39 @@ public final class ErrorDetails {
 
     /** Same as the Instant overload with {@code Instant.ofEpochMilli(epochMillis)}; safe below API 26. */
     public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis) {
-        return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis));
+        return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis), null);
+    }
+
+    /**
+     * As the {@code long} overload, plus a last line {@code refresh=<diagnostic>} when {@code refreshDiagnostic} is
+     * not empty (V4 test builds: the last RefreshDiagnostic, one line, at most {@link #MAX_DETAIL} characters).
+     */
+    // TODO(V4): remove the refresh= line with the diagnostic toast after the refresh strategy is confirmed
+    public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
+            String refreshDiagnostic) {
+        return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis), refreshDiagnostic);
     }
 
     private static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, String time) {
+        return format(e, wfVersion, patchVersion, rulesetId, time, null);
+    }
+
+    private static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, String time,
+            String refresh) {
         return "code=" + (e == null ? UNKNOWN : e.code())
                 + detailLine(e)
                 + "\nwordfeud=" + orUnknown(wfVersion)
                 + "\npatch=" + orUnknown(patchVersion)
                 + "\nruleset=" + (rulesetId < 0 ? UNKNOWN : Integer.toString(rulesetId))
-                + "\ntime=" + time;
+                + "\ntime=" + time
+                + refreshLine(refresh);
+    }
+
+    private static String refreshLine(String r) {
+        if (r == null || r.trim().isEmpty()) return "";
+        r = r.replace('\r', ' ').replace('\n', ' ');
+        if (r.length() > MAX_DETAIL) r = r.substring(0, MAX_DETAIL);
+        return "\nrefresh=" + r;
     }
 
     private static String detailLine(WfError e) {

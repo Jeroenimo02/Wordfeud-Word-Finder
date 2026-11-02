@@ -83,4 +83,13 @@ public class ErrorDetailsTest {
         assertFalse(ErrorDetails.retryable(WfError.mvServer("x")));
         assertFalse(ErrorDetails.retryable(null));
     }
+
+    @Test
+    public void refreshDiagnosticLineWhenPresent() {
+        String base = "code=WL-NET\nwordfeud=5.7.1\npatch=dev\nruleset=2\ntime=1970-01-01T00:00:00Z";
+        assertEquals(base, ErrorDetails.format(WfError.wlNet(), "5.7.1", "dev", 2, 0L, null));
+        assertEquals(base, ErrorDetails.format(WfError.wlNet(), "5.7.1", "dev", 2, 0L, " "));
+        assertEquals(base + "\nrefresh=RouteBounce: jni=none",
+                ErrorDetails.format(WfError.wlNet(), "5.7.1", "dev", 2, 0L, "RouteBounce:\njni=none"));
+    }
 }

@@ -16,9 +16,17 @@ public class RefresherTest {
         String debug;
         final List<String> log = new ArrayList<>();
         Refresher.DebugLog seenLog = null;
+        RefreshDiagnostic diag;
+        final List<String> shown = new ArrayList<>();
 
         @Override
-        public Refresher.Messenger messenger(Refresher.DebugLog l) {
+        public void showDiagnostic(String text) {
+            shown.add(text);
+        }
+
+        @Override
+        public Refresher.Messenger messenger(Refresher.DebugLog l, RefreshDiagnostic d) {
+            diag = d;
             seenLog = l;
             return messenger;
         }
@@ -37,6 +45,46 @@ public class RefresherTest {
     @After
     public void reset() {
         Refresher.install(null);
+        RefreshDiagnostic.clearLast();
+    }
+
+    @Test
+    public void diagnosticWhenNothingCouldBeSent() {
+        assertTrue(Refresher.DIAGNOSTIC_TOAST); // V4 testbuild 3
+        FakeEnv env = new FakeEnv();
+        env.messenger.available = false;
+        Refresher.install(env);
+        Refresher.refresh(4391L);
+        assertEquals(Arrays.asList("RouteBounce: not possible"), env.shown);
+        assertEquals("RouteBounce: not possible", RefreshDiagnostic.last());
+    }
+
+    @Test
+    public void scheduledSequenceIsFinishedByTheMessenger() {
+        FakeEnv env = new FakeEnv();
+        Refresher.install(env);
+        Refresher.refresh(4391L);
+        assertTrue(env.shown.isEmpty()); // still running: the bridge finishes it after the last message
+        env.diag.step(RefreshDiagnostic.message("send", "flutter/navigation", 63) + " OK");
+        env.diag.finish();
+        env.diag.finish(); // once only
+        assertEquals(Arrays.asList("RouteBounce: send(flutter/navigation,63B) OK"), env.shown);
+    }
+
+    @Test
+    public void diagnosticRecordsFailuresPerStrategy() {
+        RefreshDiagnostic d = new RefreshDiagnostic(null);
+        List<Refresher.Strategy> order = Arrays.asList(
+                new Refresher.Strategy() {
+                    public boolean refresh(long id) { throw new IllegalStateException("x"); }
+                    public String name() { return "A"; }
+                },
+                new Refresher.Strategy() {
+                    public boolean refresh(long id) { return false; }
+                    public String name() { return "B"; }
+                });
+        assertFalse(Refresher.run(order, 9L, null, d));
+        assertEquals("A: failed IllegalStateException || B: not possible", d.text());
     }
 
     @Test

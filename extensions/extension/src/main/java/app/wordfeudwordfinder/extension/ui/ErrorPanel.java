@@ -11,6 +11,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import app.wordfeudwordfinder.extension.core.BuildInfo;
 import app.wordfeudwordfinder.extension.core.WfError;
+import app.wordfeudwordfinder.extension.play.RefreshDiagnostic;
 import app.wordfeudwordfinder.extension.ui.Strings.Key;
 
 /**
@@ -108,8 +109,9 @@ final class ErrorPanel extends LinearLayout {
         WfError e = error;
         if (e == null) return;
         Context ctx = getContext();
+        // TODO(V4): drop the refresh diagnostic after the refresh strategy is confirmed
         String text = ErrorDetails.format(e, hostVersion(ctx), BuildInfo.PATCH_VERSION, rulesetId,
-                System.currentTimeMillis());
+                System.currentTimeMillis(), RefreshDiagnostic.last());
         ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
         if (cm != null) cm.setPrimaryClip(ClipData.newPlainText(Strings.get(lang, Key.TITLE), text));
     }

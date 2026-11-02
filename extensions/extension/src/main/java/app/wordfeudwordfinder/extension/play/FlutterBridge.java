@@ -1,10 +1,12 @@
 package app.wordfeudwordfinder.extension.play;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 import app.wordfeudwordfinder.extension.hooks.RouteTap;
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -21,6 +23,10 @@ import java.util.List;
  * FlutterFragmentActivity's FlutterFragment), then {@code engine.getDartExecutor()} (a BinaryMessenger), then
  * {@code send(String, ByteBuffer)}. Flutter's own ProGuard rules keep {@code io.flutter.**}, so these names survive.
  *
+ * <p>Fallback (V4 testbuild 3): when that engine path finds nothing (or a send on it throws), messages go through
+ * {@code FlutterJNI.dispatchPlatformMessage} on the FlutterJNI instance RouteTap captured ({@link JniDispatch}).
+ * Every step is recorded in a {@link RefreshDiagnostic}, shown as a toast while {@link Refresher#DIAGNOSTIC_TOAST}.
+ *
  * <p>Messages are sent on the main (platform) thread, as Flutter requires, in direct ByteBuffers whose position is
  * the message size (DartMessenger passes {@code message.position()} as the length to FlutterJNI).
  *
@@ -35,10 +41,19 @@ public final class FlutterBridge implements Refresher.Env {
 
     private final WeakReference<Activity> activity;
     private final List<File> debugFiles;
+    /** For the diagnostic toast (application context: does not keep the activity alive). */
+    private final Context appContext;
 
     private FlutterBridge(Activity a, List<File> debugFiles) {
         this.activity = new WeakReference<>(a);
         this.debugFiles = debugFiles;
+        Context c = null;
+        try {
+            c = a.getApplicationContext();
+        } catch (Throwable ignored) {
+            // no toast then
+        }
+        this.appContext = c;
     }
 
     /** Main thread, once the activity's onCreate has run. Never throws. */
@@ -79,47 +94,109 @@ public final class FlutterBridge implements Refresher.Env {
     }
 
     @Override
-    public Refresher.Messenger messenger(Refresher.DebugLog log) {
-        return (channel, messages, gapMs) -> send(channel, messages, gapMs, log);
+    public Refresher.Messenger messenger(Refresher.DebugLog log, RefreshDiagnostic diag) {
+        return (channel, messages, gapMs) -> send(channel, messages, gapMs, log, diag);
     }
 
-    private boolean send(String channel, List<byte[]> messages, long gapMs, Refresher.DebugLog log) {
-        Activity a = activity.get();
-        if (a == null || a.isFinishing() || a.isDestroyed()) {
-            if (log != null) log.d("no activity for " + channel);
-            return false;
-        }
-        Object messenger;
+    // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
+    @Override
+    public void showDiagnostic(String text) {
+        if (!Refresher.DIAGNOSTIC_TOAST || text == null) return;
+        Context c = appContext;
+        if (c == null) return;
+        main().post(() -> {
+            try {
+                Toast.makeText(c, "WFWF " + text, Toast.LENGTH_LONG).show();
+            } catch (Throwable ignored) {
+                // diagnostics never affect the app
+            }
+        });
+    }
+
+    /** Sends one message; {@link #verb()} names the path in the diagnostic. */
+    private interface Sender {
+        void send(String channel, byte[] message) throws Exception;
+
+        String verb();
+    }
+
+    /**
+     * Path choice (V4 testbuild 3): the engine path first (DartExecutor.send, the public API), the FlutterJNI path
+     * as fallback when no engine/DartExecutor is found, and also for the rest of a sequence when an engine send throws.
+     * Both end in the same FlutterJNI.dispatchPlatformMessage; the JNI path just needs no engine lookup.
+     */
+    private boolean send(String channel, List<byte[]> messages, long gapMs, Refresher.DebugLog log,
+            RefreshDiagnostic diag) {
+        RefreshDiagnostic d = diag != null ? diag : new RefreshDiagnostic(null);
         try {
-            messenger = findMessenger(a);
+            Activity a = activity.get();
+            boolean usable = a != null && !a.isFinishing() && !a.isDestroyed();
+            d.step("activity=" + (a == null ? "none" : a.getClass().getSimpleName() + (usable ? "" : " (finishing)")));
+            Sender primary = usable ? engineSender(a, d) : null;
+            if (primary == null) {
+                d.step("-> FlutterJNI path");
+                primary = jniSender(d);
+            }
+            if (primary == null) {
+                if (log != null) log.d("no Flutter engine or FlutterJNI for " + channel);
+                return false;
+            }
+            if (messages.isEmpty()) {
+                d.finish();
+                return true;
+            }
+            if (log != null) {
+                log.d("schedule " + messages.size() + " message(s) on " + channel + " via " + primary.verb()
+                        + ", gap " + gapMs + " ms");
+            }
+            // The sender is kept for the whole sequence: once the first message went out, the next ones go to the
+            // same engine even if the activity is finishing meanwhile (a "background" is never left without
+            // "foreground").
+            Sender target = primary;
+            boolean posted = main().post(() -> sendStep(target, channel, messages, 0, Math.max(0L, gapMs), log, d));
+            if (!posted) d.step("main thread post failed");
+            return posted;
         } catch (Throwable t) {
-            messenger = null;
-        }
-        if (messenger == null) {
-            if (log != null) log.d("no Flutter engine for " + channel);
+            d.step("bridge: " + RefreshDiagnostic.reason(t));
             return false;
         }
-        if (messages.isEmpty()) return true;
-        if (log != null) log.d("schedule " + messages.size() + " message(s) on " + channel + ", gap " + gapMs + " ms");
-        // The engine object is kept for the whole sequence: once the first message went out, the next ones go to the
-        // same engine even if the activity is finishing meanwhile (a "background" is never left without "foreground").
-        Object target = messenger;
-        return main().post(() -> sendStep(target, channel, messages, 0, Math.max(0L, gapMs), log));
     }
 
-    /** Main thread. Sends message {@code i}; when that worked, schedules {@code i + 1}. */
-    private static void sendStep(Object messenger, String channel, List<byte[]> messages, int i, long gapMs,
-            Refresher.DebugLog log) {
+    /** Main thread. Sends message {@code i}; when that worked, schedules {@code i + 1}. Finishes {@code d} at the end. */
+    private static void sendStep(Sender sender, String channel, List<byte[]> messages, int i, long gapMs,
+            Refresher.DebugLog log, RefreshDiagnostic d) {
+        Sender used = sender;
         try {
             byte[] message = messages.get(i);
-            sendNow(messenger, channel, message);
+            String label = RefreshDiagnostic.message(sender.verb(), channel, message.length);
+            try {
+                sender.send(channel, message);
+                d.step(label + " OK");
+            } catch (Throwable t) {
+                d.step(label + " failed " + RefreshDiagnostic.reason(t));
+                if (!(sender instanceof JniSender)) {
+                    d.step("-> FlutterJNI path");
+                    used = jniSender(d);
+                }
+                if (used == null || used == sender) throw t;
+                used.send(channel, message);
+                d.step(RefreshDiagnostic.message(used.verb(), channel, message.length) + " OK");
+            }
             if (log != null) log.d("sent " + channel + " #" + (i + 1) + " (" + message.length + " bytes)");
         } catch (Throwable t) {
             if (log != null) log.d("send failed on " + channel + " #" + (i + 1) + ": " + t.getClass().getSimpleName());
+            d.finish();
             return; // nothing went out, so stopping here leaves no half state
         }
         if (i + 1 < messages.size()) {
-            main().postDelayed(() -> sendStep(messenger, channel, messages, i + 1, gapMs, log), gapMs);
+            Sender next = used;
+            boolean posted = main().postDelayed(() -> sendStep(next, channel, messages, i + 1, gapMs, log, d), gapMs);
+            if (!posted) {
+                d.step("main thread post failed");
+                d.finish();
+            }
+        } else {
+            d.finish();
         }
     }
 
@@ -132,12 +209,101 @@ public final class FlutterBridge implements Refresher.Env {
         return h;
     }
 
-    /** The engine's DartExecutor (a BinaryMessenger), or null. */
-    static Object findMessenger(Activity a) throws Exception {
-        Object engine = call(a, "getFlutterEngine");
-        if (engine == null) engine = engineFromFields(a);
+    /** The engine path (DartExecutor.send), recording each lookup step; null when it is not available. */
+    private static Sender engineSender(Activity a, RefreshDiagnostic d) {
+        Object engine = null;
+        try {
+            engine = call(a, "getFlutterEngine");
+            d.step(engine != null ? "engine=via getFlutterEngine OK" : "engine: getFlutterEngine returned null");
+        } catch (NoSuchMethodException e) {
+            d.step("engine: NoSuchMethodException getFlutterEngine on " + a.getClass().getSimpleName());
+        } catch (Throwable t) {
+            d.step("engine: getFlutterEngine " + RefreshDiagnostic.reason(t));
+        }
+        if (engine == null) {
+            try {
+                engine = engineFromFields(a);
+                d.step(engine != null ? "engine=via field OK" : "engine fields: none");
+            } catch (Throwable t) {
+                d.step("engine fields: " + RefreshDiagnostic.reason(t));
+            }
+        }
         if (engine == null) return null;
-        return call(engine, "getDartExecutor");
+        Object messenger;
+        try {
+            messenger = call(engine, "getDartExecutor");
+        } catch (Throwable t) {
+            d.step("dartExecutor: " + RefreshDiagnostic.reason(t));
+            return null;
+        }
+        if (messenger == null) {
+            d.step("dartExecutor: null");
+            return null;
+        }
+        Method send;
+        try {
+            send = messenger.getClass().getMethod("send", String.class, ByteBuffer.class);
+        } catch (Throwable t) {
+            d.step("dartExecutor.send: " + RefreshDiagnostic.reason(t));
+            return null;
+        }
+        d.step("dartExecutor OK");
+        Object target = messenger;
+        return new Sender() {
+            @Override
+            public void send(String channel, byte[] message) throws Exception {
+                ByteBuffer buf = ByteBuffer.allocateDirect(message.length);
+                buf.put(message); // position == size, as Flutter's codecs leave it
+                send.invoke(target, channel, buf);
+            }
+
+            @Override
+            public String verb() {
+                return "send";
+            }
+        };
+    }
+
+    /** The FlutterJNI path; null when no FlutterJNI was captured or it has no dispatchPlatformMessage. */
+    private static Sender jniSender(RefreshDiagnostic d) {
+        Object jni = RouteTap.flutterJni();
+        if (jni == null) {
+            d.step("jni=none");
+            return null;
+        }
+        JniDispatch.Lookup l;
+        try {
+            l = JniDispatch.lookup(jni.getClass());
+        } catch (Throwable t) {
+            l = null;
+        }
+        if (l == null) {
+            d.step("jni=captured, no " + JniDispatch.METHOD + " on " + jni.getClass().getSimpleName());
+            return null;
+        }
+        d.step("jni=captured, " + JniDispatch.METHOD + " via " + l.how);
+        return new JniSender(l, jni);
+    }
+
+    /** Holds the FlutterJNI strongly only for one sequence (a few hundred ms). */
+    private static final class JniSender implements Sender {
+        private final JniDispatch.Lookup lookup;
+        private final Object jni;
+
+        JniSender(JniDispatch.Lookup lookup, Object jni) {
+            this.lookup = lookup;
+            this.jni = jni;
+        }
+
+        @Override
+        public void send(String channel, byte[] message) throws Exception {
+            JniDispatch.dispatch(lookup, jni, channel, message);
+        }
+
+        @Override
+        public String verb() {
+            return "dispatch";
+        }
     }
 
     private static Object engineFromFields(Object owner) throws Exception {
@@ -148,31 +314,32 @@ public final class FlutterBridge implements Refresher.Env {
                 Object v = f.get(owner);
                 if (v == null) continue;
                 if (v.getClass().getName().equals("io.flutter.embedding.engine.FlutterEngine")) return v;
-                Object e = call(v, "getFlutterEngine");
-                if (e != null) return e;
+                try {
+                    Object e = call(v, "getFlutterEngine");
+                    if (e != null) return e;
+                } catch (NoSuchMethodException ignored) {
+                    // not an engine holder
+                }
             }
         }
         return null;
     }
 
-    /** Calls a no-argument method found anywhere up the class hierarchy; null when absent or when it returns null. */
+    /**
+     * Calls a no-argument method found anywhere up the class hierarchy (may return null);
+     * NoSuchMethodException when no class has it.
+     */
     private static Object call(Object target, String name) throws Exception {
         for (Class<?> c = target.getClass(); c != null; c = c.getSuperclass()) {
+            Method m;
             try {
-                Method m = c.getDeclaredMethod(name);
-                m.setAccessible(true);
-                return m.invoke(target);
+                m = c.getDeclaredMethod(name);
             } catch (NoSuchMethodException ignored) {
-                // look in the super class
+                continue; // look in the super class
             }
+            m.setAccessible(true);
+            return m.invoke(target);
         }
-        return null;
-    }
-
-    private static void sendNow(Object messenger, String channel, byte[] message) throws Exception {
-        ByteBuffer buf = ByteBuffer.allocateDirect(message.length);
-        buf.put(message); // position == size, as Flutter's codecs leave it
-        Method send = messenger.getClass().getMethod("send", String.class, ByteBuffer.class);
-        send.invoke(messenger, channel, buf);
+        throw new NoSuchMethodException(name);
     }
 }

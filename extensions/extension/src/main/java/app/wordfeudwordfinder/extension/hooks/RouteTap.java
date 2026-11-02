@@ -1,5 +1,6 @@
 package app.wordfeudwordfinder.extension.hooks;
 
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -18,6 +19,11 @@ public final class RouteTap {
     private static volatile ChannelLogger channelLogger;
     private static final Set<String> SEEN_CHANNELS = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
     private static final int MAX_SEEN_CHANNELS = 256;
+    /**
+     * The FlutterJNI instance that delivered the latest platform message (V4: second send path, see FlutterBridge).
+     * Weak, so a destroyed engine is not kept alive; replaced only when a different instance shows up.
+     */
+    private static volatile WeakReference<Object> flutterJni;
 
     /** Receives channel names only, never message contents. */
     public interface ChannelLogger {
@@ -52,7 +58,30 @@ public final class RouteTap {
         return banner;
     }
 
-    /** Hook entry point (FlutterJNI.handlePlatformMessage). Does not alter the buffer's position/limit. */
+    /** The FlutterJNI instance seen last, or null (none seen yet, or already collected). */
+    public static Object flutterJni() {
+        WeakReference<Object> r = flutterJni;
+        return r == null ? null : r.get();
+    }
+
+    /**
+     * Hook entry point (FlutterJNI.handlePlatformMessage, {@code jni} = the FlutterJNI instance). Remembers {@code jni}
+     * weakly (no reflection, no allocation unless the instance changed), then handles the message like
+     * {@link #onPlatformMessage(String, ByteBuffer)}.
+     */
+    public static void onPlatformMessage(Object jni, String channel, ByteBuffer msg) {
+        try {
+            if (jni != null) {
+                WeakReference<Object> r = flutterJni;
+                if (r == null || r.get() != jni) flutterJni = new WeakReference<>(jni);
+            }
+        } catch (Throwable ignored) {
+            // hooks never change app behaviour
+        }
+        onPlatformMessage(channel, msg);
+    }
+
+    /** Message handling without the FlutterJNI instance (tests; earlier hook). Does not alter position/limit. */
     public static void onPlatformMessage(String channel, ByteBuffer msg) {
         try {
             if (channel == null || msg == null) return;

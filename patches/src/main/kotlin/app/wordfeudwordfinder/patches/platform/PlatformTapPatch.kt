@@ -15,13 +15,16 @@ internal object HandlePlatformMessageFingerprint : Fingerprint(
 
 // Internal patch (no name): not shown in Morphe Manager or the CLI patch list. It is only applied through
 // overlayPatch's dependsOn, which also supplies compatibleWith and the extension.
-// Observes Flutter navigation, theme and banner messages for the word finder.
+// Observes Flutter navigation, theme and banner messages for the word finder, and remembers the FlutterJNI
+// instance (V4 refresh: send path via FlutterJNI.dispatchPlatformMessage).
 val platformTapPatch = bytecodePatch {
     execute {
-        // Instance method: p0 = this, p1 = channel, p2 = message buffer.
+        // Instance method: p0 = this (the FlutterJNI, remembered for the V4 send path), p1 = channel,
+        // p2 = message buffer. The range form works whatever register numbers p0..p2 map to (they are consecutive).
         HandlePlatformMessageFingerprint.method.addInstructions(
             0,
-            "invoke-static {p1, p2}, $ROUTE_TAP->onPlatformMessage(Ljava/lang/String;Ljava/nio/ByteBuffer;)V"
+            "invoke-static/range {p0 .. p2}, $ROUTE_TAP->onPlatformMessage(" +
+                "Ljava/lang/Object;Ljava/lang/String;Ljava/nio/ByteBuffer;)V"
         )
     }
 }

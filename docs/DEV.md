@@ -74,13 +74,38 @@ strategieën staan in `extensions/.../play/`:
 Kandidaat 3 (zelf `games/detail` ophalen en aanbieden) is niet gebouwd: pas na akkoord, en alleen als 1, 2 en 4
 alle drie falen.
 
-Het huidige testbuild (testbuild 2) gebruikt standaard `RouteBounce`: `Refresher.ORDER` bevat alleen die strategie. Een lege
+Het huidige testbuild (testbuild 3) gebruikt standaard `RouteBounce`: `Refresher.ORDER` bevat alleen die strategie. Een lege
 volgorde (via het debugbestand) betekent: er gebeurt niets en Wordfeud ververst zelf (~20 s).
 
 | Strategie | Status |
 |---|---|
 | ForegroundSignal | testbuild 2026-11-02, uitkomst: werkt niet (bord ververst niet) |
-| RouteBounce | testbuild 2 2026-11-02, uitkomst: open |
+| RouteBounce | testbuild 2 2026-11-02, uitkomst: geen effect, ook geen navigatie zichtbaar → vermoedelijk komt het bericht niet aan |
+| RouteBounce | testbuild 3 2026-11-02 (diagnose-toast + FlutterJNI-pad), uitkomst: open |
+
+### Testbuild 3: diagnose en FlutterJNI-pad (tijdelijk)
+
+Omdat er geen adb is, toont testbuild 3 na een geslaagde Play een **toast** (`WFWF …`, lang) met per stap de
+uitkomst, bijvoorbeeld:
+
+- `RouteBounce: activity=MainActivity | engine=via getFlutterEngine OK | dartExecutor OK | send(flutter/navigation,63B) OK | send(…) OK`
+- `RouteBounce: activity=MainActivity | engine: NoSuchMethodException getFlutterEngine on MainActivity | engine fields: none | -> FlutterJNI path | jni=captured, dispatchPlatformMessage via getMethod | dispatch(flutter/navigation,63B) OK | …`
+- `RouteBounce: activity=… | … | -> FlutterJNI path | jni=none` gevolgd door `not possible`: er is niets verstuurd.
+
+De tekst bevat alleen klasse-/methodenamen, uitkomsten, kanaalnamen en aantallen bytes; geen potje-id's of
+berichtinhoud. De laatste diagnose staat ook als regel `refresh=` onder "Details kopiëren". Aan/uit met
+`Refresher.DIAGNOSTIC_TOAST`; alle code is gemarkeerd met `TODO(V4)` en gaat eruit zodra de strategie vaststaat.
+
+Verzendpaden (`FlutterBridge`): eerst het engine-pad (`getFlutterEngine()` → `getDartExecutor()` →
+`send(String, ByteBuffer)`); vindt dat geen engine of DartExecutor, of gooit een `send` een fout, dan het
+FlutterJNI-pad: `platformTapPatch` geeft nu ook de FlutterJNI-instantie door
+(`RouteTap.onPlatformMessage(Object, String, ByteBuffer)`, zwak vastgehouden) en `JniDispatch` roept daarop
+`dispatchPlatformMessage(String, ByteBuffer, int position, int responseId = 0)` aan (op de main thread, direct
+buffer). Die namen blijven behouden omdat FlutterJNI aan native code gebonden is.
+
+Lezen van de uitkomst: staat er overal `OK` maar gebeurt er niets, dan komt het bericht wel aan en negeert de app
+het (dan is `pushRouteInformation` de verkeerde aanpak); staat er een fout of `jni=none`, dan weten we waar het
+verzenden stopt.
 
 ### Debugbestand
 
