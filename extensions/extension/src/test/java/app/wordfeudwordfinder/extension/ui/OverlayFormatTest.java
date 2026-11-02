@@ -119,7 +119,7 @@ public class OverlayFormatTest {
         assertArrayEquals(new boolean[] {false}, OverlayFormat.usedRackIndices(Arrays.asList("A"), null));
     }
 
-    @Test public void themeBonusColoursAreDistinctAndLightEqualsDarkForNow() {
+    @Test public void themeBonusColoursAreDistinct() {
         Theme t = Theme.forDarkMode(true);
         assertEquals(t.squareEmpty, t.bonusColor(0));
         assertEquals(t.squareEmpty, t.bonusColor(9));
@@ -127,8 +127,20 @@ public class OverlayFormatTest {
         for (int c = 0; c <= 4; c++) s.add(t.bonusColor(c));
         assertEquals(5, s.size());
         assertSame(Theme.DARK, Theme.forDarkMode(true));
-        assertEquals(Theme.DARK.background, Theme.forDarkMode(false).background);
-        assertEquals(Theme.DARK.tileNewBorder, Theme.forDarkMode(false).tileNewBorder);
+        assertSame(Theme.LIGHT, Theme.forDarkMode(false));
+    }
+
+    @Test public void themeChromeAndBoardAreChosenSeparately() {
+        Theme t = Theme.of(false, true);
+        assertEquals(Theme.LIGHT.background, t.background);
+        assertEquals(Theme.LIGHT.textPrimary, t.textPrimary);
+        assertEquals(Theme.DARK.squareEmpty, t.squareEmpty);
+        assertEquals(Theme.DARK.squareTW, t.squareTW);
+        assertEquals(Theme.DARK.boardBackground, t.boardBackground);
+        assertSame(Theme.DARK, Theme.of(true, true));
+        assertSame(Theme.LIGHT, Theme.of(false, false));
+        assertEquals(0xFFC6D1D7, Theme.LIGHT.squareEmpty);
+        assertEquals(0xFFDEE3E7, Theme.LIGHT.background);
     }
 
     @Test public void rejectionTextForEachBranch() {

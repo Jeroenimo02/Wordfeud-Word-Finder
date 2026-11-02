@@ -97,6 +97,10 @@ public final class OverlayController {
     private final Application.ActivityLifecycleCallbacks lifecycle;
     private FrameLayout layer;
     private View fab;
+    /** Hides the button under a menu/dialog scrim and reads the board colours; null before build(). */
+    private ScreenSampler sampler;
+    private Long sampledGameId;
+    private boolean sampledDark;
     private final View.OnLayoutChangeListener fabRelayout = (v, l, t, r, b, ol, ot, or, ob) -> positionFab();
 
     // ---- open overlay session (main thread) ----
@@ -295,6 +299,7 @@ public final class OverlayController {
         fab = b;
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(size, size, Gravity.BOTTOM | Gravity.END);
         layer.addView(fab, lp);
+        sampler = new ScreenSampler(activity, density, () -> ui(this::refresh));
         layer.addOnLayoutChangeListener(fabRelayout);
         layer.setOnApplyWindowInsetsListener((v, insets) -> {
             ui(this::positionFab);
@@ -321,7 +326,18 @@ public final class OverlayController {
                 updatePlayEnabled();
             }
         }
-        fab.setVisibility(visible && !open ? View.VISIBLE : View.GONE);
+        boolean eligible = visible && !open;
+        if (sampler != null) {
+            boolean dark = RouteTap.isDark();
+            if (!java.util.Objects.equals(id, sampledGameId) || dark != sampledDark) {
+                sampledGameId = id;
+                sampledDark = dark;
+                sampler.reset();
+            }
+            sampler.setActive(eligible, insets().contentTopInWindow);
+            if (sampler.covered()) eligible = false;
+        }
+        fab.setVisibility(eligible ? View.VISIBLE : View.GONE);
         positionFab();
     }
 
@@ -362,6 +378,7 @@ public final class OverlayController {
             out.bottom = FabPlacement.effectiveBottomInset(bottom, windowHeight, loc[1] + layer.getHeight());
             out.top = FabPlacement.effectiveTopInset(top, loc[1]);
         }
+        out.contentTopInWindow = loc[1] + out.top;
         return out;
     }
 
@@ -378,6 +395,8 @@ public final class OverlayController {
     private static final class Insets {
         int top;
         int bottom;
+        /** Window y where the app draws below the status bar (the top of Wordfeud's app bar). */
+        int contentTopInWindow;
     }
 
     // =====================================================================================================
@@ -401,7 +420,8 @@ public final class OverlayController {
         wordListRequested = false;
         wordListError = null;
         lang = language();
-        theme = Theme.forDarkMode(RouteTap.isDark());
+        boolean appDark = RouteTap.isDark();
+        theme = Theme.of(appDark, sampler == null ? appDark : sampler.boardDark(appDark));
         focusBeforeOpen = activity.getCurrentFocus();
         buildOverlay();
         layer.addView(overlayRoot, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -438,6 +458,8 @@ public final class OverlayController {
         } catch (Throwable ignored) {
             // continue tearing down
         }
+        if (sampler != null) sampler.stop();
+        sampler = null;
         try {
             if (layer != null) {
                 layer.removeOnLayoutChangeListener(fabRelayout);

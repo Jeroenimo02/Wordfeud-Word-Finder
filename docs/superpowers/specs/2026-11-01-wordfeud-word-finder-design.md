@@ -189,7 +189,8 @@ De eerste die betrouwbaar werkt zonder zichtbaar geflikker, wordt gebruikt. Werk
   - sorteerknoppen;
   - een virtuele lijst.
 - **Sluiten:** met het kruisje, door omlaag te vegen, of met de terugknop van Android (onderschept zolang de overlay open is).
-- **Thema:** afgeleid uit `SystemChrome.setSystemUIOverlayStyle` (`statusBarIconBrightness`). Donkere kleuren zijn overgenomen uit de screenshots; lichte kleuren volgen na V8.
+- **Knopje onder menu's:** als een menu of dialoog het scherm verduistert (scrim), verdwijnt het knopje; dat wordt gemeten aan de kleur van de app-balk (`ScreenShade`).
+- **Thema:** afgeleid uit `SystemChrome.setSystemUIOverlayStyle` (`statusBarIconBrightness`). Donkere en lichte kleuren zijn overgenomen uit de screenshots (V8).
 - **Taal:** interfacetaal van de app (bron V12); teksten voor alle talen die de app ondersteunt; terugval naar Engels.
 
 ## 10. Foutcodes
@@ -211,7 +212,7 @@ Elke melding toont een korte tekst en een code. "Kopieer details" kopieert de co
 
 ## 11. Compatibiliteit en publicatie
 
-- `Compatibility(packageName = "com.hbwares.wordfeud.free", targets = [AppTarget("5.7.1"), AppTarget(version = null, isExperimental = true)])`. `apkFileType` moet overeenkomen met het bestandstype op APKMirror of UpToDown (V11).
+- `Compatibility(packageName = "com.hbwares.wordfeud.free", targets = [AppTarget("5.7.1"), AppTarget(version = null, isExperimental = true)])`. `apkFileType = XAPK`: de beheerder haalt de app van APKPure (V11).
 - **Licentie:** GPLv3 met de `NOTICE` van de template. De projectnaam mag geen "Morphe" bevatten; "compatible with Morphe" mag wel als beschrijving. Naam: "Wordfeud Word Finder". De README vermeldt dat Wordfeud een handelsmerk is van Bertheussen IT en dat het project daar niet aan gelieerd is.
 - **README:** installatie via de patchbron, de bronnentabel met licenties, de foutcodes, en de risico's (strijd met de gebruiksvoorwaarden van Wordfeud, mogelijke gevolgen voor het account, en zetten die buiten de app om verstuurd worden).
 - **Releases:** volgens de templateworkflow (de `dev`-branch geeft pre-releases, `main` stabiele releases).
@@ -232,16 +233,16 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 |---|---|---|
 | V1 | Wordt een zet geaccepteerd met alleen cookie, User-Agent en Content-Type? | De Play-knop wordt direct volledig gebouwd; de eerste publieke release volgt pas na één geslaagde zet via de knop op het toestel van de beheerder |
 | V2 | Formaat van blanco tegels in de zet en in `game_log` | bevestigd 2026-11-02 (Wordfeud 5.7.1): game_log en zet gebruiken "*X" (`[x,y,"*E"]`); `[x,y,"X",true]` gaf MV-SERVER-protocol |
-| V3 | Moeten dwarswoorden in `words`? | Alle woorden worden meegestuurd |
+| V3 | Moeten dwarswoorden in `words`? | Bevestigd 2026-11-02 (Wordfeud 5.7.1): alle woorden (hoofdwoord en dwarswoorden) meesturen; zetten met dwarswoorden worden geaccepteerd |
 | V4 | Welke verversmethode werkt? | LifecycleBounce (flutter/lifecycle paused→resumed via FlutterJNI) bevestigd 2026-11-02 (Wordfeud 5.7.1, meermaals getest) |
 | V5 | Bonus voor zeven tegels en de middenvakregel | Bonus bevestigd 2026-11-02 (Wordfeud 5.7.1): 40 punten voor een zet met zeven gelegde tegels (36 → 76 in de app); geldt niet bij een leeg rek met minder tegels aan het eind. Middenvakregel ongewijzigd en nog niet geverifieerd |
 | V6 | Formaat van een woordweigering (hint: `illegal_word`) | Op het toestel gezien 2026-11-02 (Wordfeud 5.7.1): weigering komt als `illegal_word`, overlay bleef open, zet verdween; de melding viel niet op (grijze regel). Exacte vorm nog open. Terugval (§8.3): door de server genoemde woorden; anders het enige woord van de zet; bij meerdere woorden geen blijvende weigering maar de exacte zet verborgen voor de sessie. De `server=`-regel in "Kopieer details" legt de vorm vast bij de volgende weigering |
-| V7 | Positie van het knopje, ook met een banner | Vaste afstand van 165 dp |
-| V8 | Kleuren van het lichte thema (twee screenshots) | Donkere kleuren |
+| V7 | Positie van het knopje, ook met een banner | Zonder banner bevestigd 2026-11-02. De beheerder heeft nooit een banner gezien; het knopje schuift alleen op als de app `AdApi.setBannerVisible(true)` meldt. Met banner niet geverifieerd |
+| V8 | Kleuren van het lichte thema (twee screenshots) | Gemeten 2026-11-02 op screenshots van het lichte thema, ook met Wordfeuds optie "donker bord" in licht thema. Overlay volgt het app-thema; het voorbeeldbord volgt de bordkleuren die op het scherm gemeten worden (`ScreenSampler`) |
 | V9 | Regelset-id's 8–12 en bevestiging van 0–7 | Onbekende id → `WL-NONE` |
 | V10 | Formaat van `swap`-, `pass`-, `resign`- en `timeout`-gebeurtenissen | `GS-EVENT-<type>` |
-| V11 | Bestandstype op APKMirror of UpToDown | Release pas na controle |
-| V12 | Bron van de interfacetaal van de app | Systeemtaal, met terugval naar Engels |
+| V11 | Bestandstype van de bron | Beheerder gebruikt APKPure (2026-11-02): `ApkFileType.XAPK`, net als de andere patches van de beheerder. Bestandstype voor 5.7.1 nog niet op de site gecontroleerd |
+| V12 | Bron van de interfacetaal van de app | Bevestigd 2026-11-02: de app volgt de systeemtaal (Engels en Nederlands getest); de overlay doet hetzelfde, met terugval naar Engels |
 
 Uitkomst V10 (uit proeflogs): `swap` en `resign` zijn bevestigd en geïmplementeerd in `GameReplay`.
 `swap` heeft de velden `type`, `player`, `tile_count`, `tiles`, `new_tiles`, `timestamp`; een eigen ruil verwijdert de

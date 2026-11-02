@@ -8,8 +8,8 @@ object Constants {
     val COMPATIBILITY_WORDFEUD = Compatibility(
         name = "Wordfeud",
         packageName = "com.hbwares.wordfeud.free",
-        // Provisional; to be confirmed in task 16 / V11.
-        apkFileType = ApkFileType.APKM,
+        // V11: the APK comes from APKPure, which serves split builds as XAPK.
+        apkFileType = ApkFileType.XAPK,
         appIconColor = 0x1B5E9E,
         targets = listOf(
             AppTarget(version = "5.7.1"),

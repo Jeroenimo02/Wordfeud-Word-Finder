@@ -8,7 +8,10 @@ package app.wordfeudwordfinder.extension.ui;
  * #191816 letters, rack area #2E3138, header card #404751, accent #2F7DE1). New tiles keep the spec's white with a
  * blue border. Wordfeud's yellow last-played highlight (#EFE495) is deliberately not used.
  *
- * The light theme is the same as the dark one for now (V8).
+ * The light colours (V8) are measured on a screenshot of the light game screen: page #D0D5DB, app bar #DEE3E7,
+ * card #EDF1F4, text #1B1B1B, empty square #C6D1D7, grid gaps #ACC0C7, TL #1B7FB3, DL #4DA118, DW #E3800B,
+ * TW #B51823. Wordfeud lets the board stay dark in light mode, so the overlay chrome (app theme) and the board
+ * colours are chosen separately: see {@link #of(boolean, boolean)}.
  */
 public final class Theme {
     // Overlay chrome
@@ -69,7 +72,11 @@ public final class Theme {
         if (i != c.length) throw new IllegalStateException("theme size");
     }
 
-    public static final Theme DARK = new Theme(new int[] {
+    /** Index of the first board colour in a theme array; chrome is [0, BOARD_FROM) plus the badge pair. */
+    private static final int BOARD_FROM = 8;
+    private static final int BOARD_TO = 21;
+
+    private static final int[] DARK_COLOURS = {
         0xFF343B45, // background: Wordfeud 5.7.1 dark screen
         0xFF404751, // surface: list rows, panels (header card)
         0xFF2E3138, // surfaceSelected: selected list row (rack area)
@@ -93,14 +100,56 @@ public final class Theme {
         90,         // tileDimmedAlpha
         0xFF2F7DE1, // badgeFill: blue score bubble
         0xFFFFFFFF, // badgeText
-    });
+    };
 
-    /** Same as {@link #DARK} until V8 provides the light colours. */
-    public static final Theme LIGHT = DARK;
+    private static final int[] LIGHT_COLOURS = {
+        0xFFDEE3E7, // background: light app bar
+        0xFFEDF1F4, // surface: header card
+        0xFFC6D1D7, // surfaceSelected
+        0xFFC6D1D7, // divider
+        0xFF1B1B1B, // textPrimary
+        0xFF5B6570, // textSecondary
+        0xFF2F7DE1, // accent: Play button
+        0xFFFFFFFF, // onAccent
+        0xFFACC0C7, // boardBackground (grid gaps)
+        0xFFC6D1D7, // squareEmpty
+        0xFF4DA118, // squareDL: green
+        0xFF1B7FB3, // squareTL: blue
+        0xFFE3800B, // squareDW: orange
+        0xFFB51823, // squareTW: red
+        0xFFFFFFFF, // squareLabel
+        0xFFF2EFEA, // tileFill (board tile)
+        0xFF191816, // tileText
+        0xFFFFFFFF, // tileNewFill: white
+        0xFF2F7DE1, // tileNewBorder: blue
+        0xFF262626, // tileNewText
+        90,         // tileDimmedAlpha
+        0xFF2F7DE1, // badgeFill
+        0xFFFFFFFF, // badgeText
+    };
+
+    public static final Theme DARK = new Theme(DARK_COLOURS);
+    public static final Theme LIGHT = new Theme(LIGHT_COLOURS);
+    /** Light app with Wordfeud's dark board option. */
+    public static final Theme LIGHT_DARK_BOARD = new Theme(mix(LIGHT_COLOURS, DARK_COLOURS));
+    /** Dark app with a light board (not offered by Wordfeud, but a detection result may say so). */
+    public static final Theme DARK_LIGHT_BOARD = new Theme(mix(DARK_COLOURS, LIGHT_COLOURS));
+
+    private static int[] mix(int[] chrome, int[] board) {
+        int[] c = chrome.clone();
+        System.arraycopy(board, BOARD_FROM, c, BOARD_FROM, BOARD_TO - BOARD_FROM);
+        return c;
+    }
 
     /** Theme for the app's current mode (spec section 9: derived from statusBarIconBrightness). */
     public static Theme forDarkMode(boolean dark) {
         return dark ? DARK : LIGHT;
+    }
+
+    /** Overlay chrome follows the app theme, the board preview follows the colours of Wordfeud's own board. */
+    public static Theme of(boolean appDark, boolean boardDark) {
+        if (appDark) return boardDark ? DARK : DARK_LIGHT_BOARD;
+        return boardDark ? LIGHT_DARK_BOARD : LIGHT;
     }
 
     /** Fill colour for a {@code BoardLayout} square code (0 none, 1 DL, 2 TL, 3 DW, 4 TW). */

@@ -60,9 +60,8 @@ Every message shows a short text and a code.
 ## Status and limitations
 
 - Requires Android 7.0 (API 24) or newer.
-- Not yet verified on a device (checks V1-V12 are pending).
-- Blank tiles are disabled until V2 is verified.
-- After a move, the game refreshes through Wordfeud's own polling (about 20 s).
+- Verified on a device with Wordfeud 5.7.1 and the Dutch word list: moves, blanks, cross words, the seven-tile bonus, refresh after a move, light and dark themes. Other word lists and rulesets are not available yet.
+- The exact form of a word rejection by the server (V6) and the button position with an ad banner (V7) are not verified yet.
 
 ## Translations
 
