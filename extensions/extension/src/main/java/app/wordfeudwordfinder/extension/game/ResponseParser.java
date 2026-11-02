@@ -26,9 +26,17 @@ public final class ResponseParser {
         public final List<BoardLayout> boards;
         /** Games whose header could not be parsed but whose id could: id to the reason (GS-DATA). */
         public final Map<Long, WfError> failedGames;
+        /** Games skipped because not even their id could be read. */
+        public final int skippedGames;
 
         Parsed(List<RawGame> games, List<Ruleset> rulesets, List<BoardLayout> boards,
                Map<Long, WfError> failedGames) {
+            this(games, rulesets, boards, failedGames, 0);
+        }
+
+        Parsed(List<RawGame> games, List<Ruleset> rulesets, List<BoardLayout> boards,
+               Map<Long, WfError> failedGames, int skippedGames) {
+            this.skippedGames = skippedGames;
             this.games = Collections.unmodifiableList(games);
             this.rulesets = Collections.unmodifiableList(rulesets);
             this.boards = Collections.unmodifiableList(boards);
@@ -44,6 +52,7 @@ public final class ResponseParser {
             List<RawGame> games = new ArrayList<>();
             JSONArray ga = arr(content, "games");
             Map<Long, WfError> failed = new LinkedHashMap<>();
+            int skipped = 0;
             // Tolerant per game: one malformed game must not make the whole response unusable.
             for (int i = 0; i < ga.length(); i++) {
                 Object go = ga.opt(i);
@@ -51,7 +60,11 @@ public final class ResponseParser {
                     games.add(parseGame(asObj(go, "games[]")));
                 } catch (WfError e) {
                     Long id = go instanceof JSONObject ? tryId((JSONObject) go) : null;
-                    if (id != null) failed.put(id, e); // else: no id, nothing to attach the error to; skipped
+                    if (id != null) {
+                        failed.put(id, e);
+                    } else {
+                        skipped++; // no id, nothing to attach the error to
+                    }
                 }
             }
             List<Ruleset> rulesets = new ArrayList<>();
@@ -60,7 +73,7 @@ public final class ResponseParser {
             List<BoardLayout> boards = new ArrayList<>();
             JSONArray ba = optArr(content, "boards");
             if (ba != null) boards.addAll(parseBoards(ba));
-            return new Parsed(games, rulesets, boards, failed);
+            return new Parsed(games, rulesets, boards, failed, skipped);
         } catch (JSONException e) {
             throw WfError.gsData("json: malformed response (" + e.getClass().getSimpleName() + ")");
         }

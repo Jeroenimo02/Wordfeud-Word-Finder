@@ -15,8 +15,13 @@ public class OverlayVisibilityTest {
     @Test public void hiddenOnHome() {
         assertFalse(OverlayVisibility.fabVisible(null, st(true, false, null)));
     }
-    @Test public void hiddenForUnknownGame() {
-        assertFalse(OverlayVisibility.fabVisible(1L, null));
+    // Changed (was hiddenForUnknownGame): a game route whose game is not in the GameStore yet (a new game, before
+    // Wordfeud's next games/detail poll) shows the button; the overlay then says the game is loading.
+    @Test public void visibleForGameNotYetInStore() {
+        assertTrue(OverlayVisibility.fabVisible(1L, null));
+    }
+    @Test public void hiddenOnHomeWithoutState() {
+        assertFalse(OverlayVisibility.fabVisible(null, null));
     }
     @Test public void hiddenWhenEnded() {
         assertFalse(OverlayVisibility.fabVisible(1L, st(true, true, null)));

@@ -1,6 +1,7 @@
 package app.wordfeudwordfinder.extension.ui;
 
 import app.wordfeudwordfinder.extension.core.WfError;
+import app.wordfeudwordfinder.extension.game.GameStore;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.Locale;
@@ -42,6 +43,18 @@ public final class ErrorDetails {
         return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis), refreshDiagnostic);
     }
 
+    /**
+     * As above, plus (each only when present) {@code route=<route>}: the current route as RouteTap received it, and
+     * {@code store=<summary>}: the last games/detail response ({@link GameStore.DetailSummary}, counts, ids and
+     * error codes only). Both help when the button or the game data is missing for a game.
+     */
+    public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
+            String refreshDiagnostic, String route, GameStore.DetailSummary store) {
+        return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis), refreshDiagnostic)
+                + line("route", route)
+                + line("store", store == null ? null : store.describe(isoUtc(store.timeMillis)));
+    }
+
     private static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, String time) {
         return format(e, wfVersion, patchVersion, rulesetId, time, null);
     }
@@ -54,14 +67,15 @@ public final class ErrorDetails {
                 + "\npatch=" + orUnknown(patchVersion)
                 + "\nruleset=" + (rulesetId < 0 ? UNKNOWN : Integer.toString(rulesetId))
                 + "\ntime=" + time
-                + refreshLine(refresh);
+                + line("refresh", refresh);
     }
 
-    private static String refreshLine(String r) {
+    /** {@code \n<key>=<value>}, one line of at most {@link #MAX_DETAIL} characters; empty when there is no value. */
+    private static String line(String key, String r) {
         if (r == null || r.trim().isEmpty()) return "";
         r = r.replace('\r', ' ').replace('\n', ' ');
         if (r.length() > MAX_DETAIL) r = r.substring(0, MAX_DETAIL);
-        return "\nrefresh=" + r;
+        return "\n" + key + "=" + r;
     }
 
     private static String detailLine(WfError e) {

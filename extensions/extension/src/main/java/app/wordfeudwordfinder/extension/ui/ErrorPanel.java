@@ -11,13 +11,18 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import app.wordfeudwordfinder.extension.core.BuildInfo;
 import app.wordfeudwordfinder.extension.core.WfError;
+import app.wordfeudwordfinder.extension.core.WordFinder;
+import app.wordfeudwordfinder.extension.game.GameStore;
+import app.wordfeudwordfinder.extension.hooks.RouteTap;
 import app.wordfeudwordfinder.extension.play.RefreshDiagnostic;
 import app.wordfeudwordfinder.extension.ui.Strings.Key;
 
 /**
  * An error message in the overlay (spec sections 6.2 step 5 and 10): the short text, the code, "Retry" when it
  * applies ({@link ErrorDetails#retryable}) and "Copy details", which puts {@link ErrorDetails} text on the
- * clipboard. There is no "copied" feedback of its own: Strings has no text for it, and Android 13+ confirms clipboard
+ * clipboard ({@code route=} and {@code store=} lines included when known). {@link #showLoading} uses the same panel for
+ * a game that is not in the GameStore yet: the GAME_LOADING text and "Copy details", no code or Retry. There is no
+ * "copied" feedback of its own: Strings has no text for it, and Android 13+ confirms clipboard
  * writes itself. Main thread only. Hidden (GONE) until {@link #show}.
  */
 final class ErrorPanel extends LinearLayout {
@@ -91,7 +96,22 @@ final class ErrorPanel extends LinearLayout {
         this.onRetry = ErrorDetails.retryable(e) ? retry : null;
         message.setText(Strings.get(lang, Strings.errorKey(e)));
         code.setText(String.format(Strings.get(lang, Key.ERROR_CODE), e.code()));
+        code.setVisibility(VISIBLE);
         this.retry.setVisibility(onRetry != null ? VISIBLE : GONE);
+        setVisibility(VISIBLE);
+    }
+
+    /**
+     * The open game is not in the GameStore yet (a new game): shows GAME_LOADING with "Copy details" only. The
+     * details carry {@code detail=game not loaded yet} plus the route and the last games/detail summary.
+     */
+    void showLoading() {
+        this.error = WfError.gsData("game not loaded yet");
+        this.rulesetId = -1;
+        this.onRetry = null;
+        message.setText(Strings.get(lang, Key.GAME_LOADING));
+        code.setVisibility(GONE);
+        retry.setVisibility(GONE);
         setVisibility(VISIBLE);
     }
 
@@ -111,9 +131,18 @@ final class ErrorPanel extends LinearLayout {
         Context ctx = getContext();
         // TODO(V4): drop the refresh diagnostic after the refresh strategy is confirmed
         String text = ErrorDetails.format(e, hostVersion(ctx), BuildInfo.PATCH_VERSION, rulesetId,
-                System.currentTimeMillis(), RefreshDiagnostic.last());
+                System.currentTimeMillis(), RefreshDiagnostic.last(), RouteTap.lastRoute(), lastDetail());
         ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
         if (cm != null) cm.setPrimaryClip(ClipData.newPlainText(Strings.get(lang, Key.TITLE), text));
+    }
+
+    private static GameStore.DetailSummary lastDetail() {
+        try {
+            WordFinder wf = WordFinder.get();
+            return wf == null ? null : wf.gameStore().lastDetail();
+        } catch (Throwable t) {
+            return null;
+        }
     }
 
     /** versionName of the host app (Wordfeud), or null when unavailable. */

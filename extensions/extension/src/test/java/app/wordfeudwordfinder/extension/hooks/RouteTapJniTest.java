@@ -19,6 +19,7 @@ public class RouteTapJniTest {
         RouteTap.onPlatformMessage(first, "flutter/navigation", msg);
         assertSame(first, RouteTap.flutterJni());
         assertEquals(Long.valueOf(777L), RouteTap.currentGameId()); // delegates to the message handling
+        assertEquals("/game/777", RouteTap.lastRoute()); // kept for Copy details (route=)
         assertEquals(0, msg.position());
         RouteTap.onPlatformMessage(second, "x", ByteBuffer.wrap(new byte[0]));
         assertSame(second, RouteTap.flutterJni());

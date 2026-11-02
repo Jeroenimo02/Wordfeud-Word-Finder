@@ -208,4 +208,40 @@ public class GameStoreTest {
         for (char[] row : s.board()) for (char c : row) if (c != '\0') n++;
         return n;
     }
+
+    @Test
+    public void recordsALastDetailSummary() throws Exception {
+        GameStore store = new GameStore(new Storage(tmp.getRoot()), GameReplay::replay, () -> 1000L);
+        assertNull(store.lastDetail());
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        GameStore.DetailSummary d = store.lastDetail();
+        assertNotNull(d);
+        assertEquals(1000L, d.timeMillis);
+        assertTrue(d.games > 0);
+        assertEquals(0, d.failed);
+        assertNull(d.error);
+        assertEquals("games/detail T: games=" + d.games + " failed=0 skipped=0 known=" + d.known, d.describe("T"));
+
+        // a malformed game with an id, one without: failed [id] and skipped 1
+        JSONObject root = new JSONObject(fixture("detail_neigen.json"));
+        org.json.JSONArray games = root.getJSONObject("content").getJSONArray("games");
+        games.put(new JSONObject().put("id", 77L));
+        games.put(new JSONObject().put("x", 1));
+        store.onGamesDetail(root.toString());
+        d = store.lastDetail();
+        assertEquals(1, d.failed);
+        assertEquals(java.util.Collections.singletonList(77L), d.failedIds);
+        assertEquals(1, d.skipped);
+        assertTrue(d.describe("T"), d.describe("T").contains(" failed=1 [77] skipped=1 "));
+
+        // a response unusable as a whole keeps the store, records the code
+        long gen = store.detailGeneration();
+        store.onGamesDetail("{\"status\":\"error\"}");
+        d = store.lastDetail();
+        assertEquals("GS-DATA", d.error);
+        assertEquals(0, d.games);
+        assertEquals(gen, store.detailGeneration());
+        assertTrue(d.describe("T"), d.describe("T").startsWith("games/detail T: error GS-DATA games=0 failed=0"));
+        assertNotNull(store.state(GAME)); // unchanged
+    }
 }

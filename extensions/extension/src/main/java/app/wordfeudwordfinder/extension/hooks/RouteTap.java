@@ -12,6 +12,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /** Observes Flutter platform messages (route, theme, banner state). Thread-safe; never throws. */
 public final class RouteTap {
     private static volatile Long gameId;
+    /** The last route seen (see {@link PlatformMessages#routeFromNavigation}), for Copy details. */
+    private static volatile String route;
     private static volatile boolean dark = true;
     private static volatile boolean banner;
     private static final List<Runnable> LISTENERS = new CopyOnWriteArrayList<>();
@@ -48,6 +50,11 @@ public final class RouteTap {
 
     public static Long currentGameId() {
         return gameId;
+    }
+
+    /** The last route as received (query/fragment masked), or null when none was seen yet. */
+    public static String lastRoute() {
+        return route;
     }
 
     public static boolean isDark() {
@@ -97,6 +104,8 @@ public final class RouteTap {
             if ("flutter/navigation".equals(channel)) {
                 String json = readJson(msg);
                 if (json != null && json.contains("routeInformationUpdated")) {
+                    String r = PlatformMessages.routeFromNavigation(json);
+                    if (r != null) route = r;
                     Long id = PlatformMessages.gameIdFromNavigation(json);
                     Long old = gameId;
                     gameId = id;

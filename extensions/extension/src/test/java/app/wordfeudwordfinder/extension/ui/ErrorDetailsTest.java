@@ -92,4 +92,19 @@ public class ErrorDetailsTest {
         assertEquals(base + "\nrefresh=RouteBounce: jni=none",
                 ErrorDetails.format(WfError.wlNet(), "5.7.1", "dev", 2, 0L, "RouteBounce:\njni=none"));
     }
+
+    @Test
+    public void routeAndStoreLinesWhenPresent() {
+        String base = "code=GS-DATA\ndetail=game not loaded yet\nwordfeud=5.7.1\npatch=dev\nruleset=unknown"
+                + "\ntime=1970-01-01T00:00:00Z";
+        WfError e = WfError.gsData("game not loaded yet");
+        assertEquals(base, ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, null, null));
+        app.wordfeudwordfinder.extension.game.GameStore.DetailSummary d =
+                new app.wordfeudwordfinder.extension.game.GameStore.DetailSummary(1000L, 3,
+                        java.util.Arrays.asList(77L), 1, 0, null, 12);
+        assertEquals(base + "\nrefresh=x\nroute=/game/123\nstore=games/detail 1970-01-01T00:00:01Z: games=3 failed=1"
+                + " [77] skipped=0 known=12",
+                ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, "x", "/game/123", d));
+        assertEquals(base + "\nroute=/game/1 ", ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, "/game/1\n", null));
+    }
 }

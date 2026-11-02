@@ -19,6 +19,8 @@ import java.util.Map;
  *  PTS "%d" = score; REJECTED_WORDS "%s" = the rejected words (comma separated); DOWNLOAD_PCT "%d" = download
  *  progress 0..100 (a literal percent sign is written "%%"); ERROR_CODE "%s" = the error code (e.g. WL-NET).
  *  All other keys have no placeholders.
+ *  GAME_LOADING: shown in the overlay for a game that is not in the GameStore yet (a new game, before Wordfeud's
+ *  next games/detail poll).
  *
  * BONUS_DL/TL/DW/TW are the short bonus-square labels (board squares, list detail line). Assumption (like R7):
  * Wordfeud shows DL/TL/DW/TW in every language, so all languages use those values for now; to be verified
@@ -35,7 +37,8 @@ public final class Strings {
         ERR_GS_EVENT, ERR_GS_DATA, ERR_MV_SESSION, ERR_MV_NET, ERR_MV_SERVER,
         BONUS_DL, BONUS_TL, BONUS_DW, BONUS_TW,
         CLOSE,
-        REJECTED_WORDS, DOWNLOAD_PCT, ERROR_CODE
+        REJECTED_WORDS, DOWNLOAD_PCT, ERROR_CODE,
+        GAME_LOADING
     }
 
     private static final Map<String, Map<Key, String>> TEXTS = new HashMap<>();
@@ -100,7 +103,8 @@ public final class Strings {
             "The server reported an error.",
             "DL", "TL", "DW", "TW",
             "Close",
-            "Move rejected: %s", "%d%%", "Code: %s");
+            "Move rejected: %s", "%d%%", "Code: %s",
+            "Loading game data\u2026 Wordfeud loads new games within about 20 seconds.");
         add("nl", "Woordzoeker", "Jouw letters", "Score", "Lengte", "A-Z", "Speel",
             "Je bent niet aan zet", "Verticaal", "Horizontaal", "Gebruikt: %s", "Eindigt op %s",
             "Zet afgewezen", "Opnieuw", "Kopieer details", "Woordenlijst downloaden...", "%d p",
@@ -116,7 +120,8 @@ public final class Strings {
             "De server meldt een fout.",
             "DL", "TL", "DW", "TW",
             "Sluiten",
-            "Zet afgewezen: %s", "%d%%", "Code: %s");
+            "Zet afgewezen: %s", "%d%%", "Code: %s",
+            "Gegevens van het potje worden geladen\u2026 Wordfeud laadt nieuwe potjes binnen ongeveer 20 seconden.");
         add("da", "Ordfinder", "Dine brikker", "Point", "L\u00e6ngde", "A-Z", "Spil",
             "Det er ikke din tur", "Nedad", "Vandret", "Bruger: %s", "Slutter p\u00e5 %s",
             "Tr\u00e6k afvist", "Pr\u00f8v igen", "Kopi\u00e9r detaljer", "Henter ordliste...", "%d p",
@@ -132,7 +137,8 @@ public final class Strings {
             "Serveren meldte en fejl.",
             "DL", "TL", "DW", "TW",
             "Luk",
-            "Tr\u00e6k afvist: %s", "%d %%", "Kode: %s");
+            "Tr\u00e6k afvist: %s", "%d %%", "Kode: %s",
+            "Henter spildata\u2026 Wordfeud henter nye spil inden for cirka 20 sekunder.");
         add("sv", "Ords\u00f6kare", "Dina brickor", "Po\u00e4ng", "L\u00e4ngd", "A-Z", "Spela",
             "Det \u00e4r inte din tur", "Ned\u00e5t", "V\u00e5gr\u00e4tt", "Anv\u00e4nder: %s", "Slutar p\u00e5 %s",
             "Draget nekades", "F\u00f6rs\u00f6k igen", "Kopiera detaljer", "Laddar ner ordlista...", "%d p",
@@ -148,7 +154,8 @@ public final class Strings {
             "Servern rapporterade ett fel.",
             "DL", "TL", "DW", "TW",
             "St\u00e4ng",
-            "Draget nekades: %s", "%d %%", "Kod: %s");
+            "Draget nekades: %s", "%d %%", "Kod: %s",
+            "Laddar speldata\u2026 Wordfeud laddar nya spel inom ungef\u00e4r 20 sekunder.");
         add("nb", "Ords\u00f8ker", "Brikkene dine", "Poeng", "Lengde", "A-Z", "Spill",
             "Det er ikke din tur", "Nedover", "Vannrett", "Bruker: %s", "Slutter p\u00e5 %s",
             "Trekket ble avvist", "Pr\u00f8v igjen", "Kopier detaljer", "Laster ned ordliste...", "%d p",
@@ -164,7 +171,8 @@ public final class Strings {
             "Serveren meldte en feil.",
             "DL", "TL", "DW", "TW",
             "Lukk",
-            "Trekket ble avvist: %s", "%d %%", "Kode: %s");
+            "Trekket ble avvist: %s", "%d %%", "Kode: %s",
+            "Laster inn spilldata\u2026 Wordfeud laster inn nye spill innen omtrent 20 sekunder.");
         add("es", "Buscador de palabras", "Tus fichas", "Puntos", "Longitud", "A-Z", "Jugar",
             "No es tu turno", "Vertical", "Horizontal", "Usa: %s", "Termina en %s",
             "Jugada rechazada", "Reintentar", "Copiar detalles", "Descargando lista de palabras...", "%d pts",
@@ -180,7 +188,8 @@ public final class Strings {
             "El servidor notific\u00f3 un error.",
             "DL", "TL", "DW", "TW",
             "Cerrar",
-            "Jugada rechazada: %s", "%d %%", "C\u00f3digo: %s");
+            "Jugada rechazada: %s", "%d %%", "C\u00f3digo: %s",
+            "Cargando datos de la partida\u2026 Wordfeud carga las partidas nuevas en unos 20 segundos.");
         add("fr", "Chercheur de mots", "Vos lettres", "Score", "Longueur", "A-Z", "Jouer",
             "Ce n'est pas votre tour", "Vertical", "Horizontal", "Lettres utilis\u00e9es : %s", "Fin sur %s",
             "Coup refus\u00e9", "R\u00e9essayer", "Copier les d\u00e9tails", "T\u00e9l\u00e9chargement de la liste de mots...", "%d pts",
@@ -196,7 +205,8 @@ public final class Strings {
             "Le serveur a signal\u00e9 une erreur.",
             "DL", "TL", "DW", "TW",
             "Fermer",
-            "Coup refus\u00e9 : %s", "%d %%", "Code : %s");
+            "Coup refus\u00e9 : %s", "%d %%", "Code : %s",
+            "Chargement de la partie\u2026 Wordfeud charge les nouvelles parties en 20 secondes environ.");
         add("de", "Wortfinder", "Deine Buchstaben", "Punkte", "L\u00e4nge", "A-Z", "Spielen",
             "Du bist nicht am Zug", "Senkrecht", "Waagerecht", "Nutzt: %s", "Endet auf %s",
             "Zug abgelehnt", "Erneut versuchen", "Details kopieren", "Wortliste wird geladen...", "%d P.",
@@ -212,6 +222,7 @@ public final class Strings {
             "Der Server hat einen Fehler gemeldet.",
             "DL", "TL", "DW", "TW",
             "Schlie\u00dfen",
-            "Zug abgelehnt: %s", "%d %%", "Code: %s");
+            "Zug abgelehnt: %s", "%d %%", "Code: %s",
+            "Spieldaten werden geladen\u2026 Wordfeud l\u00e4dt neue Spiele innerhalb von etwa 20 Sekunden.");
     }
 }

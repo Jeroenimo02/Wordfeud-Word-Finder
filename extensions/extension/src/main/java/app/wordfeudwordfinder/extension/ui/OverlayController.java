@@ -315,6 +315,8 @@ public final class OverlayController {
         if (open) {
             if (!visible || id == null || id != gameId) {
                 close();
+            } else if (st == null && state == null) {
+                // still loading (a new game): keep showing GAME_LOADING until the store has the game
             } else if (!MovePipeline.sameInput(state, st)) {
                 state = st;
                 loadGame();
@@ -844,17 +846,25 @@ public final class OverlayController {
         selected = null;
         adapter.setMoves(Collections.<Move>emptyList());
         GameState st = state;
-        WfError err = st == null ? WfError.gsData("no state") : st.unreadable();
+        hideStatus();
+        keepStatusForNextList = false;
+        progress.hide();
+        errorPanel.hide();
+        if (st == null) {
+            // Not in the GameStore yet (a new game opened before Wordfeud's next games/detail poll). The store
+            // listener calls refresh(), which loads the game as soon as it arrives.
+            game = null;
+            showContent(false);
+            errorPanel.showLoading();
+            return;
+        }
+        WfError err = st.unreadable();
         game = wf.gameStore().game(gameId);
         ruleset = game == null ? null : wf.gameStore().ruleset(game.getRulesetId());
         layout = game == null ? null : wf.gameStore().board(game.getBoardId());
         if (err == null && (game == null || ruleset == null || layout == null)) {
             err = WfError.gsData("game data missing");
         }
-        hideStatus();
-        keepStatusForNextList = false;
-        progress.hide();
-        errorPanel.hide();
         if (err != null) {
             showContent(false);
             errorPanel.show(err, game == null ? -1 : game.getRulesetId(), null);

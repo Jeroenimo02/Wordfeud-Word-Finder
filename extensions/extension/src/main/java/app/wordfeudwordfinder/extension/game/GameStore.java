@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -31,6 +32,56 @@ public final class GameStore {
     private final List<Runnable> listeners = new ArrayList<>();
     /** Number of games/detail responses processed (see {@link #detailGeneration}). */
     private long detailGeneration;
+    private final LongSupplier clock;
+    private DetailSummary lastDetail;
+
+    /**
+     * Diagnostics for the last games/detail response (also one that failed as a whole): when, how many games were
+     * parsed, which ids failed, how many entries were skipped (no id) and the whole-response error code. Only counts,
+     * game ids and error codes: no user names or response content. Shown as {@code store=} in Copy details.
+     */
+    public static final class DetailSummary {
+        /** At most this many failed ids are kept. */
+        static final int MAX_IDS = 5;
+
+        public final long timeMillis;
+        /** Games parsed and stored from that response. */
+        public final int games;
+        /** Ids of games whose header could not be parsed (at most {@link #MAX_IDS}). */
+        public final List<Long> failedIds;
+        public final int failed;
+        public final int skipped;
+        /** The whole-response error code (e.g. GS-DATA), or null when the response was usable. */
+        public final String error;
+        /** The number of games known to the store after that response. */
+        public final int known;
+
+        public DetailSummary(long timeMillis, int games, List<Long> failedIds, int failed, int skipped, String error,
+                int known) {
+            this.timeMillis = timeMillis;
+            this.games = games;
+            this.failedIds = java.util.Collections.unmodifiableList(failedIds);
+            this.failed = failed;
+            this.skipped = skipped;
+            this.error = error;
+            this.known = known;
+        }
+
+        /** {@code games/detail <time>: games=3 failed=1 [123] skipped=0 known=12}, or {@code ...: error GS-DATA ...}. */
+        public String describe(String time) {
+            StringBuilder b = new StringBuilder("games/detail ").append(time).append(": ");
+            if (error != null) b.append("error ").append(error).append(' ');
+            b.append("games=").append(games).append(" failed=").append(failed);
+            if (!failedIds.isEmpty()) {
+                b.append(" [");
+                for (int i = 0; i < failedIds.size(); i++) b.append(i == 0 ? "" : ",").append(failedIds.get(i));
+                if (failed > failedIds.size()) b.append(",...");
+                b.append(']');
+            }
+            b.append(" skipped=").append(skipped).append(" known=").append(known);
+            return b.toString();
+        }
+    }
 
     public GameStore(Storage s) {
         this(s, GameReplay::replay);
@@ -38,8 +89,14 @@ public final class GameStore {
 
     /** Test seam: a custom replay function (e.g. one that throws). */
     GameStore(Storage s, Function<RawGame, GameState> replayer) {
+        this(s, replayer, System::currentTimeMillis);
+    }
+
+    /** Test seam: a custom replay function and clock. */
+    GameStore(Storage s, Function<RawGame, GameState> replayer, LongSupplier clock) {
         this.storage = s;
         this.replayer = replayer;
+        this.clock = clock;
         loadCache();
     }
 
@@ -52,16 +109,23 @@ public final class GameStore {
         try {
             p = ResponseParser.parseGamesDetail(json);
         } catch (WfError e) {
+            synchronized (this) {
+                lastDetail = new DetailSummary(now(), 0, new ArrayList<Long>(), 0, 0, e.code(), states.size());
+            }
             return;
         }
         List<Runnable> toRun;
         synchronized (this) {
             mergeCache(p.rulesets, p.boards);
             for (RawGame g : p.games) put(g);
+            List<Long> failedIds = new ArrayList<>();
             for (Map.Entry<Long, WfError> f : p.failedGames.entrySet()) {
                 games.remove(f.getKey());
                 states.put(f.getKey(), unreadable(f.getKey(), f.getValue(), false, false));
+                if (failedIds.size() < DetailSummary.MAX_IDS) failedIds.add(f.getKey());
             }
+            lastDetail = new DetailSummary(now(), p.games.size(), failedIds, p.failedGames.size(), p.skippedGames,
+                    null, states.size());
             detailGeneration++;
             toRun = new ArrayList<>(listeners);
         }
@@ -112,11 +176,24 @@ public final class GameStore {
         return detailGeneration;
     }
 
+    /** The last games/detail response's summary, or null when none was seen yet. */
+    public synchronized DetailSummary lastDetail() {
+        return lastDetail;
+    }
+
     public synchronized void addListener(Runnable r) {
         listeners.add(r);
     }
 
     // ---- internals (call with the monitor held) ----
+
+    private long now() {
+        try {
+            return clock.getAsLong();
+        } catch (RuntimeException e) {
+            return 0L;
+        }
+    }
 
     private void put(RawGame g) {
         games.put(g.getId(), g);
