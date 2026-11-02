@@ -7,13 +7,14 @@ import org.json.JSONObject;
 /** Pure decoding helpers for Flutter platform messages. Never throw; return null when not decodable. */
 public final class PlatformMessages {
     /**
-     * A game route: {@code /game/<id>}, optionally followed by more path segments, a query or a fragment
-     * ({@code /game/123/chat}, {@code /game/123?x=1}), and optionally preceded by a scheme and host
-     * ({@code wordfeud://app/game/123}) or without the leading slash. {@code /games/1}, {@code /game/},
-     * {@code /game/abc} and {@code /gameover/1} are not game routes.
+     * A game route: {@code /game/<id>}, optionally with a trailing slash, a query or a fragment
+     * ({@code /game/123?x=1}), and optionally preceded by a scheme and host ({@code wordfeud://app/game/123}) or
+     * without the leading slash. Pages on top of a game ({@code /game/123/chat}, the move history) are not the game
+     * screen itself, so a further path segment is not a game route. {@code /games/1}, {@code /game/},
+     * {@code /game/abc} and {@code /gameover/1} are not game routes either.
      */
     private static final Pattern GAME_URI =
-            Pattern.compile("^(?:[A-Za-z][A-Za-z0-9+.-]*://[^/?#]*)?/?game/(\\d{1,18})(?:[/?#].*)?$");
+            Pattern.compile("^(?:[A-Za-z][A-Za-z0-9+.-]*://[^/?#]*)?/?game/(\\d{1,18})/?(?:[?#].*)?$");
     /** Longest route kept by {@link #routeFromNavigation}. */
     static final int MAX_ROUTE = 120;
 

@@ -12,6 +12,9 @@ package app.wordfeudwordfinder.extension.ui;
  *
  * <p>Board: Wordfeud has a "dark board" option in light mode, so the board colours are classified from a pixel row
  * through the board (empty squares and grid gaps of either palette).
+ *
+ * <p>Elsewhere: without a scrim, the area under the button must be the plain page background; otherwise another
+ * page (chat, move history) lies over the game and the button is hidden.
  */
 public final class ScreenShade {
     // Stateful only for the app bar baseline (see scrim()); everything else is static.
@@ -32,6 +35,8 @@ public final class ScreenShade {
 
     /** Without a scrim of at least this strength nothing is cut: Wordfeud's menus always come with a scrim. */
     static final double NO_SCRIM = 0.97;
+    /** Share of the area under the button that must be the page background to count as the game screen. */
+    static final double ON_GAME_SCREEN = 0.85;
 
     /**
      * How the button should look: per pixel column the rows [0, rows[x]) are shown (null: all), multiplied by
@@ -43,11 +48,18 @@ public final class ScreenShade {
         /** Shown rows per pixel column of the button, or null when no column is cut. */
         public final int[] columnRows;
         public final float factor;
+        /** Not on the game screen (another page lies over it, e.g. chat or move history): fully hidden. */
+        public final boolean elsewhere;
 
         Cover(int visibleRows, float factor) {
+            this(visibleRows, factor, false);
+        }
+
+        Cover(int visibleRows, float factor, boolean elsewhere) {
             this.visibleRows = visibleRows;
             this.columnRows = null;
             this.factor = factor;
+            this.elsewhere = elsewhere;
         }
 
         Cover(int[] columnRows, int rows, float factor) {
@@ -57,6 +69,7 @@ public final class ScreenShade {
             this.visibleRows = cut ? min : Integer.MAX_VALUE;
             this.columnRows = cut ? columnRows : null;
             this.factor = factor;
+            this.elsewhere = false;
         }
 
         /** Shown rows of pixel column {@code x}. */
@@ -71,7 +84,7 @@ public final class ScreenShade {
         }
 
         public boolean sameLook(Cover o) {
-            return o != null && visibleRows == o.visibleRows && Math.abs(factor - o.factor) < 0.01f
+            return o != null && elsewhere == o.elsewhere && visibleRows == o.visibleRows && Math.abs(factor - o.factor) < 0.01f
                     && java.util.Arrays.equals(columnRows, o.columnRows);
         }
     }
@@ -117,8 +130,22 @@ public final class ScreenShade {
     public static Cover analyseArea(int[] px, int w, int h, int base, double s, int step) {
         if (px == null || w <= 0 || h <= 0 || px.length < w * h) return null;
         float factor = (float) Math.max(0.0, Math.min(1.0, s));
-        if (s >= NO_SCRIM) return new Cover(Integer.MAX_VALUE, factor);
         step = Math.max(1, step);
+        if (s >= NO_SCRIM) {
+            // No scrim: the game screen has its plain page background under the button. Anything else means
+            // another page (chat, move history) lies over the game, which Wordfeud does not always report as a
+            // route change.
+            int match = 0;
+            int total = 0;
+            for (int y = 0; y < h; y += step) {
+                for (int x = 0; x < w; x += step) {
+                    total++;
+                    if (scaledFrom(px[y * w + x] & 0xFFFFFF, base, 1.0)) match++;
+                }
+            }
+            if (match < total * ON_GAME_SCREEN) return new Cover(0, 1f, true);
+            return new Cover(Integer.MAX_VALUE, factor);
+        }
         int[] rows = new int[w];
         int[] sampled = new int[(w - 1) / step + 1];
         for (int i = 0; i < sampled.length; i++) {

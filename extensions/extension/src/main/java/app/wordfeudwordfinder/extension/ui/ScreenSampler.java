@@ -128,7 +128,7 @@ final class ScreenSampler {
 
     private boolean fast() {
         ScreenShade.Cover c = cover;
-        return SystemClock.uptimeMillis() < fastUntil || (c != null && !c.untouched(fab.getHeight()));
+        return SystemClock.uptimeMillis() < fastUntil || (c != null && !c.elsewhere && !c.untouched(fab.getHeight()));
     }
 
     private void scheduleFrame() {
@@ -215,7 +215,7 @@ final class ScreenSampler {
             return;
         }
         listener.onCover(shown);
-        if (c != null && !c.untouched(fab.getHeight())) scheduleFrame();
+        if (c != null && !c.elsewhere && !c.untouched(fab.getHeight())) scheduleFrame();
     }
 
     private void sampleBoard(float row) {

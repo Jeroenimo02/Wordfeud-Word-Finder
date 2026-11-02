@@ -51,7 +51,8 @@ public class PlatformMessagesTest {
     @Test
     public void gameRouteToleratesExtraSegmentsQueryAndHost() {
         assertEquals(Long.valueOf(123L), PlatformMessages.gameIdFromNavigation(nav("/game/123")));
-        assertEquals(Long.valueOf(123L), PlatformMessages.gameIdFromNavigation(nav("/game/123/chat")));
+        assertNull(PlatformMessages.gameIdFromNavigation(nav("/game/123/chat")));
+        assertNull(PlatformMessages.gameIdFromNavigation(nav("/game/123/history")));
         assertEquals(Long.valueOf(123L), PlatformMessages.gameIdFromNavigation(nav("/game/123/")));
         assertEquals(Long.valueOf(123L), PlatformMessages.gameIdFromNavigation(nav("/game/123?x=1")));
         assertEquals(Long.valueOf(123L), PlatformMessages.gameIdFromNavigation(nav("/game/123#top")));

@@ -84,10 +84,22 @@ public class ScreenShadeTest {
         assertFalse(c.untouched(h));
     }
 
+    @Test public void anotherPageOverTheGameHidesTheButton() {
+        // Measured: dark chat background, and the move history (list cards) under the button.
+        ScreenShade.Cover chat = ScreenShade.analyseArea(col(200, 0x232429), 10, 20, ScreenShade.PAGE_DARK, 1.0, 2);
+        assertTrue(chat.elsewhere);
+        assertEquals(0, chat.visibleRows);
+        int[] history = col(200, 0x343B45);
+        for (int i = 100; i < 200; i++) history[i] = 0x455467;
+        assertTrue(ScreenShade.analyseArea(history, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2).elsewhere);
+        int[] game = col(200, 0x343B45);
+        for (int i = 180; i < 200; i++) game[i] = 0x333A42; // slight shade near the rack
+        ScreenShade.Cover g = ScreenShade.analyseArea(game, 10, 20, ScreenShade.PAGE_DARK, 1.0, 2);
+        assertFalse(g.elsewhere);
+        assertTrue(g.untouched(20));
+    }
+
     @Test public void areaIsNeverCutWithoutScrim() {
-        int[] px = col(10 * 20, 0xF2EFEA); // a board tile under the button on some screen
-        ScreenShade.Cover c = ScreenShade.analyseArea(px, 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2);
-        assertTrue(c.untouched(20));
         assertTrue(ScreenShade.analyseArea(col(200, 0xD0D5DB), 10, 20, ScreenShade.PAGE_LIGHT, 1.0, 2).untouched(20));
         ScreenShade.Cover open = ScreenShade.analyseArea(col(200, 0x5E6265), 10, 20, ScreenShade.PAGE_LIGHT, 0.46, 2);
         assertEquals(Integer.MAX_VALUE, open.visibleRows);
