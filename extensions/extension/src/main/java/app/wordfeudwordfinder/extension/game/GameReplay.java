@@ -33,9 +33,29 @@ public final class GameReplay {
         List<String> rack = new ArrayList<>();
         try {
             if (lp < 0) throw WfError.gsData("no local player");
+            int index = -1;
             for (LogEvent ev : g.getLog()) {
+                index++;
                 String type = ev.getType();
-                if (type == null) throw WfError.gsData("event without type");
+                if (type == null) throw WfError.gsData("event " + index + " without type");
+                try {
+                    applyEvent(ev, type, lp, board, rack);
+                } catch (WfError e) {
+                    if (!"GS-DATA".equals(e.code())) throw e;
+                    throw WfError.gsData("event " + index + " " + type + ": " + e.getMessage());
+                }
+            }
+        } catch (WfError e) {
+            return new GameState(g.getId(), new char[GameState.SIZE][GameState.SIZE], new ArrayList<String>(),
+                    myTurn, ended, e);
+        }
+        return new GameState(g.getId(), board, rack, myTurn, ended, null);
+    }
+
+    private static void applyEvent(LogEvent ev, String type, int lp, char[][] board, List<String> rack)
+            throws WfError {
+        {
+            {
                 switch (type) {
                     case "start":
                         checkFields(ev.getRaw(), START_FIELDS);
@@ -57,11 +77,7 @@ public final class GameReplay {
                         throw WfError.gsEvent(type);
                 }
             }
-        } catch (WfError e) {
-            return new GameState(g.getId(), new char[GameState.SIZE][GameState.SIZE], new ArrayList<String>(),
-                    myTurn, ended, e);
         }
-        return new GameState(g.getId(), board, rack, myTurn, ended, null);
     }
 
     private static void checkFields(JSONObject raw, Set<String> allowed) throws WfError {
@@ -85,7 +101,7 @@ public final class GameReplay {
         int x = ResponseParser.integer(raw, "x");
         int y = ResponseParser.integer(raw, "y");
         Object h = raw.opt("horizontal");
-        if (!(h instanceof Boolean)) throw WfError.gsData("horizontal");
+        if (!(h instanceof Boolean)) throw WfError.gsData("field horizontal is not a boolean: " + h);
         boolean horizontal = (Boolean) h;
         int dx = horizontal ? 1 : 0;
         int dy = horizontal ? 0 : 1;
@@ -97,7 +113,7 @@ public final class GameReplay {
                 x += dx;
                 y += dy;
             }
-            if (!inside(x, y)) throw WfError.gsData("move leaves the board");
+            if (!inside(x, y)) throw WfError.gsData("tile " + letter + " leaves the board (x=" + x + ", y=" + y + ")");
             board[y][x] = letter.charAt(0);
             x += dx;
             y += dy;
@@ -105,7 +121,7 @@ public final class GameReplay {
 
         if (player == lp) {
             for (String letter : placed) {
-                if (!rack.remove(letter)) throw WfError.gsData("letter " + letter + " not on rack");
+                if (!rack.remove(letter)) throw WfError.gsData("letter " + letter + " not on rack " + rack);
             }
             JSONArray newTiles = ResponseParser.optArr(raw, "new_tiles");
             if (newTiles != null) rack.addAll(letters(newTiles));
@@ -124,9 +140,9 @@ public final class GameReplay {
         JSONArray newTiles = ResponseParser.optArr(raw, "new_tiles");
         if (newTiles == null) throw WfError.gsData("own swap without new tiles");
         List<String> fresh = letters(newTiles);
-        if (swapped.isEmpty() || fresh.size() != swapped.size()) throw WfError.gsData("swap tile count");
+        if (swapped.isEmpty() || fresh.size() != swapped.size()) throw WfError.gsData("swap tile count: " + swapped.size() + " swapped, " + fresh.size() + " new");
         for (String letter : swapped) {
-            if (!rack.remove(letter)) throw WfError.gsData("letter " + letter + " not on rack");
+            if (!rack.remove(letter)) throw WfError.gsData("letter " + letter + " not on rack " + rack);
         }
         rack.addAll(fresh);
     }
@@ -135,7 +151,7 @@ public final class GameReplay {
         List<String> out = new ArrayList<>(a.length());
         for (int i = 0; i < a.length(); i++) {
             Object v = a.opt(i);
-            if (!(v instanceof String) || ((String) v).length() != 1) throw WfError.gsData("bad tile");
+            if (!(v instanceof String) || ((String) v).length() != 1) throw WfError.gsData("bad tile at index " + i + ": " + v);
             out.add((String) v);
         }
         return out;

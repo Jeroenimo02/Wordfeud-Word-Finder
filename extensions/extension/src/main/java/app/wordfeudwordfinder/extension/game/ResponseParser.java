@@ -39,7 +39,7 @@ public final class ResponseParser {
     public static Parsed parseGamesDetail(String json) throws WfError {
         try {
             JSONObject root = new JSONObject(json);
-            if (!"success".equals(root.opt("status"))) throw WfError.gsData("status");
+            if (!"success".equals(root.opt("status"))) throw WfError.gsData("response status is not success");
             JSONObject content = obj(root, "content");
             List<RawGame> games = new ArrayList<>();
             JSONArray ga = arr(content, "games");
@@ -62,7 +62,7 @@ public final class ResponseParser {
             if (ba != null) boards.addAll(parseBoards(ba));
             return new Parsed(games, rulesets, boards, failed);
         } catch (JSONException e) {
-            throw WfError.gsData("json: " + e.getMessage());
+            throw WfError.gsData("json: malformed response (" + e.getClass().getSimpleName() + ")");
         }
     }
 
@@ -77,7 +77,7 @@ public final class ResponseParser {
             }
             return parseGame(obj(obj(root, "content"), "game"));
         } catch (JSONException e) {
-            throw WfError.gsData("json: " + e.getMessage());
+            throw WfError.gsData("json: malformed response (" + e.getClass().getSimpleName() + ")");
         }
     }
 

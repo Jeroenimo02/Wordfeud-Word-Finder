@@ -7,8 +7,11 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * The text behind "Copy details" (spec section 10): code, Wordfeud version, patch version, ruleset and time, one
- * {@code key=value} per line. It never contains the error's message (which may hold game data), cookies or content.
+ * The text behind "Copy details" (spec section 10): code, detail, Wordfeud version, patch version, ruleset and time,
+ * one {@code key=value} per line. The detail is the error's message (e.g. which game event failed to replay), reduced
+ * to one line of at most {@link #MAX_DETAIL} characters; it is omitted when there is none. WfError messages only hold
+ * event indexes and types, field names, letters and racks: never cookies, session ids, user names or response bodies
+ * (the parser does not pass on org.json messages, which can quote the response).
  *
  * <p>{@link #format(WfError, String, String, int, Instant)} is the interface from the plan. {@code java.time} needs
  * API 26 and Wordfeud's minSdk is unknown, so the Android code calls the {@code long} overload, which gives the same
@@ -16,6 +19,7 @@ import java.util.TimeZone;
  */
 public final class ErrorDetails {
     static final String UNKNOWN = "unknown";
+    static final int MAX_DETAIL = 300;
 
     private ErrorDetails() {}
 
@@ -30,10 +34,20 @@ public final class ErrorDetails {
 
     private static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, String time) {
         return "code=" + (e == null ? UNKNOWN : e.code())
+                + detailLine(e)
                 + "\nwordfeud=" + orUnknown(wfVersion)
                 + "\npatch=" + orUnknown(patchVersion)
                 + "\nruleset=" + (rulesetId < 0 ? UNKNOWN : Integer.toString(rulesetId))
                 + "\ntime=" + time;
+    }
+
+    private static String detailLine(WfError e) {
+        if (e == null) return "";
+        String m = e.getMessage();
+        if (m == null || m.isEmpty() || m.equals(e.code())) return "";
+        m = m.replace('\r', ' ').replace('\n', ' ');
+        if (m.length() > MAX_DETAIL) m = m.substring(0, MAX_DETAIL);
+        return "\ndetail=" + m;
     }
 
     /**

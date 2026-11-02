@@ -25,10 +25,36 @@ public class ErrorDetailsTest {
     }
 
     @Test
+    public void detailLineFromMessage() {
+        String s = ErrorDetails.format(WfError.gsData("event 12 packed_move: letter Q not on rack [A, B, *]"),
+                "5.7.1", "dev", 2, Instant.parse("2026-11-01T00:00:00Z"));
+        assertEquals("code=GS-DATA\ndetail=event 12 packed_move: letter Q not on rack [A, B, *]\n"
+                + "wordfeud=5.7.1\npatch=dev\nruleset=2\ntime=2026-11-01T00:00:00Z", s);
+    }
+
+    @Test
+    public void detailIsOneLineAndCapped() {
+        StringBuilder sb = new StringBuilder("a\r\nb\nc");
+        for (int i = 0; i < 400; i++) sb.append('x');
+        String s = ErrorDetails.format(WfError.gsData(sb.toString()), "w", "p", 1, 0L);
+        String detail = s.split("\n")[1];
+        assertEquals("detail=a  b c" + "x".repeat(ErrorDetails.MAX_DETAIL - 6), detail);
+        assertEquals(6, s.split("\n").length);
+    }
+
+    @Test
+    public void noDetailLineWithoutMessage() {
+        assertEquals("code=WL-NET\nwordfeud=w\npatch=p\nruleset=1\ntime=1970-01-01T00:00:00Z",
+                ErrorDetails.format(WfError.wlNet(), "w", "p", 1, 0L));
+        assertEquals("code=unknown\nwordfeud=w\npatch=p\nruleset=1\ntime=1970-01-01T00:00:00Z",
+                ErrorDetails.format(null, "w", "p", 1, 0L));
+    }
+
+    @Test
     public void unknownValues() {
         String s = ErrorDetails.format(WfError.gsData("secret detail"), null, "", -1,
                 Instant.parse("2026-11-01T00:00:00Z"));
-        assertEquals("code=GS-DATA\nwordfeud=unknown\npatch=unknown\nruleset=unknown\n"
+        assertEquals("code=GS-DATA\ndetail=secret detail\nwordfeud=unknown\npatch=unknown\nruleset=unknown\n"
                 + "time=2026-11-01T00:00:00Z", s);
     }
 
