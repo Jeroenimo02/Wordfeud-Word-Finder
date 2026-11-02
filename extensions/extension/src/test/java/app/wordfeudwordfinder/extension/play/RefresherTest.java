@@ -50,13 +50,13 @@ public class RefresherTest {
 
     @Test
     public void diagnosticWhenNothingCouldBeSent() {
-        assertTrue(Refresher.DIAGNOSTIC_TOAST); // V4 testbuild 3
+        assertTrue(Refresher.DIAGNOSTIC_TOAST); // V4 testbuild 4
         FakeEnv env = new FakeEnv();
         env.messenger.available = false;
         Refresher.install(env);
         Refresher.refresh(4391L);
-        assertEquals(Arrays.asList("RouteBounce: not possible"), env.shown);
-        assertEquals("RouteBounce: not possible", RefreshDiagnostic.last());
+        assertEquals(Arrays.asList("ForegroundSignal: FAILED not possible"), env.shown); // short toast
+        assertEquals("ForegroundSignal: not possible", RefreshDiagnostic.last()); // full line for Copy details
     }
 
     @Test
@@ -65,10 +65,16 @@ public class RefresherTest {
         Refresher.install(env);
         Refresher.refresh(4391L);
         assertTrue(env.shown.isEmpty()); // still running: the bridge finishes it after the last message
-        env.diag.step(RefreshDiagnostic.message("send", "flutter/navigation", 63) + " OK");
+        String ch = ForegroundSignal.CHANNEL;
+        env.diag.expect(2);
+        env.diag.step("jni=captured, dispatchPlatformMessage via getMethod");
+        env.diag.sent("jni", RefreshDiagnostic.message("dispatch", ch, 3) + " OK");
+        env.diag.sent("jni", RefreshDiagnostic.message("dispatch", ch, 3) + " OK");
         env.diag.finish();
         env.diag.finish(); // once only
-        assertEquals(Arrays.asList("RouteBounce: send(flutter/navigation,63B) OK"), env.shown);
+        assertEquals(Arrays.asList("ForegroundSignal: jni 2/2 OK"), env.shown);
+        assertEquals("ForegroundSignal: jni=captured, dispatchPlatformMessage via getMethod | dispatch(" + ch
+                + ",3B) OK | dispatch(" + ch + ",3B) OK", RefreshDiagnostic.last());
     }
 
     @Test
@@ -88,14 +94,14 @@ public class RefresherTest {
     }
 
     @Test
-    public void defaultOrderIsRouteBounceOnly() {
-        assertEquals(Arrays.asList(RouteBounce.NAME), Refresher.ORDER);
+    public void defaultOrderIsForegroundSignalOnly() {
+        assertEquals(Arrays.asList(ForegroundSignal.NAME), Refresher.ORDER); // V4 testbuild 4
         Refresher.refresh(42L); // no environment: never throws
         FakeEnv env = new FakeEnv();
         Refresher.install(env);
         Refresher.refresh(42L);
-        assertEquals(2, env.messenger.sent.size()); // route "/", then "/game/<id>"
-        assertEquals("flutter/navigation", env.messenger.sent.get(0).channel);
+        assertEquals(2, env.messenger.sent.size()); // background, then foreground
+        assertEquals(ForegroundSignal.CHANNEL, env.messenger.sent.get(0).channel);
         assertTrue(env.log.isEmpty()); // release: no logging at all
         assertEquals(null, env.seenLog);
     }

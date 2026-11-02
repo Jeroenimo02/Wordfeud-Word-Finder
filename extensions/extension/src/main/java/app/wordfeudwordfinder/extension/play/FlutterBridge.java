@@ -16,16 +16,18 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * Android side of {@link Refresher}: sends platform messages to the Flutter engine of Wordfeud's MainActivity and
- * reads the debug opt-in file. Flutter classes are reached by reflection only (the extension cannot link them):
+ * Android side of {@link Refresher}: sends platform messages to Wordfeud's Flutter engine and reads the debug opt-in
+ * file. Flutter classes are reached by reflection only (the extension cannot link them).
+ *
+ * <p>Primary path (V4 testbuild 4): {@code FlutterJNI.dispatchPlatformMessage} on the FlutterJNI instance RouteTap
+ * captured ({@link JniDispatch}); testbuild 3 showed that messages sent this way arrive in Dart.
+ *
+ * <p>Fallback path (did not work on Wordfeud 5.7.1 in testbuild 3, kept because it is cheap):
  * {@code activity.getFlutterEngine()} (FlutterActivity / FlutterFragmentActivity, protected, so searched up the class
  * hierarchy; fallback: any field holding the engine or an object with {@code getFlutterEngine()}, such as
  * FlutterFragmentActivity's FlutterFragment), then {@code engine.getDartExecutor()} (a BinaryMessenger), then
- * {@code send(String, ByteBuffer)}. Flutter's own ProGuard rules keep {@code io.flutter.**}, so these names survive.
- *
- * <p>Fallback (V4 testbuild 3): when that engine path finds nothing (or a send on it throws), messages go through
- * {@code FlutterJNI.dispatchPlatformMessage} on the FlutterJNI instance RouteTap captured ({@link JniDispatch}).
- * Every step is recorded in a {@link RefreshDiagnostic}, shown as a toast while {@link Refresher#DIAGNOSTIC_TOAST}.
+ * {@code send(String, ByteBuffer)}. Every step is recorded in a {@link RefreshDiagnostic}; its short summary is
+ * shown as a toast while {@link Refresher#DIAGNOSTIC_TOAST}.
  *
  * <p>Messages are sent on the main (platform) thread, as Flutter requires, in direct ByteBuffers whose position is
  * the message size (DartMessenger passes {@code message.position()} as the length to FlutterJNI).
@@ -113,34 +115,38 @@ public final class FlutterBridge implements Refresher.Env {
         });
     }
 
-    /** Sends one message; {@link #verb()} names the path in the diagnostic. */
+    /** Sends one message; {@link #verb()} names the call and {@link #path()} the path in the diagnostic. */
     private interface Sender {
         void send(String channel, byte[] message) throws Exception;
 
         String verb();
+
+        /** "jni" or "engine": the short path name in the toast summary. */
+        String path();
     }
 
     /**
-     * Path choice (V4 testbuild 3): the engine path first (DartExecutor.send, the public API), the FlutterJNI path
-     * as fallback when no engine/DartExecutor is found, and also for the rest of a sequence when an engine send throws.
-     * Both end in the same FlutterJNI.dispatchPlatformMessage; the JNI path just needs no engine lookup.
+     * Path choice (V4 testbuild 4): the FlutterJNI path first. Testbuild 3 showed that on Wordfeud 5.7.1 the engine
+     * lookup fails ({@code NoSuchMethodException getFlutterEngine} on MainActivity) while messages sent via
+     * FlutterJNI.dispatchPlatformMessage do arrive. The engine path (DartExecutor.send) is kept as a fallback only:
+     * it costs nothing when the JNI path works and may help when no FlutterJNI was captured yet (no platform message
+     * seen since the process started) or a dispatch throws.
      */
     private boolean send(String channel, List<byte[]> messages, long gapMs, Refresher.DebugLog log,
             RefreshDiagnostic diag) {
         RefreshDiagnostic d = diag != null ? diag : new RefreshDiagnostic(null);
         try {
-            Activity a = activity.get();
-            boolean usable = a != null && !a.isFinishing() && !a.isDestroyed();
-            d.step("activity=" + (a == null ? "none" : a.getClass().getSimpleName() + (usable ? "" : " (finishing)")));
-            Sender primary = usable ? engineSender(a, d) : null;
+            Sender primary = jniSender(d);
             if (primary == null) {
-                d.step("-> FlutterJNI path");
-                primary = jniSender(d);
+                d.step("-> engine path");
+                primary = engineSender(d);
             }
             if (primary == null) {
-                if (log != null) log.d("no Flutter engine or FlutterJNI for " + channel);
+                if (log != null) log.d("no FlutterJNI or Flutter engine for " + channel);
+                d.fail(RouteTap.flutterJni() == null ? "no FlutterJNI" : "no dispatch method");
                 return false;
             }
+            d.expect(messages.size());
             if (messages.isEmpty()) {
                 d.finish();
                 return true;
@@ -149,21 +155,20 @@ public final class FlutterBridge implements Refresher.Env {
                 log.d("schedule " + messages.size() + " message(s) on " + channel + " via " + primary.verb()
                         + ", gap " + gapMs + " ms");
             }
-            // The sender is kept for the whole sequence: once the first message went out, the next ones go to the
-            // same engine even if the activity is finishing meanwhile (a "background" is never left without
-            // "foreground").
+            // The sender is kept for the whole sequence: once the first message went out, the next ones go the same
+            // way even if the activity is finishing meanwhile (a "background" is never left without "foreground").
             Sender target = primary;
             boolean posted = main().post(() -> sendStep(target, channel, messages, 0, Math.max(0L, gapMs), log, d));
-            if (!posted) d.step("main thread post failed");
+            if (!posted) d.fail("main thread post failed");
             return posted;
         } catch (Throwable t) {
-            d.step("bridge: " + RefreshDiagnostic.reason(t));
+            d.fail("bridge: " + RefreshDiagnostic.reason(t));
             return false;
         }
     }
 
     /** Main thread. Sends message {@code i}; when that worked, schedules {@code i + 1}. Finishes {@code d} at the end. */
-    private static void sendStep(Sender sender, String channel, List<byte[]> messages, int i, long gapMs,
+    private void sendStep(Sender sender, String channel, List<byte[]> messages, int i, long gapMs,
             Refresher.DebugLog log, RefreshDiagnostic d) {
         Sender used = sender;
         try {
@@ -171,33 +176,41 @@ public final class FlutterBridge implements Refresher.Env {
             String label = RefreshDiagnostic.message(sender.verb(), channel, message.length);
             try {
                 sender.send(channel, message);
-                d.step(label + " OK");
+                d.sent(sender.path(), label + " OK");
             } catch (Throwable t) {
                 d.step(label + " failed " + RefreshDiagnostic.reason(t));
-                if (!(sender instanceof JniSender)) {
-                    d.step("-> FlutterJNI path");
-                    used = jniSender(d);
-                }
-                if (used == null || used == sender) throw t;
+                used = fallback(sender, d);
+                if (used == null) throw t;
                 used.send(channel, message);
-                d.step(RefreshDiagnostic.message(used.verb(), channel, message.length) + " OK");
+                d.sent(used.path(), RefreshDiagnostic.message(used.verb(), channel, message.length) + " OK");
             }
             if (log != null) log.d("sent " + channel + " #" + (i + 1) + " (" + message.length + " bytes)");
         } catch (Throwable t) {
             if (log != null) log.d("send failed on " + channel + " #" + (i + 1) + ": " + t.getClass().getSimpleName());
+            d.fail("send #" + (i + 1) + " " + RefreshDiagnostic.reason(t));
             d.finish();
-            return; // nothing went out, so stopping here leaves no half state
+            return; // this message did not go out; stop so no further message follows a missing one
         }
         if (i + 1 < messages.size()) {
             Sender next = used;
             boolean posted = main().postDelayed(() -> sendStep(next, channel, messages, i + 1, gapMs, log, d), gapMs);
             if (!posted) {
-                d.step("main thread post failed");
+                d.fail("main thread post failed");
                 d.finish();
             }
         } else {
             d.finish();
         }
+    }
+
+    /** The other path after {@code failed} threw, or null when there is none. */
+    private Sender fallback(Sender failed, RefreshDiagnostic d) {
+        if (failed instanceof JniSender) {
+            d.step("-> engine path");
+            return engineSender(d);
+        }
+        d.step("-> FlutterJNI path");
+        return jniSender(d);
     }
 
     private static Handler main() {
@@ -209,8 +222,15 @@ public final class FlutterBridge implements Refresher.Env {
         return h;
     }
 
-    /** The engine path (DartExecutor.send), recording each lookup step; null when it is not available. */
-    private static Sender engineSender(Activity a, RefreshDiagnostic d) {
+    /**
+     * The engine path (DartExecutor.send), recording each lookup step; null when it is not available. Fallback only
+     * (see {@link #send(String, List, long, Refresher.DebugLog, RefreshDiagnostic)}).
+     */
+    private Sender engineSender(RefreshDiagnostic d) {
+        Activity a = activity.get();
+        boolean usable = a != null && !a.isFinishing() && !a.isDestroyed();
+        d.step("activity=" + (a == null ? "none" : a.getClass().getSimpleName() + (usable ? "" : " (finishing)")));
+        if (!usable) return null;
         Object engine = null;
         try {
             engine = call(a, "getFlutterEngine");
@@ -261,6 +281,11 @@ public final class FlutterBridge implements Refresher.Env {
             public String verb() {
                 return "send";
             }
+
+            @Override
+            public String path() {
+                return "engine";
+            }
         };
     }
 
@@ -303,6 +328,11 @@ public final class FlutterBridge implements Refresher.Env {
         @Override
         public String verb() {
             return "dispatch";
+        }
+
+        @Override
+        public String path() {
+            return "jni";
         }
     }
 
