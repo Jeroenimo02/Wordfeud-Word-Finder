@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -1208,7 +1209,7 @@ public final class OverlayController {
         return l == null || l.isEmpty() ? "en" : l;
     }
 
-    /** Round accent button with a magnifier glyph (drawn, so it needs no icon resource or font). */
+    /** Round accent button with an open-book glyph (drawn, so it needs no icon resource or font). */
     private static final class FabDrawable extends Drawable {
         private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -1219,6 +1220,7 @@ public final class OverlayController {
             stroke.setColor(theme.onAccent);
             stroke.setStyle(Paint.Style.STROKE);
             stroke.setStrokeCap(Paint.Cap.ROUND);
+            stroke.setStrokeJoin(Paint.Join.ROUND);
         }
 
         @Override
@@ -1228,13 +1230,20 @@ public final class OverlayController {
             float cx = b.exactCenterX();
             float cy = b.exactCenterY();
             c.drawCircle(cx, cy, r, fill);
-            stroke.setStrokeWidth(r * 0.14f);
-            float lens = r * 0.32f;
-            float lx = cx - r * 0.1f;
-            float ly = cy - r * 0.1f;
-            c.drawCircle(lx, ly, lens, stroke);
-            float d = lens * 0.7071f;
-            c.drawLine(lx + d, ly + d, cx + r * 0.42f, cy + r * 0.42f, stroke);
+            stroke.setStrokeWidth(r * 0.121f);
+            // Open book on a 56-unit grid centred on (28, 28): two pages meeting at the spine x = 28.
+            float u = r / 28f;
+            Path book = new Path();
+            book.moveTo(cx, cy - 10 * u);
+            book.cubicTo(cx - 4 * u, cy - 13 * u, cx - 9 * u, cy - 14 * u, cx - 14 * u, cy - 13 * u);
+            book.lineTo(cx - 14 * u, cy + 9 * u);
+            book.cubicTo(cx - 9 * u, cy + 8 * u, cx - 4 * u, cy + 9 * u, cx, cy + 12 * u);
+            book.cubicTo(cx + 4 * u, cy + 9 * u, cx + 9 * u, cy + 8 * u, cx + 14 * u, cy + 9 * u);
+            book.lineTo(cx + 14 * u, cy - 13 * u);
+            book.cubicTo(cx + 9 * u, cy - 14 * u, cx + 4 * u, cy - 13 * u, cx, cy - 10 * u);
+            book.close();
+            c.drawPath(book, stroke);
+            c.drawLine(cx, cy - 10 * u, cx, cy + 12 * u, stroke);
         }
 
         @Override
