@@ -128,15 +128,7 @@ final class ErrorPanel extends LinearLayout {
     private void copyDetails() {
         WfError e = error;
         if (e == null) return;
-        copyDetails(getContext(), lang, e, rulesetId);
-    }
-
-    /**
-     * Puts the {@link ErrorDetails} text on the clipboard: {@code e} (null when there is no error, e.g. the overlay
-     * says it is not the user's turn), route, refresh diagnostic, the last games/detail summary and the open game's
-     * update source. Main thread; throws when there is no clipboard (callers catch).
-     */
-    static void copyDetails(Context ctx, String lang, WfError e, int rulesetId) {
+        Context ctx = getContext();
         Long gameId = RouteTap.currentGameId();
         String text = ErrorDetails.format(e, hostVersion(ctx), BuildInfo.PATCH_VERSION, rulesetId,
                 System.currentTimeMillis(), RefreshDiagnostic.last(), RouteTap.lastRoute(), lastDetail(), gameId,
