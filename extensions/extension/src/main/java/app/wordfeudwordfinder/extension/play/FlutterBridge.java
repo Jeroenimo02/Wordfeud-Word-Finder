@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 import app.wordfeudwordfinder.extension.hooks.RouteTap;
+import app.wordfeudwordfinder.extension.hooks.UploadTap;
 import java.io.File;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
@@ -74,6 +75,8 @@ public final class FlutterBridge implements Refresher.Env {
             List<File> files = RefreshOrder.debugFiles(internal, external, Build.VERSION.SDK_INT);
             FlutterBridge b = new FlutterBridge(a, files);
             Refresher.install(b);
+            // TODO(V2): remove with UploadTap's diagnostic toast
+            UploadTap.setToaster(b::toast);
             if (b.debugOrder() != null) {
                 Log.d(TAG, "debug file present: logging channel names");
                 RouteTap.setChannelLogger(channel -> Log.d(TAG, "channel seen: " + channel));
@@ -103,16 +106,28 @@ public final class FlutterBridge implements Refresher.Env {
     // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
     @Override
     public void showDiagnostic(String text) {
-        if (!Refresher.DIAGNOSTIC_TOAST || text == null) return;
-        Context c = appContext;
-        if (c == null) return;
-        main().post(() -> {
-            try {
-                Toast.makeText(c, "WFWF " + text, Toast.LENGTH_LONG).show();
-            } catch (Throwable ignored) {
-                // diagnostics never affect the app
-            }
-        });
+        if (!Refresher.DIAGNOSTIC_TOAST) return;
+        toast(text);
+    }
+
+    /**
+     * Diagnostic toast "WFWF &lt;text&gt;" on the main thread (V4 refresh, V2 UploadTap); callable from any thread.
+     */
+    // TODO(V4, V2): remove with the diagnostic toasts
+    void toast(String text) {
+        try {
+            Context c = appContext;
+            if (c == null || text == null) return;
+            main().post(() -> {
+                try {
+                    Toast.makeText(c, "WFWF " + text, Toast.LENGTH_LONG).show();
+                } catch (Throwable ignored) {
+                    // diagnostics never affect the app
+                }
+            });
+        } catch (Throwable ignored) {
+            // diagnostics never affect the app
+        }
     }
 
     /** Sends one message; {@link #verb()} names the call and {@link #path()} the path in the diagnostic. */

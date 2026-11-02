@@ -107,4 +107,21 @@ public class ErrorDetailsTest {
                 ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, "x", "/game/123", d));
         assertEquals(base + "\nroute=/game/1 ", ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, "/game/1\n", null));
     }
+
+    @Test
+    public void lastMoveLineWhenPresent() {
+        String base = "code=MV-SERVER-protocol\nwordfeud=5.7.1\npatch=dev\nruleset=unknown"
+                + "\ntime=1970-01-01T00:00:00Z";
+        WfError e = WfError.mvServer("protocol");
+        String body = "{\"move\":[[7,7,\"E\"]],\"words\":[\"EEN\"],\"ruleset\":2}";
+        assertEquals(base, ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, null, null, null));
+        assertEquals(base, ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, null, null, " "));
+        assertEquals(base + "\nroute=/game/1\nlastmove=" + body,
+                ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, "/game/1", null, body));
+        // longer than a detail line, still whole up to MAX_LASTMOVE
+        StringBuilder longBody = new StringBuilder("{\"move\":[],\"words\":[\"");
+        while (longBody.length() < ErrorDetails.MAX_LASTMOVE + 50) longBody.append('A');
+        String text = ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, null, null, longBody.toString());
+        assertEquals(base + "\nlastmove=" + longBody.substring(0, ErrorDetails.MAX_LASTMOVE), text);
+    }
 }
