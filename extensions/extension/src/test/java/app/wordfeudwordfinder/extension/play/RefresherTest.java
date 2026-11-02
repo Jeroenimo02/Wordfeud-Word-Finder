@@ -40,16 +40,27 @@ public class RefresherTest {
     }
 
     @Test
-    public void emptyOrderIsTheFallback() {
-        assertTrue(Refresher.ORDER.isEmpty());
-        assertFalse(Refresher.run(new ArrayList<>(), 42L, null));
+    public void defaultOrderIsForegroundSignalOnly() {
+        assertEquals(Arrays.asList(ForegroundSignal.NAME), Refresher.ORDER);
         Refresher.refresh(42L); // no environment: never throws
         FakeEnv env = new FakeEnv();
         Refresher.install(env);
         Refresher.refresh(42L);
-        assertTrue(env.messenger.sent.isEmpty()); // nothing happens; Wordfeud refreshes itself
+        assertEquals(2, env.messenger.sent.size()); // [false], then [true]
+        assertEquals("dev.flutter.pigeon.wordfeud.FlutterProcessLifecycleApi.onForegroundStateChanged",
+                env.messenger.sent.get(0).channel);
         assertTrue(env.log.isEmpty()); // release: no logging at all
         assertEquals(null, env.seenLog);
+    }
+
+    @Test
+    public void emptyOrderIsTheFallback() {
+        assertFalse(Refresher.run(new ArrayList<>(), 42L, null));
+        FakeEnv env = new FakeEnv();
+        env.debug = "# no strategies"; // injected empty order (the debug file replaces ORDER)
+        Refresher.install(env);
+        Refresher.refresh(42L);
+        assertTrue(env.messenger.sent.isEmpty()); // nothing happens; Wordfeud refreshes itself
     }
 
     @Test

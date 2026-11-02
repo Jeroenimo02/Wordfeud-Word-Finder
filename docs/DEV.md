@@ -74,7 +74,12 @@ strategieën staan in `extensions/.../play/`:
 Kandidaat 3 (zelf `games/detail` ophalen en aanbieden) is niet gebouwd: pas na akkoord, en alleen als 1, 2 en 4
 alle drie falen.
 
-`Refresher.ORDER` is leeg: zonder debugbestand gebeurt er na een zet niets en ververst Wordfeud zelf (~20 s).
+Het huidige testbuild gebruikt standaard `ForegroundSignal`: `Refresher.ORDER` bevat alleen die strategie. Een lege
+volgorde (via het debugbestand) betekent: er gebeurt niets en Wordfeud ververst zelf (~20 s).
+
+| Strategie | Status |
+|---|---|
+| ForegroundSignal | getest in testbuild 2026-11-02, uitkomst: open |
 
 ### Debugbestand
 

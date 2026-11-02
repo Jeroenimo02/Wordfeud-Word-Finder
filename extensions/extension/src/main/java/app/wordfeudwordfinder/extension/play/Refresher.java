@@ -7,8 +7,9 @@ import java.util.List;
  * Makes Wordfeud show the new game state after a move played through the overlay (spec section 8.4).
  *
  * <p>{@link #ORDER} names the strategies to try ({@link ForegroundSignal}, {@link RouteBounce}, {@link FcmNudge}).
- * It stays empty until a strategy has been confirmed on a device (V4, docs/DEV.md "V4 — verversen"). With an empty
- * order nothing happens: the overlay closes and Wordfeud refreshes by itself (about 20 s), the fallback from spec 8.4.
+ * It holds only {@link ForegroundSignal} in this test build (V4, docs/DEV.md "V4 — verversen"); the final order waits
+ * for the device result. With an empty order nothing happens: the overlay closes and Wordfeud refreshes by itself
+ * (about 20 s), the fallback from spec 8.4.
  *
  * <p>Debug override: when {@code wfwf/debug_refresh_order.txt} exists, its names replace {@link #ORDER} and each step
  * is logged (strategy and channel names only). Without that file nothing is logged.
@@ -52,7 +53,7 @@ public final class Refresher {
     }
 
     /** The strategy names to try, in order. Empty: fallback (spec 8.4), Wordfeud refreshes itself. */
-    static final List<String> ORDER = Collections.emptyList();
+    static final List<String> ORDER = Collections.singletonList(ForegroundSignal.NAME);
 
     private static volatile Env env;
 
