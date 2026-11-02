@@ -39,7 +39,6 @@ public final class ErrorDetails {
      * As the {@code long} overload, plus a last line {@code refresh=<diagnostic>} when {@code refreshDiagnostic} is
      * not empty (V4 test builds: the last RefreshDiagnostic, one line, at most {@link #MAX_DETAIL} characters).
      */
-    // TODO(V4): remove the refresh= line with the diagnostic toast after the refresh strategy is confirmed
     public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
             String refreshDiagnostic) {
         return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis), refreshDiagnostic);

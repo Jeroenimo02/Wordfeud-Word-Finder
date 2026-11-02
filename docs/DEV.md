@@ -97,26 +97,16 @@ volgorde (via het debugbestand) betekent: er gebeurt niets en Wordfeud ververst 
 | RouteBounce | testbuild 2 2026-11-02, uitkomst: geen effect, ook geen navigatie zichtbaar → vermoedelijk komt het bericht niet aan |
 | RouteBounce | testbuild 3 2026-11-02 (diagnose-toast + FlutterJNI-pad), uitkomst: berichten komen aan via FlutterJNI (engine-pad: `NoSuchMethodException getFlutterEngine`), maar geen verversing; extra /game-pagina op de stapel (twee keer terug nodig) → ongeschikt |
 | ForegroundSignal | testbuild 4 2026-11-02 (FlutterJNI-pad als hoofdpad, korte toast), uitkomst: komt aan (jni 2/2 OK), geen verversing; Wordfeud ververst zelf na 20–30 s |
-| LifecycleBounce | testbuild 5 2026-11-02 (app-levenscyclus via `flutter/lifecycle`, toast `WFWF LifecycleBounce: jni 6/6 OK`), uitkomst: werkt (1× getest): bord ververst direct |
+| LifecycleBounce | testbuild 5 2026-11-02 (app-levenscyclus via `flutter/lifecycle`, toast `WFWF LifecycleBounce: jni 6/6 OK`), uitkomst: werkt (meermaals getest 2026-11-02), definitief |
 
-`Refresher.ORDER` blijft `[LifecycleBounce]`. De diagnose-toast blijft voorlopig staan en gaat er pas uit na meer
-bevestigingen op een toestel.
+`Refresher.ORDER` blijft `[LifecycleBounce]`. De diagnose-toast is verwijderd.
 
-### Diagnose en verzendpaden (tijdelijk, sinds testbuild 3)
-
-Omdat er geen adb is, toont het testbuild na een geslaagde Play een **korte toast** (testbuild 3 had de hele
-stappenregel als toast; die viel van het scherm):
-
-- `WFWF ForegroundSignal: jni 2/2 OK` — beide berichten zijn via FlutterJNI verstuurd (`engine 2/2 OK`: via het
-  terugvalpad);
-- `WFWF ForegroundSignal: FAILED <korte reden>` — bijvoorbeeld `FAILED no FlutterJNI` (nog geen platformbericht
-  gezien, niets verstuurd) of `FAILED send #2 IllegalStateException …`.
+### Diagnose en verzendpaden
 
 De volledige stappenregel staat als `refresh=` onder "Details kopiëren", bijvoorbeeld
-`ForegroundSignal: jni=captured, dispatchPlatformMessage via getMethod | dispatch(dev.flutter.pigeon…,3B) OK | dispatch(…,3B) OK`.
+`LifecycleBounce: jni=captured, dispatchPlatformMessage via getMethod | dispatch(flutter/lifecycle,26B) OK | …`.
 De tekst bevat alleen klasse-/methodenamen, uitkomsten, kanaalnamen en aantallen bytes; geen potje-id's of
-berichtinhoud. Aan/uit met `Refresher.DIAGNOSTIC_TOAST`; alle code is gemarkeerd met `TODO(V4)` en gaat eruit
-zodra de strategie vaststaat.
+berichtinhoud.
 
 Verzendpaden (`FlutterBridge`), sinds testbuild 4: eerst het **FlutterJNI-pad**: `platformTapPatch` geeft de
 FlutterJNI-instantie door (`RouteTap.onPlatformMessage(Object, String, ByteBuffer)`, zwak vastgehouden) en

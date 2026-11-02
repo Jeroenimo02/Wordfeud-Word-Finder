@@ -11,7 +11,7 @@ import java.util.List;
  * docs/DEV.md "V4 — verversen"). Testbuild 3 showed that messages do arrive via FlutterJNI, but RouteBounce re-pushed
  * the game route without refetching it and left an extra game page on the stack, so it is unsuitable; testbuild 4's
  * ForegroundSignal arrived (jni 2/2 OK) but did not refresh the board. The final order waits for the device result. Each step is recorded in a {@link RefreshDiagnostic}; its
- * short summary is shown as a toast ({@link #DIAGNOSTIC_TOAST}), the full line goes to Copy details. With an empty order nothing happens: the overlay closes and Wordfeud refreshes by itself
+ * full line goes to Copy details. With an empty order nothing happens: the overlay closes and Wordfeud refreshes by itself
  * (about 20 s), the fallback from spec 8.4.
  *
  * <p>Debug override: when {@code wfwf/debug_refresh_order.txt} exists, its names replace {@link #ORDER} and each step
@@ -58,14 +58,6 @@ public final class Refresher {
          */
         Messenger messenger(DebugLog log, RefreshDiagnostic diag);
 
-        /**
-         * Shows the diagnostic's short summary ({@link RefreshDiagnostic#summary()}) on the device (toast); only
-         * called while {@link #DIAGNOSTIC_TOAST} is true.
-         */
-        // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
-        default void showDiagnostic(String text) {
-        }
-
         /** The text of the debug order file, or null when it does not exist (normal use). */
         String debugOrder();
 
@@ -74,10 +66,6 @@ public final class Refresher {
 
     /** The strategy names to try, in order. Empty: fallback (spec 8.4), Wordfeud refreshes itself. */
     static final List<String> ORDER = Collections.singletonList(LifecycleBounce.NAME);
-
-    // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
-    /** V4 test builds: show each refresh's {@link RefreshDiagnostic} as a toast after Play succeeded. */
-    public static final boolean DIAGNOSTIC_TOAST = true;
 
     private static volatile Env env;
 
@@ -98,10 +86,7 @@ public final class Refresher {
             List<String> names = log == null ? ORDER : RefreshOrder.parse(debugText);
             if (log != null) log.d("refresh: order=" + names + " (debug file)");
             if (names.isEmpty()) return;
-            RefreshDiagnostic diag = new RefreshDiagnostic(text -> {
-                // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
-                if (DIAGNOSTIC_TOAST) e.showDiagnostic(text);
-            });
+            RefreshDiagnostic diag = new RefreshDiagnostic(null);
             boolean scheduled = run(RefreshOrder.strategies(names, e.messenger(log, diag)), gameId, log, diag);
             if (!scheduled) diag.finish(); // otherwise the messenger finishes it when the sequence ended
         } catch (Throwable ignored) {

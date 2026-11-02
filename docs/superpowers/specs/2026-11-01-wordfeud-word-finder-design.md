@@ -233,7 +233,7 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 | V1 | Wordt een zet geaccepteerd met alleen cookie, User-Agent en Content-Type? | De Play-knop wordt direct volledig gebouwd; de eerste publieke release volgt pas na één geslaagde zet via de knop op het toestel van de beheerder |
 | V2 | Formaat van blanco tegels in de zet en in `game_log` | bevestigd 2026-11-02 (Wordfeud 5.7.1): game_log en zet gebruiken "*X" (`[x,y,"*E"]`); `[x,y,"X",true]` gaf MV-SERVER-protocol |
 | V3 | Moeten dwarswoorden in `words`? | Alle woorden worden meegestuurd |
-| V4 | Welke verversmethode werkt? | Terugval: overlay sluiten |
+| V4 | Welke verversmethode werkt? | LifecycleBounce (flutter/lifecycle paused→resumed via FlutterJNI) bevestigd 2026-11-02 (Wordfeud 5.7.1, meermaals getest) |
 | V5 | Bonus voor zeven tegels en de middenvakregel | Score zonder bonus, gemarkeerd als niet geverifieerd in debugbuilds |
 | V6 | Formaat van een woordweigering (hint: `illegal_word`) | Het hoofdwoord wordt als geweigerd gemarkeerd |
 | V7 | Positie van het knopje, ook met een banner | Vaste afstand van 165 dp |

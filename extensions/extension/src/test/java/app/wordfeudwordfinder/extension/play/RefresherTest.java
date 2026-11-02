@@ -2,6 +2,7 @@ package app.wordfeudwordfinder.extension.play;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -17,12 +18,6 @@ public class RefresherTest {
         final List<String> log = new ArrayList<>();
         Refresher.DebugLog seenLog = null;
         RefreshDiagnostic diag;
-        final List<String> shown = new ArrayList<>();
-
-        @Override
-        public void showDiagnostic(String text) {
-            shown.add(text);
-        }
 
         @Override
         public Refresher.Messenger messenger(Refresher.DebugLog l, RefreshDiagnostic d) {
@@ -50,12 +45,10 @@ public class RefresherTest {
 
     @Test
     public void diagnosticWhenNothingCouldBeSent() {
-        assertTrue(Refresher.DIAGNOSTIC_TOAST); // V4 testbuild 5
         FakeEnv env = new FakeEnv();
         env.messenger.available = false;
         Refresher.install(env);
         Refresher.refresh(4391L);
-        assertEquals(Arrays.asList("LifecycleBounce: FAILED not possible"), env.shown); // short toast
         assertEquals("LifecycleBounce: not possible", RefreshDiagnostic.last()); // full line for Copy details
     }
 
@@ -64,14 +57,13 @@ public class RefresherTest {
         FakeEnv env = new FakeEnv();
         Refresher.install(env);
         Refresher.refresh(4391L);
-        assertTrue(env.shown.isEmpty()); // still running: the bridge finishes it after the last message
+        assertNull(RefreshDiagnostic.last()); // still running: the bridge finishes it after the last message
         String ch = LifecycleBounce.CHANNEL;
         env.diag.expect(6);
         env.diag.step("jni=captured, dispatchPlatformMessage via getMethod");
         for (int i = 0; i < 6; i++) env.diag.sent("jni", RefreshDiagnostic.message("dispatch", ch, 26) + " OK");
         env.diag.finish();
         env.diag.finish(); // once only
-        assertEquals(Arrays.asList("LifecycleBounce: jni 6/6 OK"), env.shown);
         assertTrue(RefreshDiagnostic.last().startsWith("LifecycleBounce: jni=captured, dispatchPlatformMessage via"
                 + " getMethod | dispatch(" + ch + ",26B) OK | "));
     }

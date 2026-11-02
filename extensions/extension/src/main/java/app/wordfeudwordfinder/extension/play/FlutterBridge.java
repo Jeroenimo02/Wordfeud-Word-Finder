@@ -1,12 +1,10 @@
 package app.wordfeudwordfinder.extension.play;
 
 import android.app.Activity;
-import android.content.Context;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 import app.wordfeudwordfinder.extension.hooks.RouteTap;
 import app.wordfeudwordfinder.extension.hooks.UploadTap;
 import java.io.File;
@@ -27,8 +25,7 @@ import java.util.List;
  * {@code activity.getFlutterEngine()} (FlutterActivity / FlutterFragmentActivity, protected, so searched up the class
  * hierarchy; fallback: any field holding the engine or an object with {@code getFlutterEngine()}, such as
  * FlutterFragmentActivity's FlutterFragment), then {@code engine.getDartExecutor()} (a BinaryMessenger), then
- * {@code send(String, ByteBuffer)}. Every step is recorded in a {@link RefreshDiagnostic}; its short summary is
- * shown as a toast while {@link Refresher#DIAGNOSTIC_TOAST}.
+ * {@code send(String, ByteBuffer)}. Every step is recorded in a {@link RefreshDiagnostic} (Copy details).
  *
  * <p>Messages are sent on the main (platform) thread, as Flutter requires, in direct ByteBuffers whose position is
  * the message size (DartMessenger passes {@code message.position()} as the length to FlutterJNI).
@@ -44,19 +41,10 @@ public final class FlutterBridge implements Refresher.Env {
 
     private final WeakReference<Activity> activity;
     private final List<File> debugFiles;
-    /** For the diagnostic toast (application context: does not keep the activity alive). */
-    private final Context appContext;
 
     private FlutterBridge(Activity a, List<File> debugFiles) {
         this.activity = new WeakReference<>(a);
         this.debugFiles = debugFiles;
-        Context c = null;
-        try {
-            c = a.getApplicationContext();
-        } catch (Throwable ignored) {
-            // no toast then
-        }
-        this.appContext = c;
     }
 
     /** Main thread, once the activity's onCreate has run. Never throws. */
@@ -75,8 +63,6 @@ public final class FlutterBridge implements Refresher.Env {
             List<File> files = RefreshOrder.debugFiles(internal, external, Build.VERSION.SDK_INT);
             FlutterBridge b = new FlutterBridge(a, files);
             Refresher.install(b);
-            // TODO(V2): remove with UploadTap's diagnostic toast
-            UploadTap.setToaster(b::toast);
             if (b.debugOrder() != null) {
                 Log.d(TAG, "debug file present: logging channel names");
                 RouteTap.setChannelLogger(channel -> Log.d(TAG, "channel seen: " + channel));
@@ -101,33 +87,6 @@ public final class FlutterBridge implements Refresher.Env {
     @Override
     public Refresher.Messenger messenger(Refresher.DebugLog log, RefreshDiagnostic diag) {
         return (channel, sequence) -> send(channel, sequence, log, diag);
-    }
-
-    // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
-    @Override
-    public void showDiagnostic(String text) {
-        if (!Refresher.DIAGNOSTIC_TOAST) return;
-        toast(text);
-    }
-
-    /**
-     * Diagnostic toast "WFWF &lt;text&gt;" on the main thread (V4 refresh, V2 UploadTap); callable from any thread.
-     */
-    // TODO(V4, V2): remove with the diagnostic toasts
-    void toast(String text) {
-        try {
-            Context c = appContext;
-            if (c == null || text == null) return;
-            main().post(() -> {
-                try {
-                    Toast.makeText(c, "WFWF " + text, Toast.LENGTH_LONG).show();
-                } catch (Throwable ignored) {
-                    // diagnostics never affect the app
-                }
-            });
-        } catch (Throwable ignored) {
-            // diagnostics never affect the app
-        }
     }
 
     /** Sends one message; {@link #verb()} names the call and {@link #path()} the path in the diagnostic. */
