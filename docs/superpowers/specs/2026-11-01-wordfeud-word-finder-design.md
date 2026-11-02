@@ -31,7 +31,7 @@ Deze afspraken zijn één voor één met de opdrachtgever vastgesteld.
 | Na spelen | Geen bevestiging; overlay sluit, het bord moet direct het woord tonen (zie §8.4) |
 | Niet aan zet | Lijst zichtbaar, melding in plaats van Play-knop |
 | Afgelopen potje | Knopje verborgen |
-| Blanco tegels | Doen mee, de patch kiest de letter; uitgeschakeld tot het formaat is bevestigd (V2) |
+| Blanco tegels | Doen mee, de patch kiest de letter; verstuurd als `"*X"` (V2 bevestigd) |
 | Geweigerd woord | Melding, overlay blijft open, woord per regelset permanent verborgen, ook na een nieuwe woordenlijst |
 | Instellingen | Geen in de app; de beheerder dwingt nieuwe woordenlijsten af via een nieuwe patchversie |
 | Foutcodes | Vaste codes met een "Kopieer details"-knop (zie §10) |
@@ -140,7 +140,7 @@ Per regelset bewaard op schijf, nooit automatisch gewist, ook niet bij een nieuw
 - **Algoritme:** Appel-Jacobson met ankervakken en dwarscontroles; verticaal via het gekantelde bord.
 - **Score:** de som van de letterwaarden. DL/TL gelden alleen op nieuw gelegde tegels; DW/TW vermenigvuldigen het woord voor elke nieuwe tegel op zo'n vak. Dwarswoorden worden op dezelfde manier gescoord. De bonus voor zeven tegels komt erbij (waarde V5). Blanco tegels tellen 0 punten.
 - **Eerste zet:** moet over het middenvak (7, 7) gaan (V5).
-- **Blanco tegels:** het algoritme ondersteunt ze, maar de functie staat uit tot V2 is bevestigd. Tot die tijd worden zetten met een blanco tegel niet getoond.
+- **Blanco tegels:** ondersteund; in de zet als `[x,y,"*X"]` (V2 bevestigd 2026-11-02).
 - **Uitvoer per zet:** woord, posities, richting, nieuw gelegde tegels, gebruikte bordletters, score, alle gevormde woorden, en bonusvakken onder nieuwe tegels.
 - **Sorteren:**
   - Hoogste score: score aflopend, dan A–Z.
@@ -231,7 +231,7 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 | ID | Vraag | Gedrag tot bevestiging |
 |---|---|---|
 | V1 | Wordt een zet geaccepteerd met alleen cookie, User-Agent en Content-Type? | De Play-knop wordt direct volledig gebouwd; de eerste publieke release volgt pas na één geslaagde zet via de knop op het toestel van de beheerder |
-| V2 | Formaat van blanco tegels in de zet en in `game_log` (hint: 4e element) | game_log-formaat bevestigd (2026-11-02): blanco als "*X" in packed_move.tiles, "*" op het rek; formaat in de eigen zet nog onbevestigd. testbuild 5: `[x,y,"X",true]` → MV-SERVER-protocol (2026-11-02); blanco-zetten staan weer uit tot het formaat bekend is (volgende stap: de zet die de app zelf verstuurt vastleggen) |
+| V2 | Formaat van blanco tegels in de zet en in `game_log` | bevestigd 2026-11-02 (Wordfeud 5.7.1): game_log en zet gebruiken "*X" (`[x,y,"*E"]`); `[x,y,"X",true]` gaf MV-SERVER-protocol |
 | V3 | Moeten dwarswoorden in `words`? | Alle woorden worden meegestuurd |
 | V4 | Welke verversmethode werkt? | Terugval: overlay sluiten |
 | V5 | Bonus voor zeven tegels en de middenvakregel | Score zonder bonus, gemarkeerd als niet geverifieerd in debugbuilds |

@@ -7,12 +7,8 @@ public final class Rules {
     /** Bonus for using all seven rack tiles. Stays 0 until check V5 confirms the value (task 16). */
     public static final int BINGO_BONUS = 0;
 
-    /**
-     * Moves that use a blank. Off again: the V2 experiment (testbuild 5) sent a blank as {@code [x,y,"X",true]}
-     * (play/MoveRequest) and the server answered MV-SERVER-protocol (2026-11-02). Stays off until the format the app
-     * itself sends is known (hooks/UploadTap); the MoveRequest blank code path stays, unused.
-     */
-    public static final boolean BLANKS_ENABLED = false;
+    /** Moves that use a blank; the move format ("*X") is confirmed (V2, 2026-11-02). */
+    public static final boolean BLANKS_ENABLED = true;
 
     /** Centre square (x = y = CENTER) that the first move must cover. */
     public static final int CENTER = 7;

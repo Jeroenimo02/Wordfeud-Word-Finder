@@ -20,10 +20,9 @@ public final class MoveRequest {
      * {@link Move#placed}, {@code words} = {@link Move#allWords} (main word first). Built by hand so the key order is
      * fixed.
      *
-     * <p>A blank (lower-case letter in {@link Move#placedLetters}) goes out as {@code [x,y,"L",true]} with the letter
-     * in upper case. V2 experiment (testbuild 5): this shape follows the [column, row, letter, blank] tiles of a
-     * third-party client; the server rejected it (MV-SERVER-protocol, 2026-11-02), so it is unused while
-     * {@code Rules.BLANKS_ENABLED} is off. Normal tiles stay {@code [x,y,"L"]} (confirmed).
+     * <p>A blank (lower-case letter in {@link Move#placedLetters}) goes out as {@code [x,y,"*L"]} with the letter in
+     * upper case, the same "*X" notation as game_log. Confirmed on device (Wordfeud 5.7.1, 2026-11-02) from the app's
+     * own move request; {@code [x,y,"L",true]} gave MV-SERVER-protocol. Normal tiles are {@code [x,y,"L"]}.
      */
     public static String body(Move m, int rulesetId) {
         StringBuilder sb = new StringBuilder("{\"move\":[");
@@ -33,8 +32,8 @@ public final class MoveRequest {
             String letter = m.placedLetters.get(i);
             boolean blank = isBlank(letter);
             sb.append('[').append(xy[0]).append(',').append(xy[1]).append(',');
-            quote(sb, blank ? letter.toUpperCase(Locale.ROOT) : letter);
-            sb.append(blank ? ",true]" : "]");
+            quote(sb, blank ? "*" + letter.toUpperCase(Locale.ROOT) : letter);
+            sb.append(']');
         }
         sb.append("],\"words\":[");
         List<String> words = m.allWords;
