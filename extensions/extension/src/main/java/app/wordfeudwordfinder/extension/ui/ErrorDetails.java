@@ -22,7 +22,6 @@ public final class ErrorDetails {
     static final String UNKNOWN = "unknown";
     static final int MAX_DETAIL = 300;
     /** A move body with all its words can be longer than a detail line; it is kept whole up to this length. */
-    static final int MAX_LASTMOVE = 1000;
 
     private ErrorDetails() {}
 
@@ -51,20 +50,9 @@ public final class ErrorDetails {
      */
     public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
             String refreshDiagnostic, String route, GameStore.DetailSummary store) {
-        return format(e, wfVersion, patchVersion, rulesetId, epochMillis, refreshDiagnostic, route, store, null);
-    }
-
-    /**
-     * As above, plus {@code lastmove=<body>} when present: the last move body Wordfeud itself sent (V2 diagnosis,
-     * hooks/UploadTap; tiles, words and ruleset only), at most {@link #MAX_LASTMOVE} characters.
-     */
-    // TODO(V2): remove the lastmove= line once the blank format is known
-    public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
-            String refreshDiagnostic, String route, GameStore.DetailSummary store, String lastMove) {
         return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis), refreshDiagnostic)
                 + line("route", route)
-                + line("store", store == null ? null : store.describe(isoUtc(store.timeMillis)))
-                + line("lastmove", lastMove, MAX_LASTMOVE);
+                + line("store", store == null ? null : store.describe(isoUtc(store.timeMillis)));
     }
 
     private static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, String time) {

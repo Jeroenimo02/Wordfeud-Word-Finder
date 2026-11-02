@@ -60,19 +60,6 @@ java -jar morphe-desktop-*-all.jar patch -p patches/build/libs/patches-*.mpp \
 De GUI kan dezelfde `.mpp` laden (lokale bron) en accepteert `.apk`, `.apkm`, `.xapk` en `.apks`.
 Het resultaat is `*-patched.apk`, getekend met de gedeelde `morphe.keystore`.
 
-## V2 — blanco in de zet (diagnose, tijdelijk)
-
-`[x,y,"X",true]` gaf MV-SERVER-protocol (2026-11-02); blanco-zetten staan uit (`Rules.BLANKS_ENABLED = false`).
-Om het echte formaat te zien legt `uploadTapPatch` (afhankelijkheid van de overlay) de zet vast die Wordfeud zelf
-verstuurt: het haakt in op de statische fabrieken `create([B)`, `create([BII)` en `create(Ljava/nio/ByteBuffer;)`
-van `org.chromium.net.UploadDataProviders` (Cronet-API, namen blijven behouden). Ontbreekt een van die overloads in
-de APK, dan wordt die overgeslagen (`matchOrNull()`), de rest werkt gewoon.
-
-`hooks/UploadTap` bewaart alleen een body die JSON is met een `"move"`-array (hooguit 4 KB gelezen, andere bodies
-worden genegeerd) en toont die als toast `WFWF move: <body>`; dezelfde body staat als `lastmove=` onder "Details
-kopiëren". Test: speel in Wordfeud zelf (niet via de overlay) een zet met een blanco en noteer de toast. Aan/uit
-met `UploadTap.DIAGNOSTIC_TOAST`; alles is gemarkeerd met `TODO(V2)`.
-
 ## V4 — verversen
 
 Na een geslaagde zet via de Play-knop roept de overlay `Refresher.refresh(gameId)` aan (spec §8.4). De

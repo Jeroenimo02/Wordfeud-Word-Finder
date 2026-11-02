@@ -4,7 +4,6 @@ import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstruction
 import app.morphe.patcher.patch.bytecodePatch
 import app.wordfeudwordfinder.patches.network.networkTapPatch
-import app.wordfeudwordfinder.patches.network.uploadTapPatch
 import app.wordfeudwordfinder.patches.platform.platformTapPatch
 import app.wordfeudwordfinder.patches.platform.userAgentPatch
 import app.wordfeudwordfinder.patches.shared.Constants.COMPATIBILITY_WORDFEUD
@@ -27,8 +26,7 @@ val overlayPatch = bytecodePatch(
     compatibleWith(COMPATIBILITY_WORDFEUD)
 
     // The overlay needs the game data (network), the route/theme/banner state (platform) and the User-Agent.
-    // uploadTapPatch: V2 diagnosis only (the move body Wordfeud sends); TODO(V2): remove.
-    dependsOn(networkTapPatch, platformTapPatch, userAgentPatch, uploadTapPatch)
+    dependsOn(networkTapPatch, platformTapPatch, userAgentPatch)
 
     extendWith("extensions/extension.mpe")
 

@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import app.wordfeudwordfinder.extension.hooks.RouteTap;
-import app.wordfeudwordfinder.extension.hooks.UploadTap;
 import java.io.File;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
