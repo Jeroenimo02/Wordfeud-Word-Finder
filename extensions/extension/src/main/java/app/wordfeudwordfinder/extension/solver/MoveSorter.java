@@ -25,6 +25,9 @@ public final class MoveSorter {
         return Boolean.compare(b.horizontal, a.horizontal); // horizontal first
     };
 
+    /** Score mode's order (best first); also what {@link MoveGenerator} keeps when it caps its output. */
+    static final Comparator<Move> BEST_FIRST = BY_SCORE_DESC.thenComparing(BY_WORD).thenComparing(BY_POSITION);
+
     /** Returns a new sorted list; the input is not modified. */
     public static List<Move> sort(List<Move> moves, SortMode mode) {
         Comparator<Move> c;

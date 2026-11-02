@@ -24,6 +24,16 @@ public final class MoveGenerator {
     private static final int[] LETTER_MULT = {1, 2, 3, 1, 1};
     private static final int[] WORD_MULT = {1, 1, 1, 2, 3};
 
+    /**
+     * Most moves returned: with two blanks the full list easily holds 100k+ moves, too much memory inside the host
+     * app. The best ones by score are kept ({@link MoveCollector}).
+     */
+    public static final int MAX_MOVES = 3000;
+
+    /**
+     * The best {@link #MAX_MOVES} legal moves, best first ({@link MoveSorter#BEST_FIRST}), one per word and
+     * placement (the highest-scoring blank/no-blank variant).
+     */
     public static List<Move> generate(char[][] board, List<String> rack, BoardLayout layout, Ruleset rs,
                                       WordGraph wg, AtomicBoolean cancel) {
         return generate(board, rack, layout, rs, wg, cancel, Rules.BLANKS_ENABLED);
@@ -32,6 +42,12 @@ public final class MoveGenerator {
     /** As {@link #generate(char[][], List, BoardLayout, Ruleset, WordGraph, AtomicBoolean)}; tests can allow blanks. */
     static List<Move> generate(char[][] board, List<String> rack, BoardLayout layout, Ruleset rs, WordGraph wg,
                                AtomicBoolean cancel, boolean allowBlanks) {
+        return generate(board, rack, layout, rs, wg, cancel, allowBlanks, MAX_MOVES);
+    }
+
+    /** Tests can also change the cap. */
+    static List<Move> generate(char[][] board, List<String> rack, BoardLayout layout, Ruleset rs, WordGraph wg,
+                               AtomicBoolean cancel, boolean allowBlanks, int maxMoves) {
         if (cancel == null) cancel = new AtomicBoolean(false);
         if (cancel.get() || board == null || rack == null || layout == null || wg == null) {
             return Collections.emptyList();
@@ -97,7 +113,7 @@ public final class MoveGenerator {
         }
         if (rackChars.length == 0 && blanks == 0) return Collections.emptyList();
 
-        List<Move> out = new ArrayList<>();
+        MoveCollector out = new MoveCollector(maxMoves);
         for (int pass = 0; pass < 2; pass++) {
             boolean horizontal = pass == 0;
             char[][] g = horizontal ? letters : transpose(letters);
@@ -108,7 +124,7 @@ public final class MoveGenerator {
             if (!p.run()) return Collections.emptyList();
         }
         if (cancel.get()) return Collections.emptyList();
-        return out;
+        return out.result();
     }
 
     private static char[][] transpose(char[][] a) {
@@ -146,7 +162,7 @@ public final class MoveGenerator {
         final int[] rackCounts;
         int blanks;
         final AtomicBoolean cancel;
-        final List<Move> out;
+        final MoveCollector out;
 
         // Per-square cross-check data for the current orientation.
         final boolean[][] anchor;
@@ -167,7 +183,7 @@ public final class MoveGenerator {
 
         Pass(char[][] g, boolean[][] gBlank, int[][] sq, boolean horizontal, boolean emptyBoard, WordGraph wg,
              Map<Character, Integer> values, char[] rackChars, int[] rackCounts, int blanks,
-             AtomicBoolean cancel, List<Move> out) {
+             AtomicBoolean cancel, MoveCollector out) {
             this.g = g;
             this.gBlank = gBlank;
             this.sq = sq;
@@ -346,6 +362,29 @@ public final class MoveGenerator {
             }
         }
 
+        /** The score {@link #record} computes, without building the move. */
+        private int score(int start, int len) {
+            int mainSum = 0;
+            int wordMult = 1;
+            int crossTotal = 0;
+            for (int i = 0; i < len; i++) {
+                int col = start + i;
+                if (!isNew[i]) {
+                    mainSum += value(word[i], isBlankTile[i]);
+                    continue;
+                }
+                int type = sq[row][col];
+                if (type < 0 || type >= BONUS.length) type = 0;
+                int tile = value(word[i], isBlankTile[i]) * LETTER_MULT[type];
+                mainSum += tile;
+                wordMult *= WORD_MULT[type];
+                if (hasCross[row][col]) crossTotal += (crossSum[row][col] + tile) * WORD_MULT[type];
+            }
+            int score = mainSum * wordMult + crossTotal;
+            if (placedCount == Rules.RACK_SIZE) score += Rules.BINGO_BONUS;
+            return score;
+        }
+
         private void record(int start, int len) {
             // A single tile forms a word in both directions; the horizontal pass reports it when its
             // horizontal word has two or more letters, so the vertical pass skips it then.
@@ -354,6 +393,7 @@ public final class MoveGenerator {
                     if (isNew[i] && hasCross[row][start + i]) return;
                 }
             }
+            if (score(start, len) < out.minScore()) return; // cannot get into the kept moves: build nothing
             int mainSum = 0;
             int wordMult = 1;
             int crossTotal = 0;

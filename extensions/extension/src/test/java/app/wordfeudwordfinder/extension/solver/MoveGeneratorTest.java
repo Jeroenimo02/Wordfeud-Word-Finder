@@ -483,11 +483,50 @@ public class MoveGeneratorTest {
         long t0 = System.nanoTime();
         List<Move> moves = MoveGenerator.generate(b, rack("??ENRTA"), layout, nl, wg, new AtomicBoolean(false), true);
         long ms = (System.nanoTime() - t0) / 1_000_000;
-        System.out.println("two blanks, " + tiles + " tiles: " + moves.size() + " moves in " + ms + " ms");
         assertTrue("took " + ms + " ms", ms < 5000);
+        assertTrue(moves.size() + " moves", moves.size() <= MoveGenerator.MAX_MOVES);
         boolean usesBlank = false;
         for (Move m : moves) for (String l : m.placedLetters) usesBlank |= Character.isLowerCase(l.charAt(0));
         assertTrue(usesBlank);
+        // The cap keeps the best: same top move as an uncapped run.
+        List<Move> all = MoveGenerator.generate(b, rack("??ENRTA"), layout, nl, wg, new AtomicBoolean(false), true,
+                Integer.MAX_VALUE);
+        System.out.println("two blanks, " + tiles + " tiles: " + moves.size() + " of " + all.size() + " moves in "
+                + ms + " ms");
+        assertTrue(all.size() > moves.size());
+        List<Move> sorted = MoveSorter.sort(all, SortMode.SCORE);
+        assertEquals(sorted.get(0).toString(), moves.get(0).toString());
+        assertEquals(sorted.get(moves.size() - 1).toString(), moves.get(moves.size() - 1).toString());
+        assertNoDuplicatePlacements(moves);
+    }
+
+    @Test
+    public void blankVariantOnlyWhenItScoresMore() {
+        // EE with E, E and a blank: the variants with a blank score less, only the real tiles are listed.
+        List<Move> moves = MoveGenerator.generate(empty(), rack("EE?"), layout, nl, words("EE"),
+                new AtomicBoolean(false), true);
+        Move m = find(moves, "EE", 6, 7, true); // find() fails on a duplicate word and placement
+        assertEquals(Arrays.asList("E", "E"), m.placedLetters);
+        // One E and a blank: (E,e) and (e,E) are the same placement; one is kept, the blank on the plainer square.
+        List<Move> one = MoveGenerator.generate(empty(), rack("E?"), layout, nl, words("EE"),
+                new AtomicBoolean(false), true);
+        for (Move x : one) assertEquals(1, MoveCollector.blanks(x));
+        assertNoDuplicatePlacements(one);
+        java.util.Set<String> seen = new HashSet<>();
+        for (Move x : one) assertTrue("duplicate " + x, seen.add(x.word + x.x + "," + x.y + x.horizontal));
+    }
+
+    @Test
+    public void capKeepsTheBestInScoreOrder() {
+        WordGraph wg = randomWords(5000, 7);
+        List<Move> all = MoveGenerator.generate(fixtureBoard, rack("VWTJHOR"), layout, nl, wg,
+                new AtomicBoolean(false), false, Integer.MAX_VALUE);
+        assertTrue(all.size() > 20);
+        List<Move> top = MoveGenerator.generate(fixtureBoard, rack("VWTJHOR"), layout, nl, wg,
+                new AtomicBoolean(false), false, 20);
+        assertEquals(20, top.size());
+        List<Move> sorted = MoveSorter.sort(all, SortMode.SCORE);
+        for (int i = 0; i < 20; i++) assertEquals(sorted.get(i).toString(), top.get(i).toString());
     }
 
     @Test
