@@ -2,6 +2,7 @@ package app.wordfeudwordfinder.extension.ui;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import app.wordfeudwordfinder.extension.core.WfError;
@@ -106,5 +107,24 @@ public class ErrorDetailsTest {
                 + " [77] skipped=0 known=12",
                 ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, "x", "/game/123", d));
         assertEquals(base + "\nroute=/game/1 ", ErrorDetails.format(e, "5.7.1", "dev", -1, 0L, null, "/game/1\n", null));
+    }
+
+    @Test
+    public void storeLineHoldsTheOpenGamesSource() {
+        app.wordfeudwordfinder.extension.game.GameStore.DetailSummary d =
+                new app.wordfeudwordfinder.extension.game.GameStore.DetailSummary(1000L, 3,
+                        new java.util.ArrayList<Long>(), 0, 0, null, 12);
+        app.wordfeudwordfinder.extension.game.GameStore.UpdateSource src =
+                new app.wordfeudwordfinder.extension.game.GameStore.UpdateSource("game/<id>/move/", 2000L,
+                        1793538961.5, false, "user/games/detail/", 3000L);
+        assertEquals("games/detail 1970-01-01T00:00:01Z: games=3 failed=0 skipped=0 known=12; game 7: "
+                + "game/<id>/move/ 1970-01-01T00:00:02Z updated=1793538961 turn=other skipped user/games/detail/ "
+                + "1970-01-01T00:00:03Z", ErrorDetails.storeLine(d, 7L, src));
+        assertEquals("game 7: unknown", ErrorDetails.storeLine(null, 7L, null));
+        assertNull(ErrorDetails.storeLine(null, null, src));
+        app.wordfeudwordfinder.extension.game.GameStore.UpdateSource plain =
+                new app.wordfeudwordfinder.extension.game.GameStore.UpdateSource("game/<id>/", 0L, -1, true, null, 0L);
+        String text = ErrorDetails.format(null, "w", "p", 2, 0L, null, null, null, 7L, plain);
+        assertTrue(text, text.endsWith("\nstore=game 7: game/<id>/ 1970-01-01T00:00:00Z turn=me"));
     }
 }

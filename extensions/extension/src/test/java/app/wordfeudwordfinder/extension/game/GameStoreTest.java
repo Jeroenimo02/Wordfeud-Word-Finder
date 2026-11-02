@@ -316,4 +316,37 @@ public class GameStoreTest {
         assertTrue(RawGame.notOlder(old, new RawGame(1L, 0, 2, 0, 0, 0, one)));
         assertFalse(RawGame.notOlder(old, new RawGame(1L, 0, 2, 0, 0, 0, none)));
     }
+
+    @Test
+    public void sourcePathHidesNumbersAndQuery() {
+        assertEquals("game/<id>/move/",
+                GameStore.sourcePath("https://api.wordfeud.com/wf/game/4391319402/move/?game_format=log"));
+        assertEquals("user/games/detail/",
+                GameStore.sourcePath("https://api.wordfeud.com/wf/user/games/detail/?known_tile_points=1"));
+        assertEquals("overlay-play", GameStore.sourcePath("overlay-play"));
+        assertNull(GameStore.sourcePath(null));
+    }
+
+    @Test
+    public void recordsSourceOfLastUpdateAndSkippedStaleOne() throws Exception {
+        long[] t = {1000L};
+        GameStore store = new GameStore(new Storage(tmp.getRoot()), GameReplay::replay, () -> t[0]);
+        assertNull(store.source(GAME));
+        store.onGamesDetail(fixture("detail_neigen.json"), "https://api.wordfeud.com/wf/user/games/detail/?x=1");
+        t[0] = 2000L;
+        store.onMoveResponse(fixture("move_hoort.json"), "https://api.wordfeud.com/wf/game/" + GAME + "/move/");
+        GameStore.UpdateSource src = store.source(GAME);
+        assertEquals("game/<id>/move/", src.path);
+        assertEquals(2000L, src.timeMillis);
+        assertFalse(src.myTurn);
+        assertEquals(1793538961L, (long) src.updated);
+        assertNull(src.skippedPath);
+        t[0] = 3000L;
+        store.onGamesDetail(fixture("detail_neigen.json"), "https://api.wordfeud.com/wf/user/games/detail/");
+        src = store.source(GAME);
+        assertEquals("applied source kept", "game/<id>/move/", src.path);
+        assertEquals("user/games/detail/", src.skippedPath);
+        assertEquals(3000L, src.skippedTimeMillis);
+        assertEquals("user/games/detail/", store.source(OTHER).path);
+    }
 }

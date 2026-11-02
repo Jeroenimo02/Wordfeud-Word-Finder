@@ -50,9 +50,40 @@ public final class ErrorDetails {
      */
     public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
             String refreshDiagnostic, String route, GameStore.DetailSummary store) {
+        return format(e, wfVersion, patchVersion, rulesetId, epochMillis, refreshDiagnostic, route, store, null, null);
+    }
+
+    /**
+     * As above; the {@code store=} line also holds the open game's {@link GameStore.UpdateSource} (when
+     * {@code gameId} is not null), see {@link #storeLine}.
+     */
+    public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
+            String refreshDiagnostic, String route, GameStore.DetailSummary store, Long gameId,
+            GameStore.UpdateSource source) {
         return format(e, wfVersion, patchVersion, rulesetId, isoUtc(epochMillis), refreshDiagnostic)
                 + line("route", route)
-                + line("store", store == null ? null : store.describe(isoUtc(store.timeMillis)));
+                + line("store", storeLine(store, gameId, source));
+    }
+
+    /**
+     * {@code <detail summary>; game <id>: <path> <time> updated=<s> turn=me|other[ skipped <path> <time>]}, either
+     * part only when known ({@code game <id>: unknown} when the open game has no recorded source). Null when there
+     * is nothing.
+     */
+    static String storeLine(GameStore.DetailSummary store, Long gameId, GameStore.UpdateSource src) {
+        String d = store == null ? null : store.describe(isoUtc(store.timeMillis));
+        if (gameId == null) return d;
+        StringBuilder b = new StringBuilder();
+        if (d != null) b.append(d).append("; ");
+        b.append("game ").append(gameId).append(": ");
+        if (src == null) return b.append(UNKNOWN).toString();
+        b.append(src.path == null ? UNKNOWN : src.path).append(' ').append(isoUtc(src.timeMillis));
+        if (src.updated >= 0) b.append(" updated=").append((long) src.updated);
+        b.append(" turn=").append(src.myTurn ? "me" : "other");
+        if (src.skippedPath != null) {
+            b.append(" skipped ").append(src.skippedPath).append(' ').append(isoUtc(src.skippedTimeMillis));
+        }
+        return b.toString();
     }
 
     private static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, String time) {

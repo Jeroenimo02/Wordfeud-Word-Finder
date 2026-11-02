@@ -27,6 +27,7 @@ public final class GameStore {
     private final Function<RawGame, GameState> replayer;
     private final Map<Long, RawGame> games = new LinkedHashMap<>();
     private final Map<Long, GameState> states = new LinkedHashMap<>();
+    private final Map<Long, UpdateSource> sources = new LinkedHashMap<>();
     private final Map<Integer, Ruleset> rulesets = new LinkedHashMap<>();
     private final Map<Integer, BoardLayout> boards = new LinkedHashMap<>();
     private final List<Runnable> listeners = new ArrayList<>();
@@ -83,6 +84,49 @@ public final class GameStore {
         }
     }
 
+    /**
+     * Diagnostics per game: where its stored data came from (the API path with numbers replaced by {@code <id>}, no
+     * query, see {@link #sourcePath}), when, its {@code updated} time and turn; plus the last response for it that
+     * was skipped as older than the stored one. Paths and numbers only, no response content. Shown in Copy details.
+     */
+    public static final class UpdateSource {
+        public final String path;
+        public final long timeMillis;
+        /** The game's server {@code updated} time in seconds, or negative when unknown. */
+        public final double updated;
+        public final boolean myTurn;
+        /** Path of the last skipped (older) response for this game, or null. */
+        public final String skippedPath;
+        public final long skippedTimeMillis;
+
+        public UpdateSource(String path, long timeMillis, double updated, boolean myTurn, String skippedPath,
+                long skippedTimeMillis) {
+            this.path = path;
+            this.timeMillis = timeMillis;
+            this.updated = updated;
+            this.myTurn = myTurn;
+            this.skippedPath = skippedPath;
+            this.skippedTimeMillis = skippedTimeMillis;
+        }
+    }
+
+    private static final String API_PREFIX = "https://api.wordfeud.com/wf/";
+
+    /**
+     * A URL reduced for diagnostics: without the API prefix and query, every run of digits replaced by {@code <id>}
+     * (e.g. {@code game/<id>/move/}). Null stays null.
+     */
+    public static String sourcePath(String url) {
+        if (url == null) return null;
+        String p = url;
+        int q = p.indexOf('?');
+        if (q >= 0) p = p.substring(0, q);
+        int h = p.indexOf('#');
+        if (h >= 0) p = p.substring(0, h);
+        if (p.startsWith(API_PREFIX)) p = p.substring(API_PREFIX.length());
+        return p.replaceAll("[0-9]+", "<id>");
+    }
+
     public GameStore(Storage s) {
         this(s, GameReplay::replay);
     }
@@ -106,14 +150,19 @@ public final class GameStore {
      * disk cache. A response that is not parseable as a whole leaves the store unchanged and does not notify.
      */
     public void onGamesDetail(String json) {
+        onGamesDetail(json, "user/games/detail/");
+    }
+
+    /** As {@link #onGamesDetail(String)}; {@code url} is recorded (reduced, see {@link #sourcePath}) per game. */
+    public void onGamesDetail(String json, String url) {
         ResponseParser.Parsed p;
         try {
             p = ResponseParser.parseGamesDetail(json);
         } catch (WfError e) {
-            onGamesDetail(null, e);
+            onGamesDetail(null, e, url);
             return;
         }
-        onGamesDetail(p, null);
+        onGamesDetail(p, null, url);
     }
 
     /**
@@ -123,6 +172,11 @@ public final class GameStore {
      * without notifying. Never throws. Returns true when the response carried game data.
      */
     public boolean onGameData(String json) {
+        return onGameData(json, null);
+    }
+
+    /** As {@link #onGameData(String)}; {@code url} is recorded (reduced, see {@link #sourcePath}) per game. */
+    public boolean onGameData(String json, String url) {
         JSONObject root;
         try {
             root = new JSONObject(json);
@@ -137,11 +191,11 @@ public final class GameStore {
             } catch (WfError e) {
                 return false; // a malformed list from another endpoint does not count as a failed games/detail
             }
-            onGamesDetail(p, null);
+            onGamesDetail(p, null, url);
             return true;
         }
         if (kind == ResponseParser.Kind.GAME) {
-            onSingleGame(root);
+            onSingleGame(root, url);
             return true;
         }
         return false;
@@ -152,7 +206,7 @@ public final class GameStore {
      * {@link #onMoveResponse} it never throws: an unparseable game is ignored. It counts as a games/detail for
      * {@link #detailGeneration}: it is the server's own snapshot, not the result of our move.
      */
-    private void onSingleGame(JSONObject root) {
+    private void onSingleGame(JSONObject root, String url) {
         RawGame g;
         try {
             g = ResponseParser.parseSingleGame(root);
@@ -161,7 +215,7 @@ public final class GameStore {
         }
         List<Runnable> toRun;
         synchronized (this) {
-            put(g);
+            put(g, url);
             detailGeneration++;
             toRun = new ArrayList<>(listeners);
         }
@@ -169,7 +223,7 @@ public final class GameStore {
     }
 
     /** Merges a parsed games list, or records the whole-response error {@code e} (then {@code p} is null). */
-    private void onGamesDetail(ResponseParser.Parsed p, WfError e) {
+    private void onGamesDetail(ResponseParser.Parsed p, WfError e, String url) {
         if (e != null) {
             synchronized (this) {
                 lastDetail = new DetailSummary(now(), 0, new ArrayList<Long>(), 0, 0, e.code(), states.size());
@@ -179,7 +233,7 @@ public final class GameStore {
         List<Runnable> toRun;
         synchronized (this) {
             mergeCache(p.rulesets, p.boards);
-            for (RawGame g : p.games) put(g);
+            for (RawGame g : p.games) put(g, url);
             List<Long> failedIds = new ArrayList<>();
             for (Map.Entry<Long, WfError> f : p.failedGames.entrySet()) {
                 games.remove(f.getKey());
@@ -199,10 +253,15 @@ public final class GameStore {
      * nothing on a server error.
      */
     public void onMoveResponse(String json) throws WfError {
+        onMoveResponse(json, "move");
+    }
+
+    /** As {@link #onMoveResponse(String)}; {@code url} is recorded (reduced, see {@link #sourcePath}). */
+    public void onMoveResponse(String json, String url) throws WfError {
         RawGame g = ResponseParser.parseMove(json);
         List<Runnable> toRun;
         synchronized (this) {
-            put(g);
+            put(g, url);
             toRun = new ArrayList<>(listeners);
         }
         notifyAll(toRun);
@@ -242,6 +301,11 @@ public final class GameStore {
         return detailGeneration;
     }
 
+    /** Where the stored data of {@code gameId} came from, or null when unknown. */
+    public synchronized UpdateSource source(long gameId) {
+        return sources.get(gameId);
+    }
+
     /** The last games/detail response's summary, or null when none was seen yet. */
     public synchronized DetailSummary lastDetail() {
         return lastDetail;
@@ -265,9 +329,26 @@ public final class GameStore {
      * Stores {@code g} unless the stored copy of that game is newer ({@link RawGame#notOlder}); false when it was
      * skipped as stale.
      */
-    private boolean put(RawGame g) {
-        if (!RawGame.notOlder(games.get(g.getId()), g)) return false;
+    private boolean put(RawGame g, String url) {
+        String path = sourcePath(url);
+        UpdateSource prev = sources.get(g.getId());
+        if (!RawGame.notOlder(games.get(g.getId()), g)) {
+            if (prev != null) {
+                sources.put(g.getId(), new UpdateSource(prev.path, prev.timeMillis, prev.updated, prev.myTurn, path,
+                        now()));
+            }
+            return false;
+        }
         games.put(g.getId(), g);
+        replay(g);
+        GameState st = states.get(g.getId());
+        sources.put(g.getId(), new UpdateSource(path, now(), g.getUpdated(), st != null && st.myTurn(),
+                prev == null ? null : prev.skippedPath, prev == null ? 0L : prev.skippedTimeMillis));
+        return true;
+    }
+
+    /** Replays {@code g} into {@link #states} (the caller has stored it in {@link #games}). */
+    private void replay(RawGame g) {
         if (!rulesets.containsKey(g.getRulesetId())) {
             states.put(g.getId(), unreadable(g.getId(), WfError.gsData("ruleset " + g.getRulesetId() + " unknown"),
                     g));
@@ -283,7 +364,6 @@ public final class GameStore {
             }
             states.put(g.getId(), st);
         }
-        return true;
     }
 
     private static GameState unreadable(long id, WfError e, RawGame g) {

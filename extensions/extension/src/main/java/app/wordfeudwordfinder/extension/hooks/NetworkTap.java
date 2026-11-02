@@ -81,9 +81,9 @@ public final class NetworkTap {
     static void route(ResponseAssembler.Completed c, GameStore store) throws Exception {
         if (c == null || c.url == null || c.body == null || store == null) return;
         String path = path(c.url);
-        if (path.contains("user/games/detail/")) store.onGamesDetail(c.body);
-        else if (path.contains("/move/")) store.onMoveResponse(c.body);
-        else if (c.body.contains("game_log")) store.onGameData(c.body);
+        if (path.contains("user/games/detail/")) store.onGamesDetail(c.body, c.url);
+        else if (path.contains("/move/")) store.onMoveResponse(c.body, c.url);
+        else if (c.body.contains("game_log")) store.onGameData(c.body, c.url);
     }
 
     /** The URL without its query string. */

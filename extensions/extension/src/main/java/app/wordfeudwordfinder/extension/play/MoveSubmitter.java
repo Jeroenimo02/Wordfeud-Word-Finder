@@ -141,7 +141,7 @@ public final class MoveSubmitter {
         try {
             // Also for a non-2xx body: the server's own JSON decides. A non-2xx with status "success" is
             // therefore treated as SUCCESS (the server says the move was played).
-            store.onMoveResponse(response);
+            store.onMoveResponse(response, "overlay-play"); // source label for Copy details
             return Result.success();
         } catch (WfError e) {
             if (ILLEGAL_WORD.equals(e.code())) {

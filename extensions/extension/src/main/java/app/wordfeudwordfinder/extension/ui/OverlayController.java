@@ -141,6 +141,8 @@ public final class OverlayController {
     private TextView infoScore;
     private TextView playButton;
     private TextView notYourTurn;
+    /** NOT_YOUR_TURN plus a small "Copy details" button (diagnoses a turn that looks wrong). */
+    private LinearLayout notYourTurnBox;
     private LinearLayout sortRow;
     private final TextView[] sortButtons = new TextView[SortMode.values().length];
     private ListView list;
@@ -786,7 +788,25 @@ public final class OverlayController {
         notYourTurn.setText(Strings.get(lang, Key.NOT_YOUR_TURN));
         notYourTurn.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         notYourTurn.setMaxWidth(dp(160));
-        row.addView(notYourTurn, wrap());
+        LinearLayout box = new LinearLayout(ctx);
+        box.setOrientation(LinearLayout.HORIZONTAL);
+        box.setGravity(Gravity.CENTER_VERTICAL);
+        box.addView(notYourTurn, wrap());
+        TextView copy = button(ctx, Strings.get(lang, Key.COPY_DETAILS), false);
+        copy.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12);
+        copy.setOnClickListener(v -> {
+            try {
+                ErrorPanel.copyDetails(activity, lang, null, game == null ? -1 : game.getRulesetId());
+            } catch (Throwable ignored) {
+                // no clipboard: nothing to do
+            }
+        });
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                dp(BUTTON_HEIGHT_DP));
+        clp.leftMargin = dp(SECTION_GAP_DP);
+        box.addView(copy, clp);
+        notYourTurnBox = box;
+        row.addView(box, wrap());
         return row;
     }
 
@@ -828,6 +848,7 @@ public final class OverlayController {
         infoScore = null;
         playButton = null;
         notYourTurn = null;
+        notYourTurnBox = null;
         sortRow = null;
         java.util.Arrays.fill(sortButtons, null);
         list = null;
@@ -1167,7 +1188,7 @@ public final class OverlayController {
         infoScore.setText(m == null ? "" : OverlayFormat.scoreText(lang, m.score));
         boolean myTurn = state != null && state.myTurn();
         playButton.setVisibility(myTurn ? View.VISIBLE : View.GONE);
-        notYourTurn.setVisibility(myTurn ? View.GONE : View.VISIBLE);
+        notYourTurnBox.setVisibility(myTurn ? View.GONE : View.VISIBLE);
         updatePlayEnabled();
     }
 
