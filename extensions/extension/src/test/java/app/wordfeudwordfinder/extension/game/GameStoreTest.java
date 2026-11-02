@@ -244,4 +244,76 @@ public class GameStoreTest {
         assertTrue(d.describe("T"), d.describe("T").startsWith("games/detail T: error GS-DATA games=0 failed=0"));
         assertNotNull(store.state(GAME)); // unchanged
     }
+    /** The game from move_hoort.json after the opponent passed: same board, the turn is ours again. */
+    private static String detailAfterOpponentPass() throws Exception {
+        JSONObject game = new JSONObject(fixture("move_hoort.json")).getJSONObject("content").getJSONObject("game");
+        game.put("updated", game.getLong("updated") + 30);
+        game.put("current_player", 0);
+        JSONObject pass = new JSONObject();
+        pass.put("type", "pass");
+        pass.put("player", 1);
+        pass.put("timestamp", game.getLong("updated"));
+        game.getJSONArray("game_log").put(pass);
+        JSONObject content = new JSONObject();
+        content.put("games", new org.json.JSONArray().put(game));
+        JSONObject root = new JSONObject();
+        root.put("status", "success");
+        root.put("content", content);
+        return root.toString();
+    }
+
+    @Test
+    public void olderDetailDoesNotOverwriteNewerMoveResponse() throws Exception {
+        GameStore store = new GameStore(new Storage(tmp.getRoot()));
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        store.onMoveResponse(fixture("move_hoort.json"));
+        GameState afterMove = store.state(GAME);
+        // a games/detail that was in flight across the move arrives late
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        assertTrue("stale snapshot skipped", afterMove == store.state(GAME));
+        assertFalse(store.state(GAME).myTurn());
+        assertEquals(2, store.detailGeneration()); // still counts as a processed games/detail
+    }
+
+    @Test
+    public void olderMoveResponseDoesNotOverwriteNewerDetail() throws Exception {
+        GameStore store = new GameStore(new Storage(tmp.getRoot()));
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        store.onGamesDetail(detailAfterOpponentPass());
+        assertTrue(store.state(GAME).myTurn());
+        store.onMoveResponse(fixture("move_hoort.json")); // processed late on another thread
+        assertTrue("turn stays with us", store.state(GAME).myTurn());
+    }
+
+    @Test
+    public void opponentPassFlipsTurnWithUnchangedBoard() throws Exception {
+        GameStore store = new GameStore(new Storage(tmp.getRoot()));
+        store.onGamesDetail(fixture("detail_neigen.json"));
+        store.onMoveResponse(fixture("move_hoort.json"));
+        GameState afterMove = store.state(GAME);
+        assertFalse(afterMove.myTurn());
+        store.onGamesDetail(detailAfterOpponentPass());
+        GameState now = store.state(GAME);
+        assertNull(now.unreadable());
+        assertTrue(now.myTurn());
+        assertTrue(java.util.Arrays.deepEquals(afterMove.board(), now.board()));
+        assertFalse("overlay reloads on a turn-only change",
+                app.wordfeudwordfinder.extension.ui.MovePipeline.sameInput(afterMove, now));
+    }
+
+    @Test
+    public void notOlderComparesUpdatedThenLogLength() {
+        java.util.List<LogEvent> one = java.util.Collections.singletonList(new LogEvent("start", new JSONObject()));
+        java.util.List<LogEvent> none = java.util.Collections.emptyList();
+        RawGame old = new RawGame(1L, 0, 2, 0, 0, 0, one, 100);
+        assertTrue(RawGame.notOlder(null, old));
+        assertFalse(RawGame.notOlder(old, null));
+        assertTrue(RawGame.notOlder(old, new RawGame(1L, 0, 2, 0, 0, 0, none, 101)));
+        assertFalse(RawGame.notOlder(old, new RawGame(1L, 0, 2, 0, 0, 0, one, 99)));
+        assertTrue("equal data is accepted", RawGame.notOlder(old, new RawGame(1L, 0, 2, 1, 0, 0, one, 100)));
+        assertFalse(RawGame.notOlder(old, new RawGame(1L, 0, 2, 0, 0, 0, none, 100)));
+        // without updated on either side only the log length counts
+        assertTrue(RawGame.notOlder(old, new RawGame(1L, 0, 2, 0, 0, 0, one)));
+        assertFalse(RawGame.notOlder(old, new RawGame(1L, 0, 2, 0, 0, 0, none)));
+    }
 }

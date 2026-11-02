@@ -101,7 +101,8 @@ public final class GameStore {
     }
 
     /**
-     * Merges a games/detail response: games are upserted by id, new rulesets/boards are merged into memory and the
+     * Merges a games/detail response: games are upserted by id (a game older than the stored one is skipped, see
+     * {@link RawGame#notOlder}), new rulesets/boards are merged into memory and the
      * disk cache. A response that is not parseable as a whole leaves the store unchanged and does not notify.
      */
     public void onGamesDetail(String json) {
@@ -132,7 +133,10 @@ public final class GameStore {
         notifyAll(toRun);
     }
 
-    /** Replaces the game from a move response; throws MV-SERVER-... and changes nothing on a server error. */
+    /**
+     * Replaces the game from a move response (unless the stored one is newer); throws MV-SERVER-... and changes
+     * nothing on a server error.
+     */
     public void onMoveResponse(String json) throws WfError {
         RawGame g = ResponseParser.parseMove(json);
         List<Runnable> toRun;
@@ -195,7 +199,12 @@ public final class GameStore {
         }
     }
 
-    private void put(RawGame g) {
+    /**
+     * Stores {@code g} unless the stored copy of that game is newer ({@link RawGame#notOlder}); false when it was
+     * skipped as stale.
+     */
+    private boolean put(RawGame g) {
+        if (!RawGame.notOlder(games.get(g.getId()), g)) return false;
         games.put(g.getId(), g);
         if (!rulesets.containsKey(g.getRulesetId())) {
             states.put(g.getId(), unreadable(g.getId(), WfError.gsData("ruleset " + g.getRulesetId() + " unknown"),
@@ -212,6 +221,7 @@ public final class GameStore {
             }
             states.put(g.getId(), st);
         }
+        return true;
     }
 
     private static GameState unreadable(long id, WfError e, RawGame g) {

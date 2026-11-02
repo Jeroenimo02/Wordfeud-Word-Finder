@@ -153,7 +153,10 @@ public final class ResponseParser {
             log.add(new LogEvent(type instanceof String ? (String) type : null, ev));
         }
         // localPosition stays -1 when no player is local; GameReplay reports that as GS-DATA.
-        return new RawGame(id, board, ruleset, currentPlayer, endGame, localPosition, log);
+        Object up = g.opt("updated");
+        double updated = up instanceof Number && ((Number) up).doubleValue() >= 0 ? ((Number) up).doubleValue()
+                : RawGame.UNKNOWN_UPDATED;
+        return new RawGame(id, board, ruleset, currentPlayer, endGame, localPosition, log, updated);
     }
 
     private static Ruleset parseRuleset(JSONObject r) throws WfError {
