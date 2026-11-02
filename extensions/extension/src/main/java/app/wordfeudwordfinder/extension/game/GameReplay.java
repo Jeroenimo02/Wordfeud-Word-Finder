@@ -19,7 +19,7 @@ public final class GameReplay {
             new HashSet<>(Arrays.asList("type", "tiles", "timestamp"));
     private static final Set<String> PACKED_MOVE_FIELDS = new HashSet<>(Arrays.asList(
             "type", "player", "x", "y", "horizontal", "tiles", "new_tiles", "timestamp"));
-    // V10: swap and resign shapes observed in real logs (detail_mandje.json). pass and timeout are still unobserved.
+    // V10: swap and resign shapes observed in real logs (detail_mandje.json). pass and timeout: see below.
     private static final Set<String> SWAP_FIELDS =
             new HashSet<>(Arrays.asList("type", "player", "tile_count", "tiles", "new_tiles", "timestamp"));
     private static final Set<String> RESIGN_FIELDS =
@@ -72,6 +72,13 @@ public final class GameReplay {
                     case "resign":
                         checkFields(ev.getRaw(), RESIGN_FIELDS);
                         ResponseParser.integer(ev.getRaw(), "player"); // no board or rack change
+                        break;
+                    case "pass":
+                    case "timeout":
+                        // V10 ruling (2026-11-02): the JSON shape of pass/timeout is unobserved. Neither can change the
+                        // board or the rack, so only "player" (if present) must be an integer; all other fields are
+                        // tolerated, since strict checks could only cause false GS-DATA.
+                        if (ev.getRaw().has("player")) ResponseParser.integer(ev.getRaw(), "player");
                         break;
                     default:
                         throw WfError.gsEvent(type);

@@ -133,18 +133,46 @@ public class GameReplayTest {
 
     @Test
     public void unknownEventMarksUnreadable() throws Exception {
-        // V10: was "swap" in the plan; swap is now implemented, so "pass" (still unobserved) takes its place.
-        GameState st = replayModifiedNeigen(g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"pass\"}")));
+        GameState st = replayModifiedNeigen(g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"foo\"}")));
         assertNotNull(st.unreadable());
-        assertEquals("GS-EVENT-pass", st.unreadable().code());
+        assertEquals("GS-EVENT-foo", st.unreadable().code());
+    }
+
+    private static GameState replayTurn(int currentPlayer, String... events) throws Exception {
+        List<LogEvent> log = new ArrayList<>();
+        log.add(new LogEvent("start", new JSONObject("{\"type\":\"start\",\"tiles\":[[\"A\",\"B\",\"C\"],null],\"timestamp\":1.0}")));
+        for (String e : events) {
+            JSONObject o = new JSONObject(e);
+            log.add(new LogEvent(o.getString("type"), o));
+        }
+        return GameReplay.replay(new RawGame(1L, 0, 2, currentPlayer, 0, 0, log));
     }
 
     @Test
-    public void timeoutAndFooStayUnreadable() throws Exception {
-        assertEquals("GS-EVENT-timeout", replayModifiedNeigen(
-                g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"timeout\"}"))).unreadable().code());
-        assertEquals("GS-EVENT-foo", replayModifiedNeigen(
-                g -> g.getJSONArray("game_log").put(new JSONObject("{\"type\":\"foo\"}"))).unreadable().code());
+    public void opponentPassAsFirstEventIsReadable() throws Exception {
+        GameState st = replayTurn(0, "{\"type\":\"pass\",\"player\":1,\"timestamp\":2.0}");
+        assertNull(st.unreadable());
+        assertEquals(Arrays.asList("A", "B", "C"), sorted(st.rack()));
+        assertTrue(st.myTurn());
+    }
+
+    @Test
+    public void ownPassAndTimeoutAreReadable() throws Exception {
+        GameState own = replayTurn(1, "{\"type\":\"pass\",\"player\":0,\"timestamp\":2.0}");
+        assertNull(own.unreadable());
+        assertEquals(Arrays.asList("A", "B", "C"), sorted(own.rack()));
+        assertFalse(own.myTurn());
+        GameState to = replayTurn(0, "{\"type\":\"timeout\",\"player\":1,\"timestamp\":2.0}");
+        assertNull(to.unreadable());
+        assertEquals(Arrays.asList("A", "B", "C"), sorted(to.rack()));
+        assertTrue(to.myTurn());
+    }
+
+    @Test
+    public void passWithExtraFieldsOrNoPlayerIsReadable() throws Exception {
+        assertNull(replayTurn(0, "{\"type\":\"pass\",\"player\":1,\"timestamp\":2.0,\"x\":\"y\",\"extra\":[1]}").unreadable());
+        assertNull(replayTurn(0, "{\"type\":\"pass\"}").unreadable());
+        assertEquals("GS-DATA", replayTurn(0, "{\"type\":\"pass\",\"player\":\"x\"}").unreadable().code());
     }
 
     @Test

@@ -247,7 +247,7 @@ Uitkomst V10 (uit proeflogs): `swap` en `resign` zijn bevestigd en geïmplemente
 `swap` heeft de velden `type`, `player`, `tile_count`, `tiles`, `new_tiles`, `timestamp`; een eigen ruil verwijdert de
 geruilde tegels van het rek en voegt `new_tiles` toe (ontbreken die, dan `GS-DATA`); een ruil van de tegenstander
 wijzigt het rek niet. `resign` heeft `type`, `player`, `timestamp` en wijzigt niets (`end_game` is dan 2).
-`pass` en `timeout` zijn nog niet waargenomen en blijven `GS-EVENT-<type>`.
+`pass` en `timeout` zijn geïmplementeerd op 2026-11-02 (exacte JSON-vorm niet waargenomen): geen bord- of rekwijziging; alleen `player` (indien aanwezig) moet een geheel getal zijn, andere velden worden niet gecontroleerd. Andere onbekende typen blijven `GS-EVENT-<type>`.
 
 ## 13. Buiten scope
 
