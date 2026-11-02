@@ -223,6 +223,57 @@ public class GameReplayTest {
         return GameReplay.replay(new RawGame(1L, 0, 2, 1, 0, 0, log));
     }
 
+    private static GameState replayWithRack(String rackJson, String... events) throws Exception {
+        List<LogEvent> log = new ArrayList<>();
+        log.add(new LogEvent("start", new JSONObject("{\"type\":\"start\",\"tiles\":[" + rackJson + ",null],\"timestamp\":1.0}")));
+        for (String e : events) {
+            JSONObject o = new JSONObject(e);
+            log.add(new LogEvent(o.getString("type"), o));
+        }
+        return GameReplay.replay(new RawGame(1L, 0, 2, 1, 0, 0, log));
+    }
+
+    private static String move(int player, String tiles, String newTiles) {
+        return "{\"type\":\"packed_move\",\"player\":" + player + ",\"x\":7,\"y\":7,\"horizontal\":true,\"tiles\":"
+                + tiles + (newTiles == null ? "" : ",\"new_tiles\":" + newTiles) + ",\"timestamp\":2.0}";
+    }
+
+    @Test
+    public void ownBlankPlayedAsLetterRemovesStarAndBoardIsLowercase() throws Exception {
+        GameState st = replayWithRack("[\"*\",\"A\",\"B\"]", move(0, "[\"A\",\"*E\"]", "[\"C\",\"D\"]"));
+        assertNull(st.unreadable());
+        assertEquals(Arrays.asList("B", "C", "D"), sorted(st.rack()));
+        assertEquals("Ae", row(st.board(), 7, 7, 8));
+    }
+
+    @Test
+    public void opponentBlankIsPlacedWithoutTouchingRack() throws Exception {
+        GameState st = replayWithRack("[\"A\",\"B\"]", move(1, "[\"*E\",\"T\"]", null));
+        assertNull(st.unreadable());
+        assertEquals(Arrays.asList("A", "B"), sorted(st.rack()));
+        assertEquals("eT", row(st.board(), 7, 7, 8));
+    }
+
+    @Test
+    public void ownBlankWithoutStarOnRackIsGsData() throws Exception {
+        assertEquals("GS-DATA", replayWithRack("[\"E\",\"A\"]", move(0, "[\"*E\"]", "[\"B\"]")).unreadable().code());
+    }
+
+    @Test
+    public void malformedBlankTilesAreGsData() throws Exception {
+        assertEquals("GS-DATA", replayWithRack("[\"*\",\"A\"]", move(0, "[\"*\"]", "[\"B\"]")).unreadable().code());
+        assertEquals("GS-DATA", replayWithRack("[\"*\",\"A\"]", move(0, "[\"**\"]", "[\"B\"]")).unreadable().code());
+        assertEquals("GS-DATA", replayWithRack("[\"*\",\"A\"]", move(1, "[\"*EE\"]", null)).unreadable().code());
+    }
+
+    @Test
+    public void blankOnRackCanBeSwappedAway() throws Exception {
+        GameState st = replayWithRack("[\"*\",\"A\"]",
+                "{\"type\":\"swap\",\"player\":0,\"tile_count\":1,\"tiles\":[\"*\"],\"new_tiles\":[\"Q\"],\"timestamp\":2.0}");
+        assertNull(st.unreadable());
+        assertEquals(Arrays.asList("A", "Q"), sorted(st.rack()));
+    }
+
     @Test
     public void opponentSwapDoesNotChangeRack() throws Exception {
         GameState st = replayWithLog("{\"type\":\"swap\",\"player\":1,\"tile_count\":2,\"tiles\":null,\"new_tiles\":null,\"timestamp\":2.0}");

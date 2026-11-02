@@ -105,7 +105,7 @@ public final class GameReplay {
         boolean horizontal = (Boolean) h;
         int dx = horizontal ? 1 : 0;
         int dy = horizontal ? 0 : 1;
-        List<String> placed = letters(ResponseParser.arr(raw, "tiles"));
+        List<String> placed = moveTiles(ResponseParser.arr(raw, "tiles"));
         if (placed.isEmpty()) throw WfError.gsData("move without tiles");
 
         for (String letter : placed) {
@@ -114,14 +114,16 @@ public final class GameReplay {
                 y += dy;
             }
             if (!inside(x, y)) throw WfError.gsData("tile " + letter + " leaves the board (x=" + x + ", y=" + y + ")");
-            board[y][x] = letter.charAt(0);
+            // blank used as X: stored as lowercase (board convention: lowercase = blank, 0 points)
+            board[y][x] = letter.length() == 2 ? Character.toLowerCase(letter.charAt(1)) : letter.charAt(0);
             x += dx;
             y += dy;
         }
 
         if (player == lp) {
             for (String letter : placed) {
-                if (!rack.remove(letter)) throw WfError.gsData("letter " + letter + " not on rack " + rack);
+                String fromRack = letter.length() == 2 ? "*" : letter; // "*X" spends a blank
+                if (!rack.remove(fromRack)) throw WfError.gsData("letter " + fromRack + " not on rack " + rack);
             }
             JSONArray newTiles = ResponseParser.optArr(raw, "new_tiles");
             if (newTiles != null) rack.addAll(letters(newTiles));
@@ -153,6 +155,20 @@ public final class GameReplay {
             Object v = a.opt(i);
             if (!(v instanceof String) || ((String) v).length() != 1) throw WfError.gsData("bad tile at index " + i + ": " + v);
             out.add((String) v);
+        }
+        return out;
+    }
+
+    /** packed_move tiles: "X" or "*X" (blank played as X); anything else is GS-DATA. */
+    private static List<String> moveTiles(JSONArray a) throws WfError {
+        List<String> out = new ArrayList<>(a.length());
+        for (int i = 0; i < a.length(); i++) {
+            Object v = a.opt(i);
+            if (!(v instanceof String)) throw WfError.gsData("bad tile at index " + i + ": " + v);
+            String t = (String) v;
+            boolean ok = t.length() == 1 ? t.charAt(0) != '*' : t.length() == 2 && t.charAt(0) == '*' && t.charAt(1) != '*';
+            if (!ok) throw WfError.gsData("bad tile at index " + i + ": " + v);
+            out.add(t);
         }
         return out;
     }
