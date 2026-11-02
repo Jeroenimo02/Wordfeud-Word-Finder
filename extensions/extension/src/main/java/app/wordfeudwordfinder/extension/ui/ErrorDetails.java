@@ -66,6 +66,17 @@ public final class ErrorDetails {
     }
 
     /**
+     * As above, plus a last line {@code server=<shape>} when {@code server} is not empty: the shape of a move
+     * rejection ({@code MoveSubmitter.rejectionShape}: type, key names and any words/word field, no other values).
+     */
+    public static String format(WfError e, String wfVersion, String patchVersion, int rulesetId, long epochMillis,
+            String refreshDiagnostic, String route, GameStore.DetailSummary store, Long gameId,
+            GameStore.UpdateSource source, String server) {
+        return format(e, wfVersion, patchVersion, rulesetId, epochMillis, refreshDiagnostic, route, store, gameId,
+                source) + line("server", server);
+    }
+
+    /**
      * {@code <detail summary>; game <id>: <path> <time> updated=<s> turn=me|other[ skipped <path> <time>]}, either
      * part only when known ({@code game <id>: unknown} when the open game has no recorded source). Null when there
      * is nothing.

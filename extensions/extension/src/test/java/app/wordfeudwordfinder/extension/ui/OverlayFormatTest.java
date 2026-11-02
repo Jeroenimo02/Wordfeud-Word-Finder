@@ -130,4 +130,18 @@ public class OverlayFormatTest {
         assertEquals(Theme.DARK.background, Theme.forDarkMode(false).background);
         assertEquals(Theme.DARK.tileNewBorder, Theme.forDarkMode(false).tileNewBorder);
     }
+
+    @Test public void rejectionTextForEachBranch() {
+        assertEquals("Move rejected: NDJ", OverlayFormat.rejectionText("en", Arrays.asList("NDJ"), false));
+        assertEquals("Move rejected: one of MANDJE, NDJ",
+                OverlayFormat.rejectionText("en", Arrays.asList("MANDJE", "NDJ"), true));
+        assertEquals("Zet afgewezen: een van MANDJE, NDJ",
+                OverlayFormat.rejectionText("nl", Arrays.asList("MANDJE", "NDJ"), true));
+        assertEquals("Move rejected", OverlayFormat.rejectionText("en", Collections.<String>emptyList(), false));
+        for (String lang : Strings.languages()) {
+            String t = OverlayFormat.rejectionText(lang, Arrays.asList("A", "B", "C"), true);
+            assertTrue(lang, t.contains("A, B, C"));
+            assertNotEquals(lang, OverlayFormat.rejectionText(lang, Arrays.asList("A", "B", "C"), false), t);
+        }
+    }
 }

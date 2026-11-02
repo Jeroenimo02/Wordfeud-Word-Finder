@@ -71,4 +71,9 @@ public class StringsTest {
         assertEquals("42%", String.format(Strings.get("en", Key.DOWNLOAD_PCT), 42));
         assertEquals("Code: WL-NET", String.format(Strings.get("en", Key.ERROR_CODE), "WL-NET"));
     }
+    @Test public void rejectedOneOfPlaceholder() {
+        for (String lang : Strings.languages())
+            assertTrue(lang, String.format(Strings.get(lang, Key.REJECTED_ONE_OF), "A, B").contains("A, B"));
+        assertEquals("Move rejected: one of A, B", String.format(Strings.get("en", Key.REJECTED_ONE_OF), "A, B"));
+    }
 }

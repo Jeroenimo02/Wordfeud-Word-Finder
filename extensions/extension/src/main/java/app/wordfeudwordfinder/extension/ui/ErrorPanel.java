@@ -35,6 +35,9 @@ final class ErrorPanel extends LinearLayout {
     private WfError error;
     private int rulesetId = -1;
     private Runnable onRetry;
+    /** For a rejection: the server's reply shape for the {@code server=} line of Copy details; else null. */
+    private String server;
+    private boolean rejection;
 
     ErrorPanel(Context ctx, Theme theme, String lang, float density) {
         super(ctx);
@@ -94,11 +97,35 @@ final class ErrorPanel extends LinearLayout {
         this.error = e;
         this.rulesetId = rulesetId;
         this.onRetry = ErrorDetails.retryable(e) ? retry : null;
+        this.server = null;
+        this.rejection = false;
         message.setText(Strings.get(lang, Strings.errorKey(e)));
         code.setText(String.format(Strings.get(lang, Key.ERROR_CODE), e.code()));
         code.setVisibility(VISIBLE);
         this.retry.setVisibility(onRetry != null ? VISIBLE : GONE);
         setVisibility(VISIBLE);
+    }
+
+    /**
+     * A move the server refused: {@code text} (the rejected words), the code of {@code e}, and Copy details with a
+     * {@code server=} line holding {@code server} (the reply's shape). No Retry.
+     */
+    void showRejection(String text, WfError e, int rulesetId, String server) {
+        this.error = e;
+        this.rulesetId = rulesetId;
+        this.onRetry = null;
+        this.server = server;
+        this.rejection = true;
+        message.setText(text);
+        code.setText(String.format(Strings.get(lang, Key.ERROR_CODE), e.code()));
+        code.setVisibility(VISIBLE);
+        retry.setVisibility(GONE);
+        setVisibility(VISIBLE);
+    }
+
+    /** True while a rejection from {@link #showRejection} is shown. */
+    boolean isShowingRejection() {
+        return rejection && isShowing();
     }
 
     /**
@@ -109,6 +136,8 @@ final class ErrorPanel extends LinearLayout {
         this.error = WfError.gsData("game not loaded yet");
         this.rulesetId = -1;
         this.onRetry = null;
+        this.server = null;
+        this.rejection = false;
         message.setText(Strings.get(lang, Key.GAME_LOADING));
         code.setVisibility(GONE);
         retry.setVisibility(GONE);
@@ -118,6 +147,8 @@ final class ErrorPanel extends LinearLayout {
     void hide() {
         error = null;
         onRetry = null;
+        server = null;
+        rejection = false;
         setVisibility(GONE);
     }
 
@@ -132,7 +163,7 @@ final class ErrorPanel extends LinearLayout {
         Long gameId = RouteTap.currentGameId();
         String text = ErrorDetails.format(e, hostVersion(ctx), BuildInfo.PATCH_VERSION, rulesetId,
                 System.currentTimeMillis(), RefreshDiagnostic.last(), RouteTap.lastRoute(), lastDetail(), gameId,
-                source(gameId));
+                source(gameId), server);
         ClipboardManager cm = (ClipboardManager) ctx.getSystemService(Context.CLIPBOARD_SERVICE);
         if (cm != null) cm.setPrimaryClip(ClipData.newPlainText(Strings.get(lang, Key.TITLE), text));
     }

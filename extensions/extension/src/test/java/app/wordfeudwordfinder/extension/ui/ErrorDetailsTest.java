@@ -127,4 +127,14 @@ public class ErrorDetailsTest {
         String text = ErrorDetails.format(null, "w", "p", 2, 0L, null, null, null, 7L, plain);
         assertTrue(text, text.endsWith("\nstore=game 7: game/<id>/ 1970-01-01T00:00:00Z turn=me"));
     }
+
+    @Test
+    public void serverLineWhenPresent() {
+        WfError e = WfError.mvServer("illegal_word");
+        String base = ErrorDetails.format(e, "5.7.1", "dev", 2, 0L, null, null, null, null, null);
+        assertEquals(base, ErrorDetails.format(e, "5.7.1", "dev", 2, 0L, null, null, null, null, null, null));
+        assertEquals(base + "\nserver=type=illegal_word keys=type",
+                ErrorDetails.format(e, "5.7.1", "dev", 2, 0L, null, null, null, null, null,
+                        "type=illegal_word keys=type"));
+    }
 }

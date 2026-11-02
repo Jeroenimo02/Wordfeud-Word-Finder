@@ -120,8 +120,10 @@ public class MoveSubmitterTest {
         MoveSubmitter.Result r = submitter(p).submit(GAME, 2, MoveRequestTest.mandje());
         assertEquals(MoveSubmitter.Result.Kind.REJECTED, r.kind);
         assertEquals(Collections.singletonList("MANDJE"), r.words);
+        assertFalse(r.oneOf);
         assertTrue(rejected.contains(2, "MANDJE"));
         assertFalse(rejected.contains(1, "MANDJE"));
+        assertEquals("type=illegal_word keys=type", r.server);
     }
 
     @Test
@@ -133,6 +135,8 @@ public class MoveSubmitterTest {
         assertEquals(Arrays.asList("NDJ", "XY"), r.words);
         assertTrue(rejected.contains(2, "NDJ"));
         assertFalse(rejected.contains(2, "MANDJE"));
+        assertFalse(r.oneOf);
+        assertEquals("type=illegal_word keys=type,words words=[\"ndj\",\"XY\"]", r.server);
     }
 
     @Test
@@ -251,5 +255,56 @@ public class MoveSubmitterTest {
         MoveSubmitter s = submitter(boom);
         assertEquals("MV-NET", s.submit(GAME, 2, MoveRequestTest.mandje()).error.code());
         assertFalse(s.isBusy());
+    }
+
+    /** MANDJE with a cross word NDJ: two words formed. */
+    private static app.wordfeudwordfinder.extension.solver.Move mandjeWithCross() {
+        app.wordfeudwordfinder.extension.solver.Move m = MoveRequestTest.mandje();
+        return new app.wordfeudwordfinder.extension.solver.Move(m.word, m.x, m.y, m.horizontal, m.placed,
+                m.placedLetters, m.score, Arrays.asList("MANDJE", "NDJ"), m.bonuses, m.usesBoardLetter);
+    }
+
+    @Test
+    public void serverNamedWordsAreRejectedEvenForAMultiWordMove() {
+        FakePoster p = new FakePoster(
+                "{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\",\"word\":\"ndj\"}}");
+        MoveSubmitter s = submitter(p);
+        MoveSubmitter.Result r = s.submit(GAME, 2, mandjeWithCross());
+        assertEquals(MoveSubmitter.Result.Kind.REJECTED, r.kind);
+        assertEquals(Collections.singletonList("NDJ"), r.words);
+        assertFalse(r.oneOf);
+        assertTrue(rejected.contains(2, "NDJ"));
+        assertFalse(rejected.contains(2, "MANDJE"));
+        assertFalse(s.hidden().isHidden(GAME, mandjeWithCross()));
+    }
+
+    @Test
+    public void unnamedRejectionOfAMultiWordMoveHidesOnlyThatMove() {
+        FakePoster p = new FakePoster("{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\"}}");
+        MoveSubmitter s = submitter(p);
+        MoveSubmitter.Result r = s.submit(GAME, 2, mandjeWithCross());
+        assertEquals(MoveSubmitter.Result.Kind.REJECTED, r.kind);
+        assertTrue(r.oneOf);
+        assertEquals(Arrays.asList("MANDJE", "NDJ"), r.words);
+        // no word is rejected permanently: the main word may well be valid
+        assertFalse(rejected.contains(2, "MANDJE"));
+        assertFalse(rejected.contains(2, "NDJ"));
+        assertTrue(s.hidden().isHidden(GAME, mandjeWithCross()));
+        assertFalse(s.hidden().isHidden(GAME + 1, mandjeWithCross()));
+        // the same main word without the cross word is another move and stays listed
+        assertFalse(s.hidden().isHidden(GAME, MoveRequestTest.mandje()));
+        assertEquals(1, s.hidden().filter(GAME, Arrays.asList(mandjeWithCross(), MoveRequestTest.mandje())).size());
+        assertEquals("type=illegal_word keys=type", r.server);
+    }
+
+    @Test
+    public void rejectionShapeKeepsOnlyTypeKeyNamesAndWords() {
+        assertEquals("type=illegal_word keys=foo,type",
+                MoveSubmitter.rejectionShape(
+                        "{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\",\"foo\":\"secret\"}}"));
+        assertEquals("type=illegal_word keys=type,word word=ABC", MoveSubmitter.rejectionShape(
+                "{\"status\":\"error\",\"content\":{\"word\":\"ABC\",\"type\":\"illegal_word\"}}"));
+        assertEquals("content=none", MoveSubmitter.rejectionShape("{\"status\":\"error\"}"));
+        assertNull(MoveSubmitter.rejectionShape("not json"));
     }
 }

@@ -29,9 +29,12 @@ import org.json.JSONObject;
  *   <li>a response body (2xx, or the error body of another status) is handed to
  *       {@link GameStore#onMoveResponse}: {@code status: success} gives SUCCESS (the store is updated);
  *       a reply whose root {@code status} string is not "success" is a server error;
- *       {@code MV-SERVER-illegal_word} gives REJECTED with the words the server names in {@code content.words}
- *       (array) or {@code content.word} (string) when present, else the main word (format unconfirmed, V6), and
- *       those words go to {@link RejectedWords}; any other {@code MV-SERVER-*} gives ERROR(that code);</li>
+ *       {@code MV-SERVER-illegal_word} gives REJECTED (format unconfirmed, V6): the words the server names in
+ *       {@code content.words} (array) or {@code content.word} (string) go to {@link RejectedWords}; when it names
+ *       none and the move formed one word, that word goes there; when it names none and the move formed several
+ *       words (main plus cross words), no word is rejected permanently: the exact move is hidden for this game
+ *       for the rest of the process ({@link HiddenMoves}) and the result lists all its words
+ *       ({@link Result#oneOf}); any other {@code MV-SERVER-*} gives ERROR(that code);</li>
  *   <li>a non-2xx status whose body is missing or not a Wordfeud response: ERROR(MV-SERVER-http_&lt;status&gt;);</li>
  *   <li>a 2xx response that is empty or cannot be interpreted (also an unexpected exception): ERROR(MV-NET),
  *       outcome unknown; but when its root {@code status} is "success" and only the game cannot be read (or a
@@ -47,33 +50,45 @@ public final class MoveSubmitter {
         public enum Kind { SUCCESS, REJECTED, ERROR }
 
         public final Kind kind;
-        /** For REJECTED: the rejected words (upper case); empty otherwise. */
+        /**
+         * For REJECTED: the rejected words (upper case); with {@link #oneOf} all words of the move, of which at
+         * least one was refused. Empty otherwise.
+         */
         public final List<String> words;
+        /**
+         * For REJECTED: true when the server named no word and the move formed several: none of {@link #words} was
+         * rejected permanently, only this exact move is hidden ({@link HiddenMoves}).
+         */
+        public final boolean oneOf;
+        /** For REJECTED: the shape of the server's reply for Copy details ({@link #rejectionShape}); else null. */
+        public final String server;
         /** For ERROR: the error; null otherwise. */
         public final WfError error;
 
-        private Result(Kind kind, List<String> words, WfError error) {
+        private Result(Kind kind, List<String> words, boolean oneOf, String server, WfError error) {
             this.kind = kind;
             this.words = Collections.unmodifiableList(new ArrayList<>(words));
+            this.oneOf = oneOf;
+            this.server = server;
             this.error = error;
         }
 
         static Result success() {
-            return new Result(Kind.SUCCESS, Collections.emptyList(), null);
+            return new Result(Kind.SUCCESS, Collections.emptyList(), false, null, null);
         }
 
-        static Result rejected(List<String> words) {
-            return new Result(Kind.REJECTED, words, null);
+        static Result rejected(List<String> words, boolean oneOf, String server) {
+            return new Result(Kind.REJECTED, words, oneOf, server, null);
         }
 
         static Result error(WfError e) {
-            return new Result(Kind.ERROR, Collections.emptyList(), e);
+            return new Result(Kind.ERROR, Collections.emptyList(), false, null, e);
         }
 
         @Override
         public String toString() {
             return kind == Kind.ERROR ? "ERROR(" + error.code() + ")"
-                    : kind == Kind.REJECTED ? "REJECTED(" + words + ")" : "SUCCESS";
+                    : kind == Kind.REJECTED ? "REJECTED(" + (oneOf ? "one of " : "") + words + ")" : "SUCCESS";
         }
     }
 
@@ -81,6 +96,7 @@ public final class MoveSubmitter {
     private final Poster poster;
     private final GameStore store;
     private final RejectedWords rejected;
+    private final HiddenMoves hidden = new HiddenMoves();
     private final AtomicBoolean busy = new AtomicBoolean(false);
 
     public MoveSubmitter(SessionReader session, Poster poster, GameStore store, RejectedWords rejected) {
@@ -88,6 +104,11 @@ public final class MoveSubmitter {
         this.poster = poster;
         this.store = store;
         this.rejected = rejected;
+    }
+
+    /** Moves hidden for the rest of the process after an unattributed rejection. */
+    public HiddenMoves hidden() {
+        return hidden;
     }
 
     /** True while a move is being sent (the Play button stays disabled). */
@@ -144,16 +165,7 @@ public final class MoveSubmitter {
             store.onMoveResponse(response, "overlay-play"); // source label for Copy details
             return Result.success();
         } catch (WfError e) {
-            if (ILLEGAL_WORD.equals(e.code())) {
-                List<String> words = serverNamedWords(response);
-                if (words.isEmpty()) words = Collections.singletonList(m.word.toUpperCase(Locale.ROOT));
-                try {
-                    rejected.add(rulesetId, words);
-                } catch (RuntimeException ignored) {
-                    // best effort: the result still reports the words
-                }
-                return Result.rejected(words);
-            }
+            if (ILLEGAL_WORD.equals(e.code())) return reject(gameId, rulesetId, m, response);
             String status = statusOf(response);
             // MV-SERVER-* only for a real Wordfeud error reply (a root "status" string); JSON without it is not one
             if (e.code().startsWith("MV-SERVER-") && status != null && !"success".equals(status)) {
@@ -164,6 +176,63 @@ public final class MoveSubmitter {
             // e.g. a GameStore listener failing after the game was stored
             return httpError == null && "success".equals(statusOf(response)) ? Result.success()
                     : unknownOutcome(httpError);
+        }
+    }
+
+    /** The three REJECTED branches (see the class comment). */
+    private Result reject(long gameId, int rulesetId, Move m, String response) {
+        String server = rejectionShape(response);
+        List<String> named = serverNamedWords(response);
+        List<String> formed = formedWords(m);
+        if (named.isEmpty() && formed.size() > 1) {
+            hidden.hide(gameId, m);
+            return Result.rejected(formed, true, server);
+        }
+        List<String> words = named.isEmpty() ? formed : named;
+        try {
+            rejected.add(rulesetId, words);
+        } catch (RuntimeException ignored) {
+            // best effort: the result still reports the words
+        }
+        return Result.rejected(words, false, server);
+    }
+
+    /** All words the move forms, main word first, upper case, without duplicates. */
+    private static List<String> formedWords(Move m) {
+        List<String> out = new ArrayList<>();
+        if (m.allWords != null) for (String w : m.allWords) add(out, w);
+        if (out.isEmpty()) add(out, m.word);
+        return out;
+    }
+
+    /**
+     * The shape of a rejection for Copy details (V6 format still open): {@code type=<content.type>
+     * keys=<names of the keys under content>}, plus the value of a {@code words} / {@code word} field when present.
+     * No other values. Null when the body is not a JSON object.
+     */
+    static String rejectionShape(String json) {
+        try {
+            JSONObject root = new JSONObject(json);
+            Object content = root.opt("content");
+            StringBuilder b = new StringBuilder();
+            if (!(content instanceof JSONObject)) {
+                return b.append("content=").append(content == null ? "none" : "not-an-object").toString();
+            }
+            JSONObject c = (JSONObject) content;
+            Object type = c.opt("type");
+            b.append("type=").append(type instanceof String ? (String) type : type == null ? "none" : "?");
+            List<String> keys = new ArrayList<>();
+            java.util.Iterator<String> it = c.keys();
+            while (it.hasNext()) keys.add(it.next());
+            Collections.sort(keys);
+            b.append(" keys=").append(String.join(",", keys));
+            if (c.has("words")) b.append(" words=").append(String.valueOf(c.opt("words")));
+            if (c.has("word")) b.append(" word=").append(String.valueOf(c.opt("word")));
+            return b.toString();
+        } catch (JSONException e) {
+            return null;
+        } catch (RuntimeException e) {
+            return null;
         }
     }
 

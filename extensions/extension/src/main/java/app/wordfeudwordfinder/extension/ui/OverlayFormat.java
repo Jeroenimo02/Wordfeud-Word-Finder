@@ -105,6 +105,17 @@ public final class OverlayFormat {
         return sb.toString();
     }
 
+    /**
+     * The message after a REJECTED result: "Move rejected: A, B" for words that were rejected, "Move rejected: one
+     * of A, B, C" ({@code oneOf}) when the server did not say which word of the move was wrong, or just "Move
+     * rejected" when there are no words.
+     */
+    public static String rejectionText(String lang, List<String> words, boolean oneOf) {
+        if (words == null || words.isEmpty()) return Strings.get(lang, Key.REJECTED);
+        return String.format(Locale.ROOT, Strings.get(lang, oneOf ? Key.REJECTED_ONE_OF : Key.REJECTED_WORDS),
+                String.join(", ", words));
+    }
+
     /** Score with its unit, e.g. "12 pts". */
     public static String scoreText(String lang, int score) {
         return String.format(Locale.ROOT, Strings.get(lang, Key.PTS), score);

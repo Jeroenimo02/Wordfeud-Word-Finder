@@ -163,7 +163,7 @@ Bij elke verzending zoekt de patch `files/.cookies/*/.domains` en daarin het ite
 - De Play-knop is uitgeschakeld zolang er een verzoek loopt.
 - Bij een netwerkfout of time-out: `MV-NET`, geen automatische nieuwe poging. De Play-knop blijft uit tot de volgende `games/detail` verwerkt is.
 - `status: success`: het potje uit het antwoord gaat naar de `GameStore`, de overlay sluit, en daarna volgt het verversen (§8.4).
-- Woord geweigerd (formaat V6): de door de server genoemde woorden, of als die ontbreken het hoofdwoord, gaan naar `RejectedWords`; de overlay toont een melding en een bijgewerkte lijst.
+- Woord geweigerd (formaat V6): noemt de server woorden (`content.words` of `content.word`), dan gaan precies die naar `RejectedWords`. Noemt hij er geen en vormde de zet één woord, dan gaat dat woord daarheen. Noemt hij er geen en vormde de zet meerdere woorden (hoofd- plus dwarswoorden), dan wordt geen enkel woord blijvend geweigerd: alleen deze exacte zet (plaatsing en woorden) wordt voor de rest van de sessie in dit potje verborgen. De overlay toont de melding in het foutvak ("Zet afgewezen: A" of "Zet afgewezen: een van A, B, C", met code en "Kopieer details") en een bijgewerkte lijst; de melding blijft staan tot de gebruiker een andere zet kiest of speelt. "Kopieer details" bevat een regel `server=` met de vorm van het antwoord: `content.type`, de namen van de sleutels onder `content` en alleen de waarde van een `words`/`word`-veld.
 - Andere serverfout: `MV-SERVER-<type>`; de overlay blijft open.
 
 ### 8.4 Verversen van Wordfeud
@@ -235,7 +235,7 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 | V3 | Moeten dwarswoorden in `words`? | Alle woorden worden meegestuurd |
 | V4 | Welke verversmethode werkt? | LifecycleBounce (flutter/lifecycle paused→resumed via FlutterJNI) bevestigd 2026-11-02 (Wordfeud 5.7.1, meermaals getest) |
 | V5 | Bonus voor zeven tegels en de middenvakregel | Bonus bevestigd 2026-11-02 (Wordfeud 5.7.1): 40 punten voor een zet met zeven gelegde tegels (36 → 76 in de app); geldt niet bij een leeg rek met minder tegels aan het eind. Middenvakregel ongewijzigd en nog niet geverifieerd |
-| V6 | Formaat van een woordweigering (hint: `illegal_word`) | Het hoofdwoord wordt als geweigerd gemarkeerd |
+| V6 | Formaat van een woordweigering (hint: `illegal_word`) | Op het toestel gezien 2026-11-02 (Wordfeud 5.7.1): weigering komt als `illegal_word`, overlay bleef open, zet verdween; de melding viel niet op (grijze regel). Exacte vorm nog open. Terugval (§8.3): door de server genoemde woorden; anders het enige woord van de zet; bij meerdere woorden geen blijvende weigering maar de exacte zet verborgen voor de sessie. De `server=`-regel in "Kopieer details" legt de vorm vast bij de volgende weigering |
 | V7 | Positie van het knopje, ook met een banner | Vaste afstand van 165 dp |
 | V8 | Kleuren van het lichte thema (twee screenshots) | Donkere kleuren |
 | V9 | Regelset-id's 8–12 en bevestiging van 0–7 | Onbekende id → `WL-NONE` |

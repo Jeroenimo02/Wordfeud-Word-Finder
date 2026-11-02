@@ -13,7 +13,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -122,8 +121,6 @@ public final class OverlayController {
     private int wordListAttempt;
     /** The word list error of this open overlay; it stays shown (no automatic retry) until Retry or reopen. */
     private WfError wordListError;
-    /** The REJECTED message survives the list recomputed for it; the next list after that clears it. */
-    private boolean keepStatusForNextList;
     private Object backCallback;
     private View focusBeforeOpen;
 
@@ -132,7 +129,6 @@ public final class OverlayController {
     private LinearLayout panel;
     private LinearLayout rackRow;
     private BoardPreviewView board;
-    private TextView status;
     private DownloadProgress progress;
     private ErrorPanel errorPanel;
     private LinearLayout infoRow;
@@ -404,7 +400,6 @@ public final class OverlayController {
         readyGraphRuleset = -1;
         wordListRequested = false;
         wordListError = null;
-        keepStatusForNextList = false;
         lang = language();
         theme = Theme.forDarkMode(RouteTap.isDark());
         focusBeforeOpen = activity.getCurrentFocus();
@@ -610,13 +605,6 @@ public final class OverlayController {
         blp.topMargin = dp(SECTION_GAP_DP);
         panel.addView(board, blp);
 
-        status = text(ctx, 14, theme.textSecondary, Fonts.inter(ctx));
-        status.setGravity(Gravity.CENTER);
-        status.setVisibility(View.GONE);
-        LinearLayout.LayoutParams slp = matchWrap();
-        slp.topMargin = dp(SECTION_GAP_DP);
-        panel.addView(status, slp);
-
         progress = new DownloadProgress(ctx, theme, lang, density);
         LinearLayout.LayoutParams plp2 = matchWrap();
         plp2.topMargin = dp(SECTION_GAP_DP);
@@ -644,6 +632,10 @@ public final class OverlayController {
         list.setBackgroundColor(theme.surface);
         list.setOnItemClickListener((parent, view, position, id) -> {
             try {
+                // A rejection message stays until the user picks another move (or plays)
+                if (errorPanel.isShowingRejection() && MovePipeline.indexOf(moves, selected) != position) {
+                    errorPanel.hide();
+                }
                 select(position, false);
             } catch (Throwable ignored) {
                 // keep the overlay alive
@@ -819,7 +811,6 @@ public final class OverlayController {
         panel = null;
         rackRow = null;
         board = null;
-        status = null;
         progress = null;
         errorPanel = null;
         infoRow = null;
@@ -846,8 +837,6 @@ public final class OverlayController {
         selected = null;
         adapter.setMoves(Collections.<Move>emptyList());
         GameState st = state;
-        hideStatus();
-        keepStatusForNextList = false;
         progress.hide();
         errorPanel.hide();
         if (st == null) {
@@ -887,6 +876,7 @@ public final class OverlayController {
         final BoardLayout bl = layout;
         final Ruleset rs = ruleset;
         final int rulesetId = game.getRulesetId();
+        final long gid = gameId;
         final SortMode mode = sort;
         final WordGraph known = readyGraphRuleset == rulesetId ? readyGraph : null;
         background(() -> {
@@ -906,7 +896,7 @@ public final class OverlayController {
                 return;
             }
             final List<Move> out = MovePipeline.compute(st, bl, rs, wg,
-                    l -> wf.rejected().filter(rulesetId, l), mode, token);
+                    l -> wf.submitter().hidden().filter(gid, wf.rejected().filter(rulesetId, l)), mode, token);
             if (out == null) return;
             ui(() -> {
                 if (open && session == s && computations.isCurrent(token)) showMoves(out, false);
@@ -982,11 +972,6 @@ public final class OverlayController {
         if (adapter == null) return;
         Move keep = selected;
         progress.hide();
-        if (keepStatusForNextList) {
-            keepStatusForNextList = false; // this is the list recomputed after a rejection: keep its message
-        } else {
-            hideStatus();
-        }
         moves = out;
         adapter.setMoves(out); // resets the adapter's selection
         int idx = keepSelection ? MovePipeline.indexOf(out, keep) : -1;
@@ -1039,8 +1024,6 @@ public final class OverlayController {
         if (!open || game == null || !canPlay()) return;
         MoveSubmitter submitter = wf.submitter();
         if (!play.begin()) return;
-        hideStatus();
-        keepStatusForNextList = false;
         errorPanel.hide();
         updatePlayEnabled();
         computations.cancel(); // free the executor for the request
@@ -1049,28 +1032,22 @@ public final class OverlayController {
         final int rulesetId = game.getRulesetId();
         final int s = session;
         background(() -> {
-            MoveSubmitter.Result.Kind kind = MoveSubmitter.Result.Kind.ERROR;
-            WfError error = null; // ERROR without an error: outcome unknown, handled like MV-NET
-            List<String> words = Collections.emptyList();
+            MoveSubmitter.Result result = null; // null: outcome unknown, handled like MV-NET
             try {
-                MoveSubmitter.Result r = submitter.submit(id, rulesetId, m);
-                kind = r.kind;
-                error = r.error;
-                words = r.words;
+                result = submitter.submit(id, rulesetId, m);
             } finally {
                 // Read after the request ended: only a games/detail processed from now on lifts an MV-NET block.
                 long generation = detailGeneration();
-                MoveSubmitter.Result.Kind k = kind;
-                WfError e = error;
-                List<String> w = words;
-                ui(() -> onPlayResult(s, id, k, e, w, generation));
+                MoveSubmitter.Result r = result;
+                ui(() -> onPlayResult(s, id, rulesetId, r, generation));
             }
         });
     }
 
     /** Main thread. Also runs when the overlay closed or reopened meanwhile: the Play state and refresh still apply. */
-    private void onPlayResult(int s, long id, MoveSubmitter.Result.Kind kind, WfError error, List<String> words,
-            long generation) {
+    private void onPlayResult(int s, long id, int rulesetId, MoveSubmitter.Result r, long generation) {
+        MoveSubmitter.Result.Kind kind = r == null ? MoveSubmitter.Result.Kind.ERROR : r.kind;
+        WfError error = r == null ? null : r.error;
         PlayState.Action a = play.onResult(kind, error, generation);
         boolean sameSession = open && session == s;
         if (a == PlayState.Action.CLOSE_AND_REFRESH) {
@@ -1080,16 +1057,17 @@ public final class OverlayController {
         }
         if (sameSession) {
             if (a == PlayState.Action.SHOW_REJECTED) {
-                showStatus(words.isEmpty() ? Strings.get(lang, Key.REJECTED)
-                        : String.format(Strings.get(lang, Key.REJECTED_WORDS), TextUtils.join(", ", words)));
-                keepStatusForNextList = true;
+                // In the error panel (primary text, code, Copy details with server=): the old grey status line
+                // under the board went unnoticed (V6). It stays until the user picks another move or plays.
+                errorPanel.showRejection(OverlayFormat.rejectionText(lang, r.words, r.oneOf),
+                        WfError.mvServer("illegal_word"), rulesetId, r.server);
                 moves = null;
                 selected = null; // the rejected move must not be played again while the list is recomputed
                 adapter.setMoves(Collections.<Move>emptyList());
                 board.setMove(null);
                 updateRack();
                 updateInfo();
-                compute(); // RejectedWords now holds the words, so the move disappears from the list
+                compute(); // RejectedWords / HiddenMoves now drop the move from the list
             } else {
                 errorPanel.show(error != null ? error : WfError.mvNet(), game == null ? -1 : game.getRulesetId(),
                         null);
@@ -1122,16 +1100,6 @@ public final class OverlayController {
         infoRow.setVisibility(v);
         sortRow.setVisibility(v);
         list.setVisibility(v);
-    }
-
-    private void showStatus(String text) {
-        if (status == null) return;
-        status.setText(text);
-        status.setVisibility(View.VISIBLE);
-    }
-
-    private void hideStatus() {
-        if (status != null) status.setVisibility(View.GONE);
     }
 
     private void updateRack() {
