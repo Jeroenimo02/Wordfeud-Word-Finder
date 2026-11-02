@@ -46,37 +46,73 @@ public final class ResponseParser {
 
     public static Parsed parseGamesDetail(String json) throws WfError {
         try {
-            JSONObject root = new JSONObject(json);
-            if (!"success".equals(root.opt("status"))) throw WfError.gsData("response status is not success");
-            JSONObject content = obj(root, "content");
-            List<RawGame> games = new ArrayList<>();
-            JSONArray ga = arr(content, "games");
-            Map<Long, WfError> failed = new LinkedHashMap<>();
-            int skipped = 0;
-            // Tolerant per game: one malformed game must not make the whole response unusable.
-            for (int i = 0; i < ga.length(); i++) {
-                Object go = ga.opt(i);
-                try {
-                    games.add(parseGame(asObj(go, "games[]")));
-                } catch (WfError e) {
-                    Long id = go instanceof JSONObject ? tryId((JSONObject) go) : null;
-                    if (id != null) {
-                        failed.put(id, e);
-                    } else {
-                        skipped++; // no id, nothing to attach the error to
-                    }
-                }
-            }
-            List<Ruleset> rulesets = new ArrayList<>();
-            JSONArray ra = optArr(content, "rulesets");
-            if (ra != null) rulesets.addAll(parseRulesets(ra));
-            List<BoardLayout> boards = new ArrayList<>();
-            JSONArray ba = optArr(content, "boards");
-            if (ba != null) boards.addAll(parseBoards(ba));
-            return new Parsed(games, rulesets, boards, failed, skipped);
+            return parseGamesDetail(new JSONObject(json));
         } catch (JSONException e) {
             throw WfError.gsData("json: malformed response (" + e.getClass().getSimpleName() + ")");
         }
+    }
+
+    /** What a response from another endpoint carries (see {@link #classify}). */
+    public enum Kind { GAMES, GAME, NONE }
+
+    /**
+     * Classifies any Wordfeud API response by its shape: {@code content.games} is an array with at least one entry
+     * that has a {@code game_log} (GAMES, parse with {@link #parseGamesDetail(JSONObject)}), else {@code content.game}
+     * is an object with a {@code game_log} (GAME, parse with {@link #parseSingleGame}); anything else (including a
+     * non-success status) is NONE.
+     */
+    public static Kind classify(JSONObject root) {
+        if (root == null || !"success".equals(root.opt("status"))) return Kind.NONE;
+        Object c = root.opt("content");
+        if (!(c instanceof JSONObject)) return Kind.NONE;
+        JSONObject content = (JSONObject) c;
+        Object ga = content.opt("games");
+        if (ga instanceof JSONArray) {
+            JSONArray a = (JSONArray) ga;
+            for (int i = 0; i < a.length(); i++) {
+                Object g = a.opt(i);
+                if (g instanceof JSONObject && ((JSONObject) g).has("game_log")) return Kind.GAMES;
+            }
+        }
+        Object g = content.opt("game");
+        if (g instanceof JSONObject && ((JSONObject) g).has("game_log")) return Kind.GAME;
+        return Kind.NONE;
+    }
+
+    /** The {@code content.game} of a response that {@link #classify} called GAME. */
+    public static RawGame parseSingleGame(JSONObject root) throws WfError {
+        return parseGame(obj(obj(root, "content"), "game"));
+    }
+
+    /** A games list in {@code content.games}; only {@code opt} accessors, so no JSONException can occur. */
+    public static Parsed parseGamesDetail(JSONObject root) throws WfError {
+        if (!"success".equals(root.opt("status"))) throw WfError.gsData("response status is not success");
+        JSONObject content = obj(root, "content");
+        List<RawGame> games = new ArrayList<>();
+        JSONArray ga = arr(content, "games");
+        Map<Long, WfError> failed = new LinkedHashMap<>();
+        int skipped = 0;
+        // Tolerant per game: one malformed game must not make the whole response unusable.
+        for (int i = 0; i < ga.length(); i++) {
+            Object go = ga.opt(i);
+            try {
+                games.add(parseGame(asObj(go, "games[]")));
+            } catch (WfError e) {
+                Long id = go instanceof JSONObject ? tryId((JSONObject) go) : null;
+                if (id != null) {
+                    failed.put(id, e);
+                } else {
+                    skipped++; // no id, nothing to attach the error to
+                }
+            }
+        }
+        List<Ruleset> rulesets = new ArrayList<>();
+        JSONArray ra = optArr(content, "rulesets");
+        if (ra != null) rulesets.addAll(parseRulesets(ra));
+        List<BoardLayout> boards = new ArrayList<>();
+        JSONArray ba = optArr(content, "boards");
+        if (ba != null) boards.addAll(parseBoards(ba));
+        return new Parsed(games, rulesets, boards, failed, skipped);
     }
 
     /** Parses a move response; a non-success status throws MV-SERVER-&lt;content.type&gt;. */

@@ -110,6 +110,67 @@ public final class GameStore {
         try {
             p = ResponseParser.parseGamesDetail(json);
         } catch (WfError e) {
+            onGamesDetail(null, e);
+            return;
+        }
+        onGamesDetail(p, null);
+    }
+
+    /**
+     * Any other Wordfeud API response (not games/detail, not a move response): when it carries games with a
+     * {@code game_log} (see {@link ResponseParser#classify}) they are merged like a games/detail (a list) or upserted
+     * (a single {@code content.game}); anything else, including malformed JSON or an error status, is ignored
+     * without notifying. Never throws. Returns true when the response carried game data.
+     */
+    public boolean onGameData(String json) {
+        JSONObject root;
+        try {
+            root = new JSONObject(json);
+        } catch (Exception e) { // JSONException is checked on Android, unchecked on the JVM
+            return false;
+        }
+        ResponseParser.Kind kind = ResponseParser.classify(root);
+        if (kind == ResponseParser.Kind.GAMES) {
+            ResponseParser.Parsed p;
+            try {
+                p = ResponseParser.parseGamesDetail(root);
+            } catch (WfError e) {
+                return false; // a malformed list from another endpoint does not count as a failed games/detail
+            }
+            onGamesDetail(p, null);
+            return true;
+        }
+        if (kind == ResponseParser.Kind.GAME) {
+            onSingleGame(root);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Upserts {@code content.game} of a non-move response (e.g. Wordfeud reloading the open game). Unlike
+     * {@link #onMoveResponse} it never throws: an unparseable game is ignored. It counts as a games/detail for
+     * {@link #detailGeneration}: it is the server's own snapshot, not the result of our move.
+     */
+    private void onSingleGame(JSONObject root) {
+        RawGame g;
+        try {
+            g = ResponseParser.parseSingleGame(root);
+        } catch (WfError | RuntimeException e) {
+            return;
+        }
+        List<Runnable> toRun;
+        synchronized (this) {
+            put(g);
+            detailGeneration++;
+            toRun = new ArrayList<>(listeners);
+        }
+        notifyAll(toRun);
+    }
+
+    /** Merges a parsed games list, or records the whole-response error {@code e} (then {@code p} is null). */
+    private void onGamesDetail(ResponseParser.Parsed p, WfError e) {
+        if (e != null) {
             synchronized (this) {
                 lastDetail = new DetailSummary(now(), 0, new ArrayList<Long>(), 0, 0, e.code(), states.size());
             }
@@ -173,7 +234,8 @@ public final class GameStore {
     }
 
     /**
-     * How many games/detail responses have been processed (a move response does not count). Listeners fire after
+     * How many games/detail responses have been processed, including other responses with game data
+     * ({@link #onGameData}); a move response does not count. Listeners fire after
      * both kinds; a caller that must wait for a games/detail compares this count instead (Play after MV-NET).
      */
     public synchronized long detailGeneration() {

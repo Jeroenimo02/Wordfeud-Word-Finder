@@ -59,13 +59,63 @@ public class NetworkTapRouteTest {
         assertEquals("a move response does not count as a detail", 1, s.detailGeneration());
     }
 
+    private static final String API = "https://api.wordfeud.com/wf/";
+
+    /** move_hoort.json's game as another endpoint would return it, with the given updated/current_player. */
+    private static String singleGame(long updatedDelta, int currentPlayer) throws Exception {
+        org.json.JSONObject root = new org.json.JSONObject(fixture("move_hoort.json"));
+        org.json.JSONObject g = root.getJSONObject("content").getJSONObject("game");
+        g.put("updated", g.getLong("updated") + updatedDelta);
+        g.put("current_player", currentPlayer);
+        return root.toString();
+    }
+
     @Test
-    public void ignoresOtherUrls() throws Exception {
+    public void gamesListFromAnyEndpointIsMerged() throws Exception {
         GameStore s = store();
-        NetworkTap.route(new ResponseAssembler.Completed(
-                "https://api.wordfeud.com/wf/user/status/", fixture("detail_neigen.json")), s);
-        assertNull(s.state(GAME));
+        NetworkTap.route(new ResponseAssembler.Completed(API + "user/status/", fixture("detail_neigen.json")), s);
+        assertNotNull(s.state(GAME));
+        assertEquals(1, s.detailGeneration());
+    }
+
+    @Test
+    public void singleGameFromAnyEndpointIsUpserted() throws Exception {
+        GameStore s = store();
+        NetworkTap.route(new ResponseAssembler.Completed(API + "user/games/detail/", fixture("detail_neigen.json")), s);
+        NetworkTap.route(new ResponseAssembler.Completed(API + "game/" + GAME + "/move/", fixture("move_hoort.json")), s);
+        assertFalse(s.state(GAME).myTurn());
+        // the opponent replied (here: only the turn changed); Wordfeud reloads the open game
+        NetworkTap.route(new ResponseAssembler.Completed(API + "game/" + GAME + "/?game_format=log",
+                singleGame(20, 0)), s);
+        assertTrue(s.state(GAME).myTurn());
+        assertEquals("a server snapshot counts like a games/detail", 2, s.detailGeneration());
+    }
+
+    @Test
+    public void olderSingleGameIsSkipped() throws Exception {
+        GameStore s = store();
+        NetworkTap.route(new ResponseAssembler.Completed(API + "user/games/detail/", fixture("detail_neigen.json")), s);
+        NetworkTap.route(new ResponseAssembler.Completed(API + "game/" + GAME + "/", singleGame(20, 0)), s);
+        NetworkTap.route(new ResponseAssembler.Completed(API + "game/" + GAME + "/", singleGame(0, 1)), s);
+        assertTrue(s.state(GAME).myTurn());
+    }
+
+    @Test
+    public void errorOrGameLessResponsesAreIgnoredWithoutThrowing() throws Exception {
+        GameStore s = store();
+        NetworkTap.route(new ResponseAssembler.Completed(API + "game/" + GAME + "/",
+                "{\"status\":\"error\",\"content\":{\"type\":\"game_log\"}}"), s);
+        NetworkTap.route(new ResponseAssembler.Completed(API + "user/status/",
+                "{\"status\":\"success\",\"content\":{\"games\":[{\"id\":1,\"updated\":5}]}}"), s);
+        NetworkTap.route(new ResponseAssembler.Completed(API + "user/notices/", "not json game_log"), s);
         assertEquals(0, s.detailGeneration());
+        assertNull(s.lastDetail());
+    }
+
+    @Test(expected = app.wordfeudwordfinder.extension.core.WfError.class)
+    public void moveErrorStillThrows() throws Exception {
+        NetworkTap.route(new ResponseAssembler.Completed(API + "game/" + GAME + "/move/",
+                "{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\"}}"), store());
     }
 
     @Test

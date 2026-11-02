@@ -52,9 +52,18 @@ public class ResponseAssemblerTest {
     public void irrelevantUrlIgnored() {
         ResponseAssembler a = new ResponseAssembler();
         Object r = new Object();
-        a.started(r, "https://api.wordfeud.com/wf/user/status/");
+        a.started(r, "https://example.com/wf/user/games/detail/");
         a.read(r, chunk("x"));
         assertNull(a.succeeded(r));
+    }
+
+    @Test
+    public void everyWordfeudApiUrlIsCollected() {
+        ResponseAssembler a = new ResponseAssembler();
+        Object r = new Object();
+        a.started(r, "https://api.wordfeud.com/wf/game/123/?game_format=log");
+        a.read(r, chunk("x"));
+        assertEquals("x", a.succeeded(r).body);
     }
 
     @Test

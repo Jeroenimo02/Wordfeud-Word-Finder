@@ -6,7 +6,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-/** Collects response body chunks per request object, for the few URLs we care about. */
+/**
+ * Collects response body chunks per request object, for every Wordfeud API response (games can arrive from more
+ * endpoints than games/detail and move, e.g. when Wordfeud reloads the open game); each body is capped at
+ * {@link #MAX_BODY}. Bodies are handed on once and never kept or logged.
+ */
 public final class ResponseAssembler {
     static final int MAX_BODY = 8 * 1024 * 1024;
     private static final String PREFIX = "https://api.wordfeud.com/wf/";
@@ -33,8 +37,7 @@ public final class ResponseAssembler {
     private final Map<Object, Entry> entries = new IdentityHashMap<>();
 
     public static boolean isRelevant(String url) {
-        return url != null && url.startsWith(PREFIX)
-                && (url.contains("user/games/detail/") || url.contains("/move/"));
+        return url != null && url.startsWith(PREFIX);
     }
 
     public synchronized void started(Object request, String url) {

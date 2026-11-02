@@ -72,11 +72,24 @@ public final class NetworkTap {
         }
     }
 
-    /** Hands a completed response to the store; other URLs are ignored. Throws MV-SERVER-... like the store. */
+    /**
+     * Hands a completed response to the store. games/detail and move responses go to their own handlers (a move
+     * response only there, so it is not processed twice; it throws MV-SERVER-... like the store). Any other response
+     * is only parsed when its body mentions {@code game_log}, and then merged when it carries game data
+     * ({@link GameStore#onGameData}); everything else is ignored.
+     */
     static void route(ResponseAssembler.Completed c, GameStore store) throws Exception {
-        if (c == null || c.url == null || store == null) return;
-        if (c.url.contains("user/games/detail/")) store.onGamesDetail(c.body);
-        else if (c.url.contains("/move/")) store.onMoveResponse(c.body);
+        if (c == null || c.url == null || c.body == null || store == null) return;
+        String path = path(c.url);
+        if (path.contains("user/games/detail/")) store.onGamesDetail(c.body);
+        else if (path.contains("/move/")) store.onMoveResponse(c.body);
+        else if (c.body.contains("game_log")) store.onGameData(c.body);
+    }
+
+    /** The URL without its query string. */
+    static String path(String url) {
+        int q = url.indexOf('?');
+        return q < 0 ? url : url.substring(0, q);
     }
 
     /** Lazily created single daemon thread; called inside the hooks' try/catch. */
