@@ -23,6 +23,7 @@ public class RefreshOrderTest {
         assertEquals(Arrays.asList("RouteBounce", "ForegroundSignal", "FcmNudge"),
                 RefreshOrder.parse(" routebounce,ForegroundSignal\r\n\n  FCMNUDGE \n"));
         assertEquals(Arrays.asList("FcmNudge", "RouteBounce"), RefreshOrder.parse("FcmNudge; RouteBounce\t"));
+        assertEquals(Arrays.asList("LifecycleBounce"), RefreshOrder.parse("lifecyclebounce"));
     }
 
     @Test
@@ -37,11 +38,12 @@ public class RefreshOrderTest {
     public void buildsStrategiesInOrder() {
         RefreshStrategiesTest.FakeMessenger m = new RefreshStrategiesTest.FakeMessenger();
         List<Refresher.Strategy> s = RefreshOrder.strategies(Arrays.asList("FcmNudge", "RouteBounce",
-                "ForegroundSignal", "Unknown"), m);
-        assertEquals(3, s.size());
+                "ForegroundSignal", "LifecycleBounce", "Unknown"), m);
+        assertEquals(4, s.size());
         assertTrue(s.get(0) instanceof FcmNudge);
         assertTrue(s.get(1) instanceof RouteBounce);
         assertTrue(s.get(2) instanceof ForegroundSignal);
+        assertTrue(s.get(3) instanceof LifecycleBounce);
     }
 
     @Test

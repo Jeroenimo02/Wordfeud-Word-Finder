@@ -97,7 +97,7 @@ public final class FlutterBridge implements Refresher.Env {
 
     @Override
     public Refresher.Messenger messenger(Refresher.DebugLog log, RefreshDiagnostic diag) {
-        return (channel, messages, gapMs) -> send(channel, messages, gapMs, log, diag);
+        return (channel, sequence) -> send(channel, sequence, log, diag);
     }
 
     // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
@@ -132,8 +132,7 @@ public final class FlutterBridge implements Refresher.Env {
      * it costs nothing when the JNI path works and may help when no FlutterJNI was captured yet (no platform message
      * seen since the process started) or a dispatch throws.
      */
-    private boolean send(String channel, List<byte[]> messages, long gapMs, Refresher.DebugLog log,
-            RefreshDiagnostic diag) {
+    private boolean send(String channel, MessageSequence sequence, Refresher.DebugLog log, RefreshDiagnostic diag) {
         RefreshDiagnostic d = diag != null ? diag : new RefreshDiagnostic(null);
         try {
             Sender primary = jniSender(d);
@@ -146,19 +145,19 @@ public final class FlutterBridge implements Refresher.Env {
                 d.fail(RouteTap.flutterJni() == null ? "no FlutterJNI" : "no dispatch method");
                 return false;
             }
-            d.expect(messages.size());
-            if (messages.isEmpty()) {
+            d.expect(sequence.size());
+            if (sequence.size() == 0) {
                 d.finish();
                 return true;
             }
             if (log != null) {
-                log.d("schedule " + messages.size() + " message(s) on " + channel + " via " + primary.verb()
-                        + ", gap " + gapMs + " ms");
+                log.d("schedule " + sequence.size() + " message(s) on " + channel + " via " + primary.verb()
+                        + ", over " + sequence.offset(sequence.size() - 1) + " ms");
             }
             // The sender is kept for the whole sequence: once the first message went out, the next ones go the same
             // way even if the activity is finishing meanwhile (a "background" is never left without "foreground").
             Sender target = primary;
-            boolean posted = main().post(() -> sendStep(target, channel, messages, 0, Math.max(0L, gapMs), log, d));
+            boolean posted = main().post(() -> sendStep(target, channel, sequence, 0, log, d));
             if (!posted) d.fail("main thread post failed");
             return posted;
         } catch (Throwable t) {
@@ -167,12 +166,17 @@ public final class FlutterBridge implements Refresher.Env {
         }
     }
 
-    /** Main thread. Sends message {@code i}; when that worked, schedules {@code i + 1}. Finishes {@code d} at the end. */
-    private void sendStep(Sender sender, String channel, List<byte[]> messages, int i, long gapMs,
-            Refresher.DebugLog log, RefreshDiagnostic d) {
+    /**
+     * Main thread. Sends message {@code i}, then schedules the one {@link MessageSequence#next(int, boolean)} names
+     * (after a failure: none, or the last one for a {@link MessageSequence#closeAlways} sequence). Finishes {@code d}
+     * at the end.
+     */
+    private void sendStep(Sender sender, String channel, MessageSequence sequence, int i, Refresher.DebugLog log,
+            RefreshDiagnostic d) {
         Sender used = sender;
+        boolean sent;
         try {
-            byte[] message = messages.get(i);
+            byte[] message = sequence.messages.get(i);
             String label = RefreshDiagnostic.message(sender.verb(), channel, message.length);
             try {
                 sender.send(channel, message);
@@ -184,21 +188,24 @@ public final class FlutterBridge implements Refresher.Env {
                 used.send(channel, message);
                 d.sent(used.path(), RefreshDiagnostic.message(used.verb(), channel, message.length) + " OK");
             }
+            sent = true;
             if (log != null) log.d("sent " + channel + " #" + (i + 1) + " (" + message.length + " bytes)");
         } catch (Throwable t) {
             if (log != null) log.d("send failed on " + channel + " #" + (i + 1) + ": " + t.getClass().getSimpleName());
             d.fail("send #" + (i + 1) + " " + RefreshDiagnostic.reason(t));
-            d.finish();
-            return; // this message did not go out; stop so no further message follows a missing one
+            sent = false;
+            used = sender; // the closing message (if any) tries the same paths again
         }
-        if (i + 1 < messages.size()) {
-            Sender next = used;
-            boolean posted = main().postDelayed(() -> sendStep(next, channel, messages, i + 1, gapMs, log, d), gapMs);
-            if (!posted) {
-                d.fail("main thread post failed");
-                d.finish();
-            }
-        } else {
+        int next = sequence.next(i, sent);
+        if (next < 0) {
+            d.finish();
+            return;
+        }
+        Sender nextSender = used;
+        boolean posted = main().postDelayed(() -> sendStep(nextSender, channel, sequence, next, log, d),
+                sequence.delayAfter(i, sent));
+        if (!posted) {
+            d.fail("main thread post failed");
             d.finish();
         }
     }
@@ -224,7 +231,7 @@ public final class FlutterBridge implements Refresher.Env {
 
     /**
      * The engine path (DartExecutor.send), recording each lookup step; null when it is not available. Fallback only
-     * (see {@link #send(String, List, long, Refresher.DebugLog, RefreshDiagnostic)}).
+     * (see {@link #send(String, MessageSequence, Refresher.DebugLog, RefreshDiagnostic)}).
      */
     private Sender engineSender(RefreshDiagnostic d) {
         Activity a = activity.get();

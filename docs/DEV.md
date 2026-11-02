@@ -67,6 +67,7 @@ strategieën staan in `extensions/.../play/`:
 
 | Naam | Kanaal | Bericht |
 |---|---|---|
+| `LifecycleBounce` | `flutter/lifecycle` | StringCodec (platte UTF-8) `AppLifecycleState.inactive`, `.hidden`, `.paused`, na 300 ms `.hidden`, `.inactive`, `.resumed` (30 ms ertussen; één reeks: is `inactive` verstuurd, dan volgt `resumed` altijd, ook als een tussenstap mislukt) |
 | `ForegroundSignal` | `dev.flutter.pigeon.wordfeud.FlutterProcessLifecycleApi.onForegroundStateChanged` | StandardMessageCodec `[false]`, na 100 ms `[true]` (één reeks: is `[false]` verstuurd, dan volgt `[true]` altijd) |
 | `RouteBounce` | `flutter/navigation` | JSON `pushRouteInformation` naar `/`, na 80 ms naar `/game/<id>` (één reeks; sleutels `location` én `uri`, `state: null`) |
 | `FcmNudge` | `plugins.flutter.io/firebase_messaging` | StandardMethodCodec `Messaging#onMessage` met `{messageId, sentTime, data: {type: "move", game_id}}` (de `data`-sleutels zijn een gok) |
@@ -74,7 +75,7 @@ strategieën staan in `extensions/.../play/`:
 Kandidaat 3 (zelf `games/detail` ophalen en aanbieden) is niet gebouwd: pas na akkoord, en alleen als 1, 2 en 4
 alle drie falen.
 
-Het huidige testbuild (testbuild 4) gebruikt standaard `ForegroundSignal`: `Refresher.ORDER` bevat alleen die strategie. Een lege
+Het huidige testbuild (testbuild 5) gebruikt standaard `LifecycleBounce`: `Refresher.ORDER` bevat alleen die strategie. Een lege
 volgorde (via het debugbestand) betekent: er gebeurt niets en Wordfeud ververst zelf (~20 s).
 
 | Strategie | Status |
@@ -82,7 +83,8 @@ volgorde (via het debugbestand) betekent: er gebeurt niets en Wordfeud ververst 
 | ForegroundSignal | testbuild 2026-11-02, uitkomst: werkt niet (bord ververst niet) |
 | RouteBounce | testbuild 2 2026-11-02, uitkomst: geen effect, ook geen navigatie zichtbaar → vermoedelijk komt het bericht niet aan |
 | RouteBounce | testbuild 3 2026-11-02 (diagnose-toast + FlutterJNI-pad), uitkomst: berichten komen aan via FlutterJNI (engine-pad: `NoSuchMethodException getFlutterEngine`), maar geen verversing; extra /game-pagina op de stapel (twee keer terug nodig) → ongeschikt |
-| ForegroundSignal | testbuild 4 2026-11-02 (FlutterJNI-pad als hoofdpad, korte toast), uitkomst: open. Eerdere test liep nog via het kapotte engine-pad en telt dus niet |
+| ForegroundSignal | testbuild 4 2026-11-02 (FlutterJNI-pad als hoofdpad, korte toast), uitkomst: komt aan (jni 2/2 OK), geen verversing; Wordfeud ververst zelf na 20–30 s |
+| LifecycleBounce | testbuild 5 2026-11-02 (app-levenscyclus via `flutter/lifecycle`, toast `WFWF LifecycleBounce: jni 6/6 OK`), uitkomst: open |
 
 ### Diagnose en verzendpaden (tijdelijk, sinds testbuild 3)
 
@@ -161,6 +163,7 @@ De eerste strategie die beide haalt gaat in `Refresher.ORDER` (taak 15, stap 3).
 
 | Strategie | Kanaalnaam bevestigd (logcat) | Bord binnen 2 s | Geen geflikker | Opmerkingen | Datum / toestel |
 |---|---|---|---|---|---|
+| `LifecycleBounce` | | | | | |
 | `ForegroundSignal` | | | | | |
 | `RouteBounce` | | | | | |
 | `FcmNudge` | | | | | |

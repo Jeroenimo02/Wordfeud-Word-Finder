@@ -14,7 +14,7 @@ public final class RefreshOrder {
     /** The debug opt-in file in {@code wfwf/} (see docs/DEV.md, "V4 — verversen"). */
     public static final String DEBUG_FILE = "debug_refresh_order.txt";
     static final int MAX_DEBUG_BYTES = 4096;
-    private static final String[] NAMES = {ForegroundSignal.NAME, RouteBounce.NAME, FcmNudge.NAME};
+    private static final String[] NAMES = {LifecycleBounce.NAME, ForegroundSignal.NAME, RouteBounce.NAME, FcmNudge.NAME};
 
     private RefreshOrder() {}
 
@@ -53,6 +53,7 @@ public final class RefreshOrder {
     }
 
     static Refresher.Strategy create(String name, Refresher.Messenger messenger) {
+        if (LifecycleBounce.NAME.equals(name)) return new LifecycleBounce(messenger);
         if (ForegroundSignal.NAME.equals(name)) return new ForegroundSignal(messenger);
         if (RouteBounce.NAME.equals(name)) return new RouteBounce(messenger);
         if (FcmNudge.NAME.equals(name)) return new FcmNudge(messenger);

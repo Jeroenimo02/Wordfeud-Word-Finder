@@ -6,11 +6,11 @@ import java.util.List;
 /**
  * Makes Wordfeud show the new game state after a move played through the overlay (spec section 8.4).
  *
- * <p>{@link #ORDER} names the strategies to try ({@link ForegroundSignal}, {@link RouteBounce}, {@link FcmNudge}).
- * It holds only {@link ForegroundSignal} in this test build (V4 testbuild 4, docs/DEV.md "V4 — verversen"). Testbuild 3
- * showed that messages do arrive via FlutterJNI, but RouteBounce re-pushed the game route without refetching it and
- * left an extra game page on the stack, so it is unsuitable; ForegroundSignal had only been tried while the send path
- * was broken. The final order waits for the device result. Each step is recorded in a {@link RefreshDiagnostic}; its
+ * <p>{@link #ORDER} names the strategies to try ({@link LifecycleBounce}, {@link ForegroundSignal},
+ * {@link RouteBounce}, {@link FcmNudge}). It holds only {@link LifecycleBounce} in this test build (V4 testbuild 5,
+ * docs/DEV.md "V4 — verversen"). Testbuild 3 showed that messages do arrive via FlutterJNI, but RouteBounce re-pushed
+ * the game route without refetching it and left an extra game page on the stack, so it is unsuitable; testbuild 4's
+ * ForegroundSignal arrived (jni 2/2 OK) but did not refresh the board. The final order waits for the device result. Each step is recorded in a {@link RefreshDiagnostic}; its
  * short summary is shown as a toast ({@link #DIAGNOSTIC_TOAST}), the full line goes to Copy details. With an empty order nothing happens: the overlay closes and Wordfeud refreshes by itself
  * (about 20 s), the fallback from spec 8.4.
  *
@@ -31,12 +31,18 @@ public final class Refresher {
     /** Sends platform messages to the Flutter engine of the current activity. */
     public interface Messenger {
         /**
-         * Schedules {@code messages} on {@code channel} on the main thread: the first right away, each next one
-         * {@code gapMs} after the previous one was sent. Once one was sent, the next is always sent too (unless the
-         * engine itself is gone), so a sequence like [background, foreground] never stops halfway. Returns false
-         * when no Flutter engine is reachable now (nothing scheduled).
+         * Schedules the {@code sequence} on {@code channel} on the main thread: the first message right away, each
+         * next one {@link MessageSequence#gapAfter(int)} after the previous one was sent. Once one was sent, the next
+         * is always sent too (unless the engine itself is gone), so a sequence like [background, foreground] never
+         * stops halfway; with {@link MessageSequence#closeAlways} the last message also follows a failed one. Returns
+         * false when no Flutter engine is reachable now (nothing scheduled).
          */
-        boolean send(String channel, List<byte[]> messages, long gapMs);
+        boolean send(String channel, MessageSequence sequence);
+
+        /** {@link #send(String, MessageSequence)} with the same {@code gapMs} between all messages. */
+        default boolean send(String channel, List<byte[]> messages, long gapMs) {
+            return send(channel, MessageSequence.uniform(messages, gapMs));
+        }
     }
 
     /** Debug log line sink (only used when the debug file exists). */
@@ -67,7 +73,7 @@ public final class Refresher {
     }
 
     /** The strategy names to try, in order. Empty: fallback (spec 8.4), Wordfeud refreshes itself. */
-    static final List<String> ORDER = Collections.singletonList(ForegroundSignal.NAME);
+    static final List<String> ORDER = Collections.singletonList(LifecycleBounce.NAME);
 
     // TODO(V4): remove diagnostic toast after the refresh strategy is confirmed
     /** V4 test builds: show each refresh's {@link RefreshDiagnostic} as a toast after Play succeeded. */

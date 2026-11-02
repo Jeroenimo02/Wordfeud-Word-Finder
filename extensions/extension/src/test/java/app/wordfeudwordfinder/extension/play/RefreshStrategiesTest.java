@@ -29,15 +29,74 @@ public class RefreshStrategiesTest {
         boolean available = true;
 
         final List<Integer> calls = new ArrayList<>();
+        final List<MessageSequence> sequences = new ArrayList<>();
 
-        /** Records message i of a sequence with delay i * gap (when the bridge would send it). */
+        /** Records message i of a sequence with its offset from the first (when the bridge would send it). */
         @Override
-        public boolean send(String channel, List<byte[]> messages, long gapMs) {
+        public boolean send(String channel, MessageSequence sequence) {
             if (!available) return false;
-            calls.add(messages.size());
-            for (int i = 0; i < messages.size(); i++) sent.add(new Sent(channel, messages.get(i), i * gapMs));
+            calls.add(sequence.size());
+            sequences.add(sequence);
+            for (int i = 0; i < sequence.size(); i++) {
+                sent.add(new Sent(channel, sequence.messages.get(i), sequence.offset(i)));
+            }
             return true;
         }
+    }
+
+    @Test
+    public void lifecycleEncoderIsPlainUtf8() {
+        assertArrayEquals("AppLifecycleState.paused".getBytes(StandardCharsets.US_ASCII),
+                LifecycleBounce.encode("paused")); // StringCodec: no type byte, no length
+    }
+
+    @Test
+    public void lifecycleBounceGoesToPausedAndBackToResumed() throws Exception {
+        FakeMessenger m = new FakeMessenger();
+        assertTrue(new LifecycleBounce(m).refresh(42L));
+        assertEquals(java.util.Collections.singletonList(6), m.calls); // one sequence
+        String[] expected = {"inactive", "hidden", "paused", "hidden", "inactive", "resumed"};
+        assertEquals(expected.length, m.sent.size());
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals("flutter/lifecycle", m.sent.get(i).channel);
+            assertEquals("AppLifecycleState." + expected[i],
+                    new String(m.sent.get(i).message, StandardCharsets.UTF_8));
+        }
+        long pause = m.sent.get(3).delay - m.sent.get(2).delay;
+        assertTrue("paused for " + pause, pause >= 250 && pause <= 400);
+        for (int i = 1; i < expected.length; i++) {
+            long gap = m.sent.get(i).delay - m.sent.get(i - 1).delay;
+            assertTrue(gap > 0);
+            if (i != 3) assertTrue("gap " + gap, gap < 100);
+        }
+        assertTrue(m.sequences.get(0).closeAlways); // "resumed" also follows a failed step
+    }
+
+    @Test
+    public void lifecycleBounceAlwaysEndsResumedOnceStarted() {
+        MessageSequence s = LifecycleBounce.sequence();
+        int last = s.size() - 1;
+        assertEquals("AppLifecycleState.resumed", new String(s.messages.get(last), StandardCharsets.UTF_8));
+        assertEquals(-1, s.next(0, false)); // "inactive" did not go out: nothing to undo
+        for (int i = 1; i < last; i++) {
+            assertEquals(last, s.next(i, false)); // a failure jumps straight to "resumed"
+            assertEquals(0L, s.delayAfter(i, false));
+            assertEquals(i + 1, s.next(i, true));
+        }
+        assertEquals(-1, s.next(last, true));
+        assertEquals(-1, s.next(last, false));
+    }
+
+    @Test
+    public void uniformSequenceStopsAtTheFirstFailure() {
+        java.util.List<byte[]> msgs = java.util.Arrays.asList(new byte[1], new byte[2], new byte[3]);
+        MessageSequence s = MessageSequence.uniform(msgs, 80);
+        assertFalse(s.closeAlways);
+        assertEquals(1, s.next(0, true));
+        assertEquals(-1, s.next(1, false)); // nothing follows a missing message (RouteBounce)
+        assertEquals(80L, s.gapAfter(0));
+        assertEquals(160L, s.offset(2));
+        assertEquals(0L, s.gapAfter(5));
     }
 
     @Test
@@ -98,6 +157,7 @@ public class RefreshStrategiesTest {
     @Test
     public void strategiesHaveTheirNames() {
         FakeMessenger m = new FakeMessenger();
+        assertEquals("LifecycleBounce", new LifecycleBounce(m).name());
         assertEquals("ForegroundSignal", new ForegroundSignal(m).name());
         assertEquals("RouteBounce", new RouteBounce(m).name());
         assertEquals("FcmNudge", new FcmNudge(m).name());
@@ -107,6 +167,7 @@ public class RefreshStrategiesTest {
     public void strategiesReportFalseWithoutAnEngine() throws Exception {
         FakeMessenger m = new FakeMessenger();
         m.available = false;
+        assertFalse(new LifecycleBounce(m).refresh(1L));
         assertFalse(new ForegroundSignal(m).refresh(1L));
         assertFalse(new RouteBounce(m).refresh(1L));
         assertFalse(new FcmNudge(m, () -> 0L).refresh(1L));
