@@ -328,14 +328,32 @@ public class MoveGeneratorTest {
     }
 
     @Test
-    public void bingoBonusIsZeroForNow() {
-        assertEquals(0, Rules.BINGO_BONUS);
+    public void sevenTileMoveGetsBonus40() {
+        // V5 confirmed 2026-11-02: a 7-tile move listed at 36 was awarded 76 by Wordfeud
+        assertEquals(40, Rules.BINGO_BONUS);
         assertEquals(7, Rules.CENTER);
         List<Move> moves = gen(empty(), "NEIGENS", words("NEIGENS"));
         Move m = find(moves, "NEIGENS", 7, 7, true);
         assertEquals(7, m.placed.size());
-        // N1 E1 I2 G3 E1 N1 S2 = 11, DW at (11,7) -> 22, plus BINGO_BONUS
-        assertEquals(22 + Rules.BINGO_BONUS, m.score);
+        // N1 E1 I2 G3 E1 N1 S2 = 11, DW at (11,7) -> 22, plus 40
+        assertEquals(62, m.score);
+    }
+
+    @Test
+    public void sixTileMoveGetsNoBonus() {
+        List<Move> moves = gen(empty(), "NEIGENS", words("NEIGEN", "NEIGENS"));
+        Move m = find(moves, "NEIGEN", 7, 7, true);
+        assertEquals(6, m.placed.size());
+        assertEquals(18, m.score);
+    }
+
+    @Test
+    public void emptyingAShortRackGetsNoBonus() {
+        // end of game: only six tiles left; placing all of them is not a 7-tile move
+        List<Move> moves = gen(empty(), "NEIGEN", words("NEIGEN"));
+        Move m = find(moves, "NEIGEN", 7, 7, true);
+        assertEquals(6, m.placed.size());
+        assertEquals(18, m.score);
     }
 
     @Test

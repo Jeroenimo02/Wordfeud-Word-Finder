@@ -138,7 +138,7 @@ Per regelset bewaard op schijf, nooit automatisch gewist, ook niet bij een nieuw
 ## 7. Zettenberekening
 
 - **Algoritme:** Appel-Jacobson met ankervakken en dwarscontroles; verticaal via het gekantelde bord.
-- **Score:** de som van de letterwaarden. DL/TL gelden alleen op nieuw gelegde tegels; DW/TW vermenigvuldigen het woord voor elke nieuwe tegel op zo'n vak. Dwarswoorden worden op dezelfde manier gescoord. De bonus voor zeven tegels komt erbij (waarde V5). Blanco tegels tellen 0 punten.
+- **Score:** de som van de letterwaarden. DL/TL gelden alleen op nieuw gelegde tegels; DW/TW vermenigvuldigen het woord voor elke nieuwe tegel op zo'n vak. Dwarswoorden worden op dezelfde manier gescoord. Bij zeven gelegde tegels komt er 40 bij (V5 bevestigd). Blanco tegels tellen 0 punten.
 - **Eerste zet:** moet over het middenvak (7, 7) gaan (V5).
 - **Blanco tegels:** ondersteund; in de zet als `[x,y,"*X"]` (V2 bevestigd 2026-11-02).
 - **Uitvoer per zet:** woord, posities, richting, nieuw gelegde tegels, gebruikte bordletters, score, alle gevormde woorden, en bonusvakken onder nieuwe tegels.
@@ -234,7 +234,7 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 | V2 | Formaat van blanco tegels in de zet en in `game_log` | bevestigd 2026-11-02 (Wordfeud 5.7.1): game_log en zet gebruiken "*X" (`[x,y,"*E"]`); `[x,y,"X",true]` gaf MV-SERVER-protocol |
 | V3 | Moeten dwarswoorden in `words`? | Alle woorden worden meegestuurd |
 | V4 | Welke verversmethode werkt? | LifecycleBounce (flutter/lifecycle paused→resumed via FlutterJNI) bevestigd 2026-11-02 (Wordfeud 5.7.1, meermaals getest) |
-| V5 | Bonus voor zeven tegels en de middenvakregel | Score zonder bonus, gemarkeerd als niet geverifieerd in debugbuilds |
+| V5 | Bonus voor zeven tegels en de middenvakregel | Bonus bevestigd 2026-11-02 (Wordfeud 5.7.1): 40 punten voor een zet met zeven gelegde tegels (36 → 76 in de app); geldt niet bij een leeg rek met minder tegels aan het eind. Middenvakregel ongewijzigd en nog niet geverifieerd |
 | V6 | Formaat van een woordweigering (hint: `illegal_word`) | Het hoofdwoord wordt als geweigerd gemarkeerd |
 | V7 | Positie van het knopje, ook met een banner | Vaste afstand van 165 dp |
 | V8 | Kleuren van het lichte thema (twee screenshots) | Donkere kleuren |

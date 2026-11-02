@@ -4,8 +4,11 @@ package app.wordfeudwordfinder.extension.solver;
 public final class Rules {
     private Rules() {}
 
-    /** Bonus for using all seven rack tiles. Stays 0 until check V5 confirms the value (task 16). */
-    public static final int BINGO_BONUS = 0;
+    /**
+     * Bonus for placing seven tiles in one move (V5 confirmed 2026-11-02, Wordfeud 5.7.1: listed 36, awarded 76).
+     * Only a move that places {@link #RACK_SIZE} tiles earns it, not one that empties a shorter rack at game end.
+     */
+    public static final int BINGO_BONUS = 40;
 
     /** Moves that use a blank; the move format ("*X") is confirmed (V2, 2026-11-02). */
     public static final boolean BLANKS_ENABLED = true;
