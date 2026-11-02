@@ -74,12 +74,13 @@ strategieën staan in `extensions/.../play/`:
 Kandidaat 3 (zelf `games/detail` ophalen en aanbieden) is niet gebouwd: pas na akkoord, en alleen als 1, 2 en 4
 alle drie falen.
 
-Het huidige testbuild gebruikt standaard `ForegroundSignal`: `Refresher.ORDER` bevat alleen die strategie. Een lege
+Het huidige testbuild (testbuild 2) gebruikt standaard `RouteBounce`: `Refresher.ORDER` bevat alleen die strategie. Een lege
 volgorde (via het debugbestand) betekent: er gebeurt niets en Wordfeud ververst zelf (~20 s).
 
 | Strategie | Status |
 |---|---|
-| ForegroundSignal | getest in testbuild 2026-11-02, uitkomst: open |
+| ForegroundSignal | testbuild 2026-11-02, uitkomst: werkt niet (bord ververst niet) |
+| RouteBounce | testbuild 2 2026-11-02, uitkomst: open |
 
 ### Debugbestand
 

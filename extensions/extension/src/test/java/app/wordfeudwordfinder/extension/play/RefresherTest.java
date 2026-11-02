@@ -40,15 +40,14 @@ public class RefresherTest {
     }
 
     @Test
-    public void defaultOrderIsForegroundSignalOnly() {
-        assertEquals(Arrays.asList(ForegroundSignal.NAME), Refresher.ORDER);
+    public void defaultOrderIsRouteBounceOnly() {
+        assertEquals(Arrays.asList(RouteBounce.NAME), Refresher.ORDER);
         Refresher.refresh(42L); // no environment: never throws
         FakeEnv env = new FakeEnv();
         Refresher.install(env);
         Refresher.refresh(42L);
-        assertEquals(2, env.messenger.sent.size()); // [false], then [true]
-        assertEquals("dev.flutter.pigeon.wordfeud.FlutterProcessLifecycleApi.onForegroundStateChanged",
-                env.messenger.sent.get(0).channel);
+        assertEquals(2, env.messenger.sent.size()); // route "/", then "/game/<id>"
+        assertEquals("flutter/navigation", env.messenger.sent.get(0).channel);
         assertTrue(env.log.isEmpty()); // release: no logging at all
         assertEquals(null, env.seenLog);
     }
