@@ -4,10 +4,10 @@ patches {
     about {
         name = "Wordfeud Word Finder"
         description = "Patches for Wordfeud, compatible with Morphe"
-        source = "git@github.com:jeroenimo02/wordfeud-morphe-patch.git"
+        source = "git@github.com:jeroenimo02/wordfeud-word-finder.git"
         author = "jeroenimo02"
         contact = "na"
-        website = "https://github.com/jeroenimo02/wordfeud-morphe-patch"
+        website = "https://github.com/jeroenimo02/wordfeud-word-finder"
         license = "GPLv3"
     }
 }

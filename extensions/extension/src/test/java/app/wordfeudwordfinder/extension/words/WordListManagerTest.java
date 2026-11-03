@@ -117,6 +117,32 @@ public class WordListManagerTest {
     }
 
     @Test
+    public void gzipListIsUnpackedAfterTheHashCheck() throws Exception {
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        try (java.util.zip.GZIPOutputStream gz = new java.util.zip.GZIPOutputStream(bos)) {
+            gz.write(LIST);
+        }
+        byte[] packed = bos.toByteArray();
+        fetcher.body = packed;
+        table.put(ID, new WordListSources.Source("https://example.org/nl/words.txt.gz", sha256(packed), 2, "UTF-8"));
+        Rec rec = new Rec();
+        manager().ensureForOverlay(ID, ruleset(), rec);
+        assertNull(rec.error);
+        assertNotNull(rec.ready);
+    }
+
+    @Test
+    public void corruptGzipIsAHashError() throws Exception {
+        byte[] notGzip = "this is not gzip".getBytes("UTF-8");
+        fetcher.body = notGzip;
+        table.put(ID, new WordListSources.Source("https://example.org/nl/words.txt.gz", sha256(notGzip), 2, "UTF-8"));
+        Rec rec = new Rec();
+        manager().ensureForOverlay(ID, ruleset(), rec);
+        assertNotNull(rec.error);
+        assertEquals("WL-HASH", rec.error.code());
+    }
+
+    @Test
     public void backgroundTriesOncePerSession() {
         fetcher.error = WfError.wlNet();
         WordListManager m = manager();
@@ -371,8 +397,8 @@ public class WordListManagerTest {
     }
 
     @Test
-    public void defaultTableHasNoEntriesYet() {
-        assertNull(WordListSources.get(1));
+    public void defaultTableHasNoEntryForRulesetsWithoutAnOpenList() {
+        assertNull(WordListSources.get(3)); // Danish: no open list yet
         assertNull(WordListSources.get(ID));
     }
 }

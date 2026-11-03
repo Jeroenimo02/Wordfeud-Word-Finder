@@ -113,14 +113,19 @@ Alle bestanden van de patch staan in `files/wfwf/` van de app (gewijzigd: wfwf, 
 
 ### 6.1 Bronnentabel
 
-De patch bevat een tabel per regelset-id met: URL, verwachte SHA-256, lijstversie en tekencodering. De tabel staat in de code en in de README, met bron en licentie per lijst.
+Herzien 2026-11-03: de lijsten staan in deze repository (`wordlists/<taal>/words.txt.gz`), gebouwd door
+`tools/wordlists/build.py` uit openbare bronnen (`wordlists/sources.json`: vaste commit-URL, SHA-256, licentie en
+bronvermelding per taal). Per taal kunnen `remove.txt` en `add.txt` woorden weghalen of toevoegen. Het script schrijft
+`wordlists/manifest.json` (SHA-256, aantal woorden en versie per lijst; de versie gaat omhoog bij elke inhoudelijke
+wijziging). Gradle genereert daaruit `WordListManifest`; `WordListSources` levert per regelset de URL
+`https://raw.githubusercontent.com/<repository>/<commit van de build>/wordlists/<taal>/words.txt.gz`, de SHA-256 en
+de versie. De download wordt op de SHA-256 gecontroleerd en daarna uitgepakt (gzip).
 
-Selectie van bronnen (plantaak W1, met akkoord van de opdrachtgever per regelset):
-
-- voorkeur voor een lijst die aantoonbaar op Wordfeuds eigen bron is gebaseerd (bijvoorbeeld Nederlands: `jensanjo/wordfeud-wordlists`, gebaseerd op OpenTaal);
-- anders de bron die Wordfeud zelf noemt, als die vrij downloadbaar is;
-- een vaste URL naar een specifieke versie (een commit-URL, geen `main`), zodat de vingerafdruk niet onverwacht verandert;
-- regelsets zonder bruikbare bron krijgen geen lijst; de overlay toont dan `WL-NONE` (zie §10).
+Bronkeuze: alleen openbare licenties (besluit opdrachtgever 2026-11-03). Regelset-id's (bevestigd uit
+`kimsb/WordfeudBot`, `kimsb/wftiles-android` en `ardavey/wordfeud-api-perl`): 0 Engels (VS), 1 Noors bokmål,
+2 Nederlands, 3 Deens, 4 Zweeds, 5 Engels internationaal, 6 Spaans, 7 Frans, 8 Zweeds strikt, 9 Duits,
+10 Noors nynorsk, 11 Fins, 12 Portugees. Regelsets zonder openbare lijst krijgen geen lijst; de overlay toont dan
+`WL-NONE` (zie §10).
 
 ### 6.2 Downloadflow
 
@@ -240,7 +245,7 @@ Tot een stap bevestigd is, geldt het gedrag dat erbij staat.
 | V6 | Formaat van een woordweigering (hint: `illegal_word`) | Bevestigd 2026-11-03 (Wordfeud 5.7.1): `content.type = illegal_word` met de sleutels `illegal_words`, `legal_words`, `message`. De woorden uit `illegal_words` gaan naar `RejectedWords`; `words`/`word` blijven als terugval. Noemt de server niets, dan geldt de terugval uit §8.3 |
 | V7 | Positie van het knopje, ook met een banner | Zonder banner bevestigd 2026-11-02. De beheerder heeft nooit een banner gezien; het knopje schuift alleen op als de app `AdApi.setBannerVisible(true)` meldt. Met banner niet geverifieerd |
 | V8 | Kleuren van het lichte thema (twee screenshots) | Gemeten 2026-11-02 op screenshots van het lichte thema, ook met Wordfeuds optie "donker bord" in licht thema. Overlay volgt het app-thema; het voorbeeldbord volgt de bordkleuren die op het scherm gemeten worden (`ScreenSampler`) |
-| V9 | Regelset-id's 8–12 en bevestiging van 0–7 | Onbekende id → `WL-NONE` |
+| V9 | Regelset-id's 8–12 en bevestiging van 0–7 | Bevestigd 2026-11-03 uit drie externe Wordfeud-clients (zie §6.1); alfabetten per taal uit `kimsb/wftiles-android` |
 | V10 | Formaat van `swap`-, `pass`-, `resign`- en `timeout`-gebeurtenissen | `GS-EVENT-<type>` |
 | V11 | Bestandstype van de bron | Beheerder gebruikt APKPure (2026-11-02): `ApkFileType.XAPK`, net als de andere patches van de beheerder. Bestandstype voor 5.7.1 nog niet op de site gecontroleerd |
 | V12 | Bron van de interfacetaal van de app | Bevestigd 2026-11-02: de app volgt de systeemtaal (Engels en Nederlands getest); de overlay doet hetzelfde, met terugval naar Engels |

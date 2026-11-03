@@ -31,17 +31,21 @@ val generateBuildInfo = tasks.register("generateBuildInfo") {
     }
 }
 
+apply(from = rootProject.file("gradle/wordlist-manifest.gradle.kts"))
+
 android {
     namespace = "app.wordfeudwordfinder.extension"
     sourceSets {
         getByName("main") {
             java.srcDir(buildInfoDir.get().asFile)
+            java.srcDir(layout.buildDirectory.dir("generated/source/wordlists").get().asFile)
         }
     }
 }
 
 tasks.named("preBuild") {
     dependsOn(generateBuildInfo)
+    dependsOn("generateWordListManifest")
 }
 
 dependencies {
