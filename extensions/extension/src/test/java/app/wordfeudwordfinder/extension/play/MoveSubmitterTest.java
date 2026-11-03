@@ -10,13 +10,16 @@ import app.wordfeudwordfinder.extension.core.Storage;
 import app.wordfeudwordfinder.extension.game.GameStore;
 import app.wordfeudwordfinder.extension.hooks.UserAgentTap;
 import app.wordfeudwordfinder.extension.words.RejectedWords;
+import app.wordfeudwordfinder.extension.words.WordReporter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -151,6 +154,35 @@ public class MoveSubmitterTest {
         assertFalse(rejected.contains(2, "MANDJE"));
         assertFalse(r.oneOf);
         assertEquals("type=illegal_word keys=illegal_words,legal_words,message,type illegal_words=[\"ndj\"]", r.server);
+    }
+
+    @Test
+    public void serverNamedWordsAreReportedOnce() {
+        List<String> reported = new ArrayList<>();
+        WordReporter rep = new WordReporter("https://w.example/report", (u, json) -> {
+            try {
+                org.json.JSONArray a = new org.json.JSONObject(json).getJSONArray("words");
+                for (int i = 0; i < a.length(); i++) reported.add(a.getString(i));
+            } catch (Exception e) { // JSONException is checked on Android
+                throw new IOException(e);
+            }
+        }, Runnable::run);
+        String body = "{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\",\"illegal_words\":[\"ndj\"]}}";
+        MoveSubmitter s = new MoveSubmitter(session, new FakePoster(body), store, rejected, rep);
+        s.submit(GAME, 2, MoveRequestTest.mandje());
+        assertEquals(Arrays.asList("NDJ"), reported);
+        s.submit(GAME, 2, MoveRequestTest.mandje()); // already rejected on this device: not reported again
+        assertEquals(Arrays.asList("NDJ"), reported);
+    }
+
+    @Test
+    public void unnamedRejectionIsNotReported() {
+        List<String> reported = new ArrayList<>();
+        WordReporter rep = new WordReporter("https://w.example/report", (u, json) -> reported.add(json), Runnable::run);
+        MoveSubmitter s = new MoveSubmitter(session,
+                new FakePoster("{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\"}}"), store, rejected, rep);
+        s.submit(GAME, 2, MoveRequestTest.mandje());
+        assertTrue(reported.isEmpty());
     }
 
     @Test

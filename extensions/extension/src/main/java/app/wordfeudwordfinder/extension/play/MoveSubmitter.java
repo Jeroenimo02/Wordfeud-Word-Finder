@@ -5,6 +5,7 @@ import app.wordfeudwordfinder.extension.game.GameStore;
 import app.wordfeudwordfinder.extension.hooks.UserAgentTap;
 import app.wordfeudwordfinder.extension.solver.Move;
 import app.wordfeudwordfinder.extension.words.RejectedWords;
+import app.wordfeudwordfinder.extension.words.WordReporter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,14 +98,22 @@ public final class MoveSubmitter {
     private final Poster poster;
     private final GameStore store;
     private final RejectedWords rejected;
+    /** Reports words the server named as illegal (new ones only); null: no reports. */
+    private final WordReporter reporter;
     private final HiddenMoves hidden = new HiddenMoves();
     private final AtomicBoolean busy = new AtomicBoolean(false);
 
     public MoveSubmitter(SessionReader session, Poster poster, GameStore store, RejectedWords rejected) {
+        this(session, poster, store, rejected, null);
+    }
+
+    public MoveSubmitter(SessionReader session, Poster poster, GameStore store, RejectedWords rejected,
+                         WordReporter reporter) {
         this.session = session;
         this.poster = poster;
         this.store = store;
         this.rejected = rejected;
+        this.reporter = reporter;
     }
 
     /** Moves hidden for the rest of the process after an unattributed rejection. */
@@ -190,6 +199,16 @@ public final class MoveSubmitter {
             return Result.rejected(formed, true, server);
         }
         List<String> words = named.isEmpty() ? formed : named;
+        if (!named.isEmpty() && reporter != null) {
+            // Only words the server itself named, and only the first time they are rejected on this device.
+            List<String> fresh = new ArrayList<>();
+            try {
+                for (String w : named) if (!rejected.contains(rulesetId, w)) fresh.add(w);
+                reporter.report(rulesetId, fresh);
+            } catch (RuntimeException ignored) {
+                // reporting must never affect the move result
+            }
+        }
         try {
             rejected.add(rulesetId, words);
         } catch (RuntimeException ignored) {

@@ -301,9 +301,11 @@ public final class WordListManager {
         progress(job, VERIFIED);
         List<String> words;
         try {
-            words = WordListNormalizer.normalize(new ByteArrayInputStream(raw), cs, alphabet(rs));
+            java.io.InputStream in = new ByteArrayInputStream(raw);
+            if (src.gzip()) in = new java.util.zip.GZIPInputStream(in, 1 << 16);
+            words = WordListNormalizer.normalize(in, cs, alphabet(rs));
         } catch (IOException e) {
-            throw WfError.wlDisk(); // cannot happen for an in-memory stream
+            throw WfError.wlHash(); // a corrupt gzip stream (the SHA-256 matched, so not expected)
         }
         raw = null; // let the download be collected before building
         progress(job, NORMALIZED);
