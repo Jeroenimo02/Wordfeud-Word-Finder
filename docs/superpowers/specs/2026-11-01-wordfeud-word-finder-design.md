@@ -124,7 +124,7 @@ de versie. De download wordt op de SHA-256 gecontroleerd en daarna uitgepakt (gz
 Bronkeuze: alleen openbare licenties (besluit opdrachtgever 2026-11-03). Regelset-id's (bevestigd uit
 `kimsb/WordfeudBot`, `kimsb/wftiles-android` en `ardavey/wordfeud-api-perl`): 0 Engels (VS), 1 Noors bokmål,
 2 Nederlands, 3 Deens, 4 Zweeds, 5 Engels internationaal, 6 Spaans, 7 Frans, 8 Zweeds strikt, 9 Duits,
-10 Noors nynorsk, 11 Fins, 12 Portugees. Regelsets zonder openbare lijst krijgen geen lijst; de overlay toont dan
+10 Noors nynorsk, 11 Fins, 12 Portugees. Lijsten (2026-11-03): 0/5 ENABLE, 1 en 10 Norsk ordbank, 2 OpenTaal, 3 COR₁ 1.5.1.0 (N+K), 4 DSSO, 7 Grammalecte v7.7, 9 enz/german-wordlist. Regelset 8 (Zweeds strikt) krijgt geen lijst: waarschijnlijk alleen grondvormen (onbevestigd). Spaans (6, ook dubbelletter-tegels CH/LL/RR), Fins (11) en Portugees (12): nog geen lijst. Regelsets zonder openbare lijst krijgen geen lijst; de overlay toont dan
 `WL-NONE` (zie §10).
 
 ### 6.1a Woordmeldingen
