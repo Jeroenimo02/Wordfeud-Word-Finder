@@ -29,8 +29,9 @@ import org.json.JSONObject;
  *   <li>a response body (2xx, or the error body of another status) is handed to
  *       {@link GameStore#onMoveResponse}: {@code status: success} gives SUCCESS (the store is updated);
  *       a reply whose root {@code status} string is not "success" is a server error;
- *       {@code MV-SERVER-illegal_word} gives REJECTED (format unconfirmed, V6): the words the server names in
- *       {@code content.words} (array) or {@code content.word} (string) go to {@link RejectedWords}; when it names
+ *       {@code MV-SERVER-illegal_word} gives REJECTED: the words the server names in
+ *       {@code content.illegal_words} (confirmed V6, 2026-11-03: keys illegal_words, legal_words, message, type;
+ *       {@code content.words} / {@code content.word} as older fallbacks) go to {@link RejectedWords}; when it names
  *       none and the move formed one word, that word goes there; when it names none and the move formed several
  *       words (main plus cross words), no word is rejected permanently: the exact move is hidden for this game
  *       for the rest of the process ({@link HiddenMoves}) and the result lists all its words
@@ -226,6 +227,7 @@ public final class MoveSubmitter {
             while (it.hasNext()) keys.add(it.next());
             Collections.sort(keys);
             b.append(" keys=").append(String.join(",", keys));
+            if (c.has("illegal_words")) b.append(" illegal_words=").append(String.valueOf(c.opt("illegal_words")));
             if (c.has("words")) b.append(" words=").append(String.valueOf(c.opt("words")));
             if (c.has("word")) b.append(" word=").append(String.valueOf(c.opt("word")));
             return b.toString();
@@ -260,20 +262,18 @@ public final class MoveSubmitter {
         }
     }
 
-    /** Words in {@code content.words} (array of strings) or {@code content.word} (string); empty when absent. */
+    /**
+     * Words in {@code content.illegal_words} (V6), else {@code content.words} (array of strings or a string), else
+     * {@code content.word} (string); empty when absent.
+     */
     static List<String> serverNamedWords(String json) {
         List<String> out = new ArrayList<>();
         try {
             Object content = new JSONObject(json).opt("content");
             if (!(content instanceof JSONObject)) return out;
             JSONObject c = (JSONObject) content;
-            Object ws = c.opt("words");
-            if (ws instanceof JSONArray) {
-                JSONArray a = (JSONArray) ws;
-                for (int i = 0; i < a.length(); i++) add(out, a.opt(i));
-            } else {
-                add(out, ws);
-            }
+            addAll(out, c.opt("illegal_words"));
+            if (out.isEmpty()) addAll(out, c.opt("words"));
             if (out.isEmpty()) add(out, c.opt("word"));
         } catch (JSONException e) {
             out.clear(); // separate catches: checked on Android, unchecked on the JVM test jar
@@ -281,6 +281,15 @@ public final class MoveSubmitter {
             out.clear();
         }
         return out;
+    }
+
+    private static void addAll(List<String> out, Object ws) {
+        if (ws instanceof JSONArray) {
+            JSONArray a = (JSONArray) ws;
+            for (int i = 0; i < a.length(); i++) add(out, a.opt(i));
+        } else {
+            add(out, ws);
+        }
     }
 
     private static void add(List<String> out, Object w) {

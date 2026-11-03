@@ -140,6 +140,20 @@ public class MoveSubmitterTest {
     }
 
     @Test
+    public void illegalWordUsesIllegalWordsFromTheServer() {
+        // Shape seen on the device (V6): keys illegal_words, legal_words, message, type.
+        FakePoster p = new FakePoster("{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\","
+                + "\"illegal_words\":[\"ndj\"],\"legal_words\":[\"mandje\"],\"message\":\"x\"}}");
+        MoveSubmitter.Result r = submitter(p).submit(GAME, 2, MoveRequestTest.mandje());
+        assertEquals(MoveSubmitter.Result.Kind.REJECTED, r.kind);
+        assertEquals(Arrays.asList("NDJ"), r.words);
+        assertTrue(rejected.contains(2, "NDJ"));
+        assertFalse(rejected.contains(2, "MANDJE"));
+        assertFalse(r.oneOf);
+        assertEquals("type=illegal_word keys=illegal_words,legal_words,message,type illegal_words=[\"ndj\"]", r.server);
+    }
+
+    @Test
     public void otherServerErrorIsError() {
         FakePoster p = new FakePoster("{\"status\":\"error\",\"content\":{\"type\":\"not_your_turn\"}}");
         MoveSubmitter.Result r = submitter(p).submit(GAME, 2, MoveRequestTest.mandje());
