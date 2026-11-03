@@ -80,7 +80,8 @@ Every message shows a short text and a code.
 
 - Using this patch may conflict with Wordfeud's terms of service. Possible consequences include a warning or a suspended account. You use it at your own risk.
 - Moves are sent outside the app's own UI, straight to the API, using your Wordfeud session cookie. The cookie never leaves the device except to `api.wordfeud.com`.
-- Network access is limited to `api.wordfeud.com` and the pinned word-list URLs. There is no analytics or telemetry.
+- Network access is limited to `api.wordfeud.com`, the word lists in this repository and, when a release has a report address, the word report worker. There is no analytics or tracking.
+- **Word reports:** when the Wordfeud server rejects a word that is in our list, the patch sends that word to the project's report worker (`tools/report-worker`) once, in the background: only the ruleset number, the rejected words and the patch version, no user name, game, cookie or device id. The maintainer reviews the reported words before they are removed from the list for everyone.
 
 ## Status and limitations
 

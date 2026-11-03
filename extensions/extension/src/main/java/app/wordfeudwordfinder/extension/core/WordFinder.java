@@ -7,6 +7,7 @@ import app.wordfeudwordfinder.extension.play.UrlConnectionPoster;
 import app.wordfeudwordfinder.extension.words.RejectedWords;
 import app.wordfeudwordfinder.extension.words.UrlConnectionFetcher;
 import app.wordfeudwordfinder.extension.words.WordListManager;
+import app.wordfeudwordfinder.extension.words.WordReporter;
 import java.io.File;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -36,7 +37,7 @@ public final class WordFinder {
         this.wordLists = new WordListManager(storage, new UrlConnectionFetcher(), wordListExecutor());
         File appFiles = root.getAbsoluteFile().getParentFile();
         this.submitter = new MoveSubmitter(new SessionReader(appFiles, System::currentTimeMillis),
-                new UrlConnectionPoster(), gameStore, rejected);
+                new UrlConnectionPoster(), gameStore, rejected, WordReporter.fromBuild());
         GameStore gs = gameStore;
         WordListManager wl = wordLists;
         gameStore.addListener(() -> wl.onRulesetsSeen(gs.seenRulesets(), gs::ruleset));

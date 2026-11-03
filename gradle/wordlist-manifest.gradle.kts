@@ -26,14 +26,21 @@ val wordlistRepository: String = System.getenv("GITHUB_REPOSITORY")?.takeIf { it
     ?: rootProject.findProperty("wordlistRepository") as String?
     ?: "Jeroenimo02/Wordfeud-Word-Finder"
 
+// Address of the report worker (tools/report-worker), e.g. https://wordfeud-word-report.<sub>.workers.dev/report.
+// Empty: the patch reports nothing.
+val wordReportUrl: String = ((findProperty("wordReportUrl") ?: rootProject.findProperty("wordReportUrl")) as String?)
+    ?.trim()?.takeIf { it.startsWith("https://") } ?: ""
+
 val generateWordListManifest by tasks.registering {
     val outDir = wordlistOutDir
     val manifest = wordlistManifestFile
     val repo = wordlistRepository
     val commit = wordlistCommit()
+    val reportUrl = wordReportUrl
     inputs.file(manifest)
     inputs.property("repository", repo)
     inputs.property("commit", commit)
+    inputs.property("reportUrl", reportUrl)
     outputs.dir(outDir)
     doLast {
         @Suppress("UNCHECKED_CAST")
@@ -55,6 +62,8 @@ val generateWordListManifest by tasks.registering {
             |final class WordListManifest {
             |    static final String REPOSITORY = ${lit(repo)};
             |    static final String COMMIT = ${lit(commit)};
+            |    /** Report worker address (https), or "" when reporting is off. */
+            |    static final String REPORT_URL = ${lit(reportUrl)};
             |    /** {ruleset id, file in the repository, SHA-256 of the file, version}. */
             |    static final String[][] ENTRIES = {
             |$rows

@@ -127,6 +127,21 @@ Bronkeuze: alleen openbare licenties (besluit opdrachtgever 2026-11-03). Regelse
 10 Noors nynorsk, 11 Fins, 12 Portugees. Regelsets zonder openbare lijst krijgen geen lijst; de overlay toont dan
 `WL-NONE` (zie §10).
 
+### 6.1a Woordmeldingen
+
+Besluit opdrachtgever 2026-11-03: woorden die de server weigert worden automatisch gemeld en via een branch per
+taal ter beoordeling aangeboden; niets gaat zonder merge van de opdrachtgever naar gebruikers.
+
+- De patch (`WordReporter`) stuurt na een `illegal_word`-weigering de door de server genoemde woorden
+  (`illegal_words`) die op dit toestel nog niet geweigerd waren, eenmalig op de achtergrond naar het meldadres
+  (`wordReportUrl` in `gradle.properties`, leeg = uit). Inhoud: `{"ruleset":n,"words":[...],"patch":"x.y.z"}`.
+- De Cloudflare Worker (`tools/report-worker`) valideert (regelset 0-12, 1-8 woorden van 2-15 letters, optionele
+  limiet per IP) en stuurt een `repository_dispatch` (`wordlist-report`) met een fine-grained token met alleen
+  Contents-schrijfrecht op deze repository.
+- De workflow `wordlist-report.yml` zet geldige woorden die in de lijst staan in `wordlists/<taal>/remove.txt` op
+  de branch `wordlist/<taal>`, bouwt de lijst opnieuw (commit type `fix`) en houdt per taal één PR naar `main`
+  open. Na de merge maakt de release-workflow een nieuwe versie met de bijgewerkte lijst.
+
 ### 6.2 Downloadflow
 
 1. Na elke verwerkte `games/detail` bepaalt de patch welke regelsets in de potjes voorkomen. Voor elke regelset zonder geldige lokale lijst (ontbrekend, of met een lagere lijstversie dan in de tabel) start hij een achtergronddownload. Per regelset loopt maximaal één download tegelijk.
