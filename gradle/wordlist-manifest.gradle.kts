@@ -24,7 +24,7 @@ fun wordlistCommit(): String {
 val wordlistRepository: String = System.getenv("GITHUB_REPOSITORY")?.takeIf { it.contains("/") }
     ?: (findProperty("wordlistRepository") as String?)
     ?: rootProject.findProperty("wordlistRepository") as String?
-    ?: "jeroenimo02/wordfeud-word-finder"
+    ?: "Jeroenimo02/Wordfeud-Word-Finder"
 
 val generateWordListManifest by tasks.registering {
     val outDir = wordlistOutDir

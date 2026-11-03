@@ -2,10 +2,10 @@
 
 Patches for Wordfeud, compatible with Morphe.
 
-[![Add to Morphe](.github/assets/add-to-morphe.svg)](https://morphe.software/add-source?github=jeroenimo02/wordfeud-morphe-patch)
+[![Add to Morphe](.github/assets/add-to-morphe.svg)](https://morphe.software/add-source?github=jeroenimo02/wordfeud-word-finder)
 
 Add the patch source in Morphe with the badge above, or open
-`https://morphe.software/add-source?github=jeroenimo02/wordfeud-morphe-patch`.
+`https://morphe.software/add-source?github=jeroenimo02/wordfeud-word-finder`.
 
 ## What it does
 
