@@ -19,7 +19,7 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1**. Other versions are experim
 ## Patches
 
 <!-- PATCHES_START -->
-> **[v1.0.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Morphe-Patch/releases/tag/v1.0.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;1 patches total
+> **[v1.0.0](https://github.com/Jeroenimo02/Wordfeud-Morphe-Patch/releases/tag/v1.0.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;1 patches total
 <details open>
 <summary>📦 Wordfeud&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
 <br>
