@@ -32,7 +32,7 @@ review of the pull request is the final check.
    npx wrangler secret put GITHUB_TOKEN     # paste the token from step 1
    ```
    `wrangler deploy` prints the address, e.g. `https://wordfeud-word-report.<your-subdomain>.workers.dev`.
-5. **Connect the patch.** Put the address plus `/report` in `gradle.properties` as `wordReportUrl=...` and release
+5. **Connect the patch.** Put the address plus `/report` in `gradle.properties` as `wordReportUrl=...` (this project: `https://wordfeud-word-report.jeroenimo02.workers.dev/report`) and release
    a new version. Builds without `wordReportUrl` do not report anything.
 
 ## Trying it
