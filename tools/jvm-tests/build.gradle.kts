@@ -9,6 +9,10 @@ tasks.withType<JavaCompile>().configureEach {
     options.release.set(17)
 }
 
+apply(from = "../../gradle/wordlist-manifest.gradle.kts")
+
+tasks.named("compileJava") { dependsOn("generateWordListManifest") }
+
 repositories {
     mavenCentral()
 }
@@ -36,6 +40,7 @@ sourceSets {
             srcDir("../../extensions/extension/src/main/java")
             // BuildInfo is generated in the real build; this is a fixed "dev" stand-in.
             srcDir("src/buildinfo/java")
+            srcDir(layout.buildDirectory.dir("generated/source/wordlists"))
             exclude(androidOnly)
         }
     }

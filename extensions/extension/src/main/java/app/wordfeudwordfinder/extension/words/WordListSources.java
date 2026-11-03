@@ -1,13 +1,16 @@
 package app.wordfeudwordfinder.extension.words;
 
 /**
- * Word list per ruleset id (spec section 6.1). Every URL here is one of the only hosts, besides
- * api.wordfeud.com, that the patch may contact. Each entry pins an exact file version (commit URL), its SHA-256
- * and a list version; raising the version makes clients re-download.
+ * Word list per ruleset id (spec section 6.1). The lists live in this project's repository (wordlists/, built by
+ * tools/wordlists/build.py from open sources); {@link WordListManifest} is generated from wordlists/manifest.json at
+ * build time. Each URL is pinned to the commit the patch was built from, on raw.githubusercontent.com, one of the
+ * only hosts besides api.wordfeud.com that the patch may contact. The SHA-256 of the (gzip) file is checked after
+ * download; raising the version makes clients re-download.
  *
- * <p>Only client-approved sources are listed (plan task 9); every other ruleset reports WL-NONE.
+ * <p>Rulesets without an open word list report WL-NONE.
  */
 public final class WordListSources {
+    static final String HOST = "https://raw.githubusercontent.com/";
 
     /** One downloadable word list. */
     public static final class Source {
@@ -26,20 +29,24 @@ public final class WordListSources {
             this.version = version;
             this.charset = charset;
         }
+
+        /** Whether the file is gzip-compressed (the lists in the repository are). */
+        public boolean gzip() {
+            return url.endsWith(".gz");
+        }
     }
 
     private WordListSources() {}
 
     /** The source for a ruleset id, or null when there is none (WL-NONE). */
     public static Source get(int rulesetId) {
-        switch (rulesetId) {
-            case 2: // Dutch: jensanjo/wordfeud-wordlists (OpenTaal), approved 2026-11-01
-                return new Source(
-                        "https://raw.githubusercontent.com/jensanjo/wordfeud-wordlists/"
-                                + "9e8bbff63d7ebd80e2d91b9a33bd69d5d9c2bd06/nl/wordlist-nl.txt",
-                        "414075805ca9b76fba3cbdaab7dd5ff7cbf1f851c3580b06f1001e2fca97b287", 1, "UTF-8");
-            default:
-                return null;
+        String id = Integer.toString(rulesetId);
+        for (String[] e : WordListManifest.ENTRIES) {
+            if (e[0].equals(id)) {
+                return new Source(HOST + WordListManifest.REPOSITORY + "/" + WordListManifest.COMMIT + "/" + e[1],
+                        e[2], Integer.parseInt(e[3]), "UTF-8");
+            }
         }
+        return null;
     }
 }

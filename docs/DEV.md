@@ -162,3 +162,13 @@ De eerste strategie die beide haalt gaat in `Refresher.ORDER` (taak 15, stap 3).
 | `FcmNudge` | | | | | |
 
 Stand 2026-11-01: nog niet op een toestel getest; `ORDER` is daarom leeg (terugval uit spec §8.4).
+
+## Woordenlijsten
+
+De lijsten staan in `wordlists/` en worden gebouwd met `python3 tools/wordlists/build.py` (alleen de
+standaardbibliotheek van Python). Zie `wordlists/README.md`. Na een wijziging in `sources.json`, `remove.txt` of
+`add.txt` het script draaien en `wordlists/` committen; de workflow `Word lists` controleert dat met `--check`.
+
+Gradle genereert `WordListManifest.java` uit `wordlists/manifest.json` (`gradle/wordlist-manifest.gradle.kts`),
+met als repository `GITHUB_REPOSITORY` (CI) of `wordlistRepository` uit `gradle.properties`, en als commit
+`GITHUB_SHA` (CI) of `git rev-parse HEAD`. Een lokaal gebouwde patch downloadt dus alleen als die commit gepusht is.

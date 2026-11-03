@@ -1,6 +1,6 @@
 # Woordenlijsten per regelset (onderzoek taak 9, stappen 1 en 2)
 
-Status: **besloten** (zie [Besluit](#besluit)). Regelset 2 (Nederlands) is goedgekeurd en ingevuld in `WordListSources`; alle andere regelsets blijven leeg (`WL-NONE`).
+Status: **vervangen** (2026-11-03). De lijsten staan nu in `wordlists/` van deze repository, alleen uit openbare bronnen; zie `wordlists/README.md` en spec §6.1. Hieronder het oorspronkelijke onderzoek (2026-11-01), ter referentie.
 Onderzoeksdatum: 2026-11-01.
 
 ## Werkwijze

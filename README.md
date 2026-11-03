@@ -41,15 +41,22 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1**. Other versions are experim
 
 ## Word lists
 
-The word finder needs a word list per ruleset. A list is downloaded in the background from a pinned commit as soon as
-a game in that ruleset is seen (opening the overlay retries a failed download), and verified against a SHA-256
-before use.
+The word finder needs a word list per ruleset. The lists live in this repository (`wordlists/`, built from open
+sources by `tools/wordlists/build.py`). A list is downloaded in the background from this repository, pinned to the
+commit the patch was built from, as soon as a game in that ruleset is seen (opening the overlay retries a failed
+download), and verified against a SHA-256 before use.
 
-| Ruleset id | Language | Source (pinned commit) | License |
+| Ruleset id | Language | Source | License of the list |
 |---|---|---|---|
-| 2 | Dutch | [jensanjo/wordfeud-wordlists](https://github.com/jensanjo/wordfeud-wordlists) `nl/wordlist-nl.txt` @ `9e8bbff63d7ebd80e2d91b9a33bd69d5d9c2bd06` | Revised BSD and/or CC BY 3.0; word list by [OpenTaal](https://www.opentaal.org/) (attribution required) |
+| 0, 5 | English (US / international) | ENABLE word list, via [dolph/dictionary](https://github.com/dolph/dictionary). A free approximation of TWL and Collins: the server may reject words that are not in Wordfeud's own list | Public domain |
+| 1 | Norwegian (bokmål) | Norsk ordbank (Språkbanken / Språkrådet), via [Ondkloss/norwegian-wordlist](https://github.com/Ondkloss/norwegian-wordlist) | CC BY 4.0 |
+| 2 | Dutch | [OpenTaal](https://www.opentaal.org/), via [jensanjo/wordfeud-wordlists](https://github.com/jensanjo/wordfeud-wordlists) | Revised BSD and/or CC BY 3.0 |
+| 4, 8 | Swedish (and Swedish strict) | Den stora svenska ordlistan (Göran Andersson), via [mrcz/Wordfeud-Player](https://github.com/mrcz/Wordfeud-Player) | CC BY-SA 3.0 |
+| 9 | German | [enz/german-wordlist](https://github.com/enz/german-wordlist) | CC0 1.0 |
+| 10 | Norwegian (nynorsk) | Norsk ordbank (Språkbanken / Språkrådet), via [Ondkloss/norwegian-wordlist](https://github.com/Ondkloss/norwegian-wordlist) | CC BY 4.0 |
 
-All other rulesets have no word list yet; the overlay reports `WL-NONE` for them. See `docs/wordlists.md` for the research.
+Rulesets 3 (Danish), 6 (Spanish), 7 (French), 11 (Finnish) and 12 (Portuguese) have no open word list yet; the overlay
+reports `WL-NONE` for them. The derived lists keep the license of their source; see `wordlists/README.md`.
 
 ## Error codes
 

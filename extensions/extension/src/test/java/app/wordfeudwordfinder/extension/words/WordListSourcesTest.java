@@ -27,15 +27,26 @@ public class WordListSourcesTest {
     }
 
     @Test
-    public void onlyApprovedDutchEntryPresent() {
+    public void openListsPerRuleset() {
+        // 0/5 English (ENABLE), 1 bokmål, 2 Dutch, 4/8 Swedish, 9 German, 10 nynorsk (wordlists/sources.json).
+        java.util.Set<Integer> present = new java.util.HashSet<>(java.util.Arrays.asList(0, 1, 2, 4, 5, 8, 9, 10));
         for (int id = 0; id <= MAX_ID; id++) {
-            if (id == 2) assertNotNull(WordListSources.get(id));
+            if (present.contains(id)) assertNotNull("id " + id, WordListSources.get(id));
             else assertNull("id " + id, WordListSources.get(id));
         }
         WordListSources.Source nl = WordListSources.get(2);
-        assertEquals("414075805ca9b76fba3cbdaab7dd5ff7cbf1f851c3580b06f1001e2fca97b287", nl.sha256);
-        assertEquals(1, nl.version);
+        assertTrue(nl.url, nl.url.endsWith("/wordlists/nl/words.txt.gz"));
+        assertTrue(nl.gzip());
         assertEquals("UTF-8", nl.charset);
+        assertEquals(WordListSources.get(0).sha256, WordListSources.get(5).sha256);
+        assertEquals(WordListSources.get(4).sha256, WordListSources.get(8).sha256);
+    }
+
+    @Test
+    public void urlPointsAtThisRepositoryAndBuildCommit() {
+        WordListSources.Source nl = WordListSources.get(2);
+        assertEquals("https://raw.githubusercontent.com/" + WordListManifest.REPOSITORY + "/" + WordListManifest.COMMIT
+                + "/wordlists/nl/words.txt.gz", nl.url);
     }
 
     @Test
