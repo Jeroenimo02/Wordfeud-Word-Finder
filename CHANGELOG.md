@@ -1,3 +1,15 @@
+## [1.1.0-dev.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2026-11-03)
+
+### ✨ New Features
+
+* Deense en Franse woordenlijst; geen lijst voor Zweeds strikt ([ad14b81](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ad14b819f75e4a258d91206eed1adc1d695407e5))
+* geweigerde woorden automatisch melden voor de woordenlijst ([b353a66](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/b353a66d691276d9a3b46f4b8729b539053d4778))
+* meldadres van de Worker in de build ([d03d92a](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/d03d92a92cfd8baa31fe88215365366b365291eb))
+
+### 🐛 Bug Fixes
+
+* test compileert op Android (JSONException is daar checked) ([ee9cb9d](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ee9cb9d28adc0d51df1f7ac1673994546a76d78e))
+
 ## [1.1.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.0.0...v1.1.0-dev.1) (2026-11-03)
 
 ### ✨ New Features
