@@ -27,6 +27,7 @@ import os
 import sys
 import unicodedata
 import urllib.request
+import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 WORDLISTS = os.path.join(ROOT, "wordlists")
@@ -97,16 +98,48 @@ def read_word_file(path, norm):
     return words
 
 
-def build_language(code, lang, cache):
-    src = lang["source"]
-    raw = fetch(src["url"], src["sha256"], cache)
+def source_entries(src, raw):
+    """The candidate words of a source, before normalisation.
+
+    Source options (all optional): "zip_member" (read that file from a zip archive), "column" (0-based column of
+    a tab-separated table; lines with fewer columns are skipped), "numeric_id" (only table lines whose first
+    column is a number), "filter_column" + "filter_values" (only lines with one of those values there),
+    "skip_capitalised" (drop entries starting with a capital letter: proper nouns).
+    """
+    if src.get("zip_member"):
+        with zipfile.ZipFile(io.BytesIO(raw)) as z:
+            raw = z.read(src["zip_member"])
     text = raw.decode(src.get("charset", "utf-8"), errors="replace")
-    norm = normaliser(lang)
-    words = set()
+    col = src.get("column")
+    fcol = src.get("filter_column")
+    fvals = set(src.get("filter_values", []))
     for line in text.splitlines():
         if line.startswith("#"):
             continue
-        w = norm(line)
+        if col is not None:
+            cols = line.split("\t")
+            if len(cols) <= col:
+                continue
+            if src.get("numeric_id") and not cols[0].strip().isdigit():
+                continue
+            if fcol is not None and (len(cols) <= fcol or cols[fcol].strip() not in fvals):
+                continue
+            entry = cols[col]
+        else:
+            entry = line
+        entry = entry.strip().lstrip("\ufeff")
+        if src.get("skip_capitalised") and entry[:1].isupper():
+            continue
+        yield entry
+
+
+def build_language(code, lang, cache):
+    src = lang["source"]
+    raw = fetch(src["url"], src["sha256"], cache)
+    norm = normaliser(lang)
+    words = set()
+    for entry in source_entries(src, raw):
+        w = norm(entry)
         if w:
             words.add(w)
     source_count = len(words)

@@ -32,3 +32,16 @@ if [ "${#FILES[@]}" -eq 0 ]; then
 fi
 javac --release 17 -Xlint:-options -classpath "$JAR" -d "$OUT" "${FILES[@]}"
 echo "android-compile-check: OK (${#FILES[@]} files)"
+
+# Unit tests too: on Android org.json's JSONException is a checked exception (on the JVM test jar it is not), so
+# tests that compile in the JVM build can still fail in CI. Needs JUnit from the Gradle cache (run the JVM tests once).
+JUNIT=$(find "$HOME/.gradle" -name 'junit-4.13.2.jar' 2>/dev/null | head -1)
+HAMCREST=$(find "$HOME/.gradle" -name 'hamcrest-core-1.3.jar' 2>/dev/null | head -1)
+TESTSRC="$HERE/../../extensions/extension/src/test/java"
+if [ -n "$JUNIT" ] && [ -n "$HAMCREST" ] && [ -d "$TESTSRC" ]; then
+  mapfile -t TESTS < <(find "$TESTSRC" -name '*.java')
+  javac --release 17 -nowarn -classpath "$JAR:$OUT:$JUNIT:$HAMCREST" -d "$OUT" "${TESTS[@]}"
+  echo "android-compile-check: tests OK (${#TESTS[@]} files)"
+else
+  echo "android-compile-check: tests skipped (run gradle -p tools/jvm-tests test once for JUnit)"
+fi

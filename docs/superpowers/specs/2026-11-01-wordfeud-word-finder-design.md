@@ -124,8 +124,23 @@ de versie. De download wordt op de SHA-256 gecontroleerd en daarna uitgepakt (gz
 Bronkeuze: alleen openbare licenties (besluit opdrachtgever 2026-11-03). Regelset-id's (bevestigd uit
 `kimsb/WordfeudBot`, `kimsb/wftiles-android` en `ardavey/wordfeud-api-perl`): 0 Engels (VS), 1 Noors bokmål,
 2 Nederlands, 3 Deens, 4 Zweeds, 5 Engels internationaal, 6 Spaans, 7 Frans, 8 Zweeds strikt, 9 Duits,
-10 Noors nynorsk, 11 Fins, 12 Portugees. Regelsets zonder openbare lijst krijgen geen lijst; de overlay toont dan
+10 Noors nynorsk, 11 Fins, 12 Portugees. Lijsten (2026-11-03): 0/5 ENABLE, 1 en 10 Norsk ordbank, 2 OpenTaal, 3 COR₁ 1.5.1.0 (N+K), 4 DSSO, 7 Grammalecte v7.7, 9 enz/german-wordlist. Regelset 8 (Zweeds strikt) krijgt geen lijst: waarschijnlijk alleen grondvormen (onbevestigd). Spaans (6, ook dubbelletter-tegels CH/LL/RR), Fins (11) en Portugees (12): nog geen lijst. Regelsets zonder openbare lijst krijgen geen lijst; de overlay toont dan
 `WL-NONE` (zie §10).
+
+### 6.1a Woordmeldingen
+
+Besluit opdrachtgever 2026-11-03: woorden die de server weigert worden automatisch gemeld en via een branch per
+taal ter beoordeling aangeboden; niets gaat zonder merge van de opdrachtgever naar gebruikers.
+
+- De patch (`WordReporter`) stuurt na een `illegal_word`-weigering de door de server genoemde woorden
+  (`illegal_words`) die op dit toestel nog niet geweigerd waren, eenmalig op de achtergrond naar het meldadres
+  (`wordReportUrl` in `gradle.properties`, leeg = uit). Inhoud: `{"ruleset":n,"words":[...],"patch":"x.y.z"}`.
+- De Cloudflare Worker (`tools/report-worker`) valideert (regelset 0-12, 1-8 woorden van 2-15 letters, optionele
+  limiet per IP) en stuurt een `repository_dispatch` (`wordlist-report`) met een fine-grained token met alleen
+  Contents-schrijfrecht op deze repository.
+- De workflow `wordlist-report.yml` zet geldige woorden die in de lijst staan in `wordlists/<taal>/remove.txt` op
+  de branch `wordlist/<taal>`, bouwt de lijst opnieuw (commit type `fix`) en houdt per taal één PR naar `main`
+  open. Na de merge maakt de release-workflow een nieuwe versie met de bijgewerkte lijst.
 
 ### 6.2 Downloadflow
 
