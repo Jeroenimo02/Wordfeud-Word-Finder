@@ -28,8 +28,9 @@ public class WordListSourcesTest {
 
     @Test
     public void openListsPerRuleset() {
-        // 0/5 English (ENABLE), 1 bokmål, 2 Dutch, 4/8 Swedish, 9 German, 10 nynorsk (wordlists/sources.json).
-        java.util.Set<Integer> present = new java.util.HashSet<>(java.util.Arrays.asList(0, 1, 2, 4, 5, 8, 9, 10));
+        // 0/5 English (ENABLE), 1 bokmål, 2 Dutch, 3 Danish, 4 Swedish, 7 French, 9 German, 10 nynorsk
+        // (wordlists/sources.json). 8 (Swedish strict) has no list: it most likely allows base forms only.
+        java.util.Set<Integer> present = new java.util.HashSet<>(java.util.Arrays.asList(0, 1, 2, 3, 4, 5, 7, 9, 10));
         for (int id = 0; id <= MAX_ID; id++) {
             if (present.contains(id)) assertNotNull("id " + id, WordListSources.get(id));
             else assertNull("id " + id, WordListSources.get(id));
@@ -39,7 +40,6 @@ public class WordListSourcesTest {
         assertTrue(nl.gzip());
         assertEquals("UTF-8", nl.charset);
         assertEquals(WordListSources.get(0).sha256, WordListSources.get(5).sha256);
-        assertEquals(WordListSources.get(4).sha256, WordListSources.get(8).sha256);
     }
 
     @Test

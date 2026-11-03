@@ -398,7 +398,7 @@ public class WordListManagerTest {
 
     @Test
     public void defaultTableHasNoEntryForRulesetsWithoutAnOpenList() {
-        assertNull(WordListSources.get(3)); // Danish: no open list yet
-        assertNull(WordListSources.get(ID));
+        assertNull(WordListSources.get(6)); // Spanish: no open list yet
+        assertNull(WordListSources.get(11)); // Finnish: no open list yet
     }
 }

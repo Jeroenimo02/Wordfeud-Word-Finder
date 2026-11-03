@@ -51,11 +51,13 @@ download), and verified against a SHA-256 before use.
 | 0, 5 | English (US / international) | ENABLE word list, via [dolph/dictionary](https://github.com/dolph/dictionary). A free approximation of TWL and Collins: the server may reject words that are not in Wordfeud's own list | Public domain |
 | 1 | Norwegian (bokmål) | Norsk ordbank (Språkbanken / Språkrådet), via [Ondkloss/norwegian-wordlist](https://github.com/Ondkloss/norwegian-wordlist) | CC BY 4.0 |
 | 2 | Dutch | [OpenTaal](https://www.opentaal.org/), via [jensanjo/wordfeud-wordlists](https://github.com/jensanjo/wordfeud-wordlists) | Revised BSD and/or CC BY 3.0 |
-| 4, 8 | Swedish (and Swedish strict) | Den stora svenska ordlistan (Göran Andersson), via [mrcz/Wordfeud-Player](https://github.com/mrcz/Wordfeud-Player) | CC BY-SA 3.0 |
+| 4 | Swedish | Den stora svenska ordlistan (Göran Andersson), via [mrcz/Wordfeud-Player](https://github.com/mrcz/Wordfeud-Player) | CC BY-SA 3.0 |
 | 9 | German | [enz/german-wordlist](https://github.com/enz/german-wordlist) | CC0 1.0 |
 | 10 | Norwegian (nynorsk) | Norsk ordbank (Språkbanken / Språkrådet), via [Ondkloss/norwegian-wordlist](https://github.com/Ondkloss/norwegian-wordlist) | CC BY 4.0 |
+| 3 | Danish | [COR₁ 1.5.1.0](https://ordregister.dk/) (Det Centrale Ordregister, Dansk Sprognævn), the register behind Retskrivningsordbogen 5.1 | Free for any use (CC0 1.0) |
+| 7 | French | [Grammalecte](https://grammalecte.net/) lexicon of inflected forms v7.7 | MPL 2.0 |
 
-Rulesets 3 (Danish), 6 (Spanish), 7 (French), 11 (Finnish) and 12 (Portuguese) have no open word list yet; the overlay
+Rulesets 6 (Spanish), 8 (Swedish strict, most likely base forms only), 11 (Finnish) and 12 (Portuguese) have no open word list yet; the overlay
 reports `WL-NONE` for them. The derived lists keep the license of their source; see `wordlists/README.md`.
 
 ## Error codes
