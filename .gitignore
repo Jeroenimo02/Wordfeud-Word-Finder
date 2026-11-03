@@ -137,3 +137,6 @@ local.properties
 tools/jvm-tests/build/
 tools/jvm-tests/.gradle/
 tools/jvm-tests/.cache/
+
+# Python
+__pycache__/
