@@ -160,8 +160,12 @@ public class MoveSubmitterTest {
     public void serverNamedWordsAreReportedOnce() {
         List<String> reported = new ArrayList<>();
         WordReporter rep = new WordReporter("https://w.example/report", (u, json) -> {
-            org.json.JSONArray a = new org.json.JSONObject(json).getJSONArray("words");
-            for (int i = 0; i < a.length(); i++) reported.add(a.getString(i));
+            try {
+                org.json.JSONArray a = new org.json.JSONObject(json).getJSONArray("words");
+                for (int i = 0; i < a.length(); i++) reported.add(a.getString(i));
+            } catch (Exception e) { // JSONException is checked on Android
+                throw new IOException(e);
+            }
         }, Runnable::run);
         String body = "{\"status\":\"error\",\"content\":{\"type\":\"illegal_word\",\"illegal_words\":[\"ndj\"]}}";
         MoveSubmitter s = new MoveSubmitter(session, new FakePoster(body), store, rejected, rep);
