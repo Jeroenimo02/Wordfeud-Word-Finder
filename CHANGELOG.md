@@ -1,3 +1,9 @@
+## [1.1.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.0.0...v1.1.0-dev.1) (2026-11-03)
+
+### ✨ New Features
+
+* woordenlijsten in de eigen repository, voor alle open talen ([6acf849](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/6acf8490a37b268f69847df6ebc4a3286db5f3d5))
+
 ## 1.0.0 (2026-11-03)
 
 ### ✨ New Features
