@@ -37,6 +37,30 @@
       "version": 1,
       "words": 168551
     },
+    "es": {
+      "added": 0,
+      "attribution": "lorenbrichter/Words es.txt (Letterpress word list)",
+      "file": "wordlists/es/words.txt.gz",
+      "license": "CC0 1.0 (as published by lorenbrichter/Words; the content matches the FISE-2 Scrabble lexicon)",
+      "removed": 0,
+      "sha256": "2228963a64afde5183ddcc55ec2dfbcaa7db1e80dff1519bebf7922795e391b7",
+      "size": 1470808,
+      "source_words": 636598,
+      "version": 1,
+      "words": 636598
+    },
+    "fi": {
+      "added": 0,
+      "attribution": "fginter/hunspell-fi (TurkuNLP), via mhavo/suomen-kieliavut",
+      "file": "wordlists/fi/words.txt.gz",
+      "license": "CC0 1.0",
+      "removed": 0,
+      "sha256": "b93fcedc60b5db7fdaf2678a1f17813f6ec5c87c3e78b2d0ea274c54a8acacf7",
+      "size": 4006272,
+      "source_words": 1456175,
+      "version": 1,
+      "words": 1456175
+    },
     "fr": {
       "added": 0,
       "attribution": "Lexique des formes fléchies du français, Grammalecte v7.7 (Olivier R.)",
@@ -85,6 +109,18 @@
       "version": 1,
       "words": 98470
     },
+    "pt": {
+      "added": 0,
+      "attribution": "jfoclpf/words-pt (European Portuguese, from the Natura word lists of Universidade do Minho)",
+      "file": "wordlists/pt/words.txt.gz",
+      "license": "GPL-3.0",
+      "removed": 0,
+      "sha256": "dad7700e5747e399b773acb5efa8de0fbacff1a4ea6dd693e579430d3900e8fa",
+      "size": 856655,
+      "source_words": 372377,
+      "version": 1,
+      "words": 372377
+    },
     "sv": {
       "added": 0,
       "attribution": "Den stora svenska ordlistan (Göran Andersson), as adapted in mrcz/Wordfeud-Player",
@@ -96,17 +132,33 @@
       "source_words": 370672,
       "version": 1,
       "words": 370672
+    },
+    "sv-strict": {
+      "added": 0,
+      "attribution": "hising/svenska-ord.txt (about 120,000 headwords from SAOL)",
+      "file": "wordlists/sv-strict/words.txt.gz",
+      "license": "Unlicense (as published; the headwords come from SAOL)",
+      "removed": 0,
+      "sha256": "3642c79d19cd837afc0062e9493b699ddf0a5bbb4dd26ac41c2431a9376ff340",
+      "size": 386059,
+      "source_words": 108839,
+      "version": 1,
+      "words": 108839
     }
   },
   "rulesets": {
     "0": "en",
     "1": "nb",
     "10": "nn",
+    "11": "fi",
+    "12": "pt",
     "2": "nl",
     "3": "da",
     "4": "sv",
     "5": "en",
+    "6": "es",
     "7": "fr",
+    "8": "sv-strict",
     "9": "de"
   }
 }

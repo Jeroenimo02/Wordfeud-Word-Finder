@@ -127,6 +127,75 @@
       "license": "MPL 2.0",
       "attribution": "Lexique des formes fléchies du français, Grammalecte v7.7 (Olivier R.)",
       "notes": "Accents folded as in French Scrabble (É -> E); contains classic and 1990 reform spellings."
+    },
+    "pt": {
+      "name": "Português",
+      "rulesets": [
+        12
+      ],
+      "alphabet": "ABCDEFGHIJLMNOPQRSTUVXZÇ",
+      "source": {
+        "url": "https://raw.githubusercontent.com/jfoclpf/words-pt/cced78e688777b6a6dfe074edc96735f11ea2098/wordsList.zip",
+        "sha256": "8459f51d8e0de19593be43b41a21c64a1026a84132e5410bd320c43fe93d8213",
+        "zip_member": "wordsList",
+        "charset": "iso-8859-1",
+        "skip_capitalised": true
+      },
+      "license": "GPL-3.0",
+      "attribution": "jfoclpf/words-pt (European Portuguese, from the Natura word lists of Universidade do Minho)",
+      "notes": "European Portuguese, post-1990-reform spelling; accents folded except Ç. Wordfeud's own list is proprietary."
+    },
+    "sv-strict": {
+      "name": "Svenska (strikt)",
+      "rulesets": [
+        8
+      ],
+      "alphabet": "ABCDEFGHIJKLMNOPRSTUVXYZÅÄÖ",
+      "source": {
+        "url": "https://raw.githubusercontent.com/hising/svenska-ord.txt/d1b83cfb84b3d1fd1092ac29650994c2ad3cd867/svenska-ord.txt",
+        "sha256": "fbd30abf429d0878976537f45396e3814d5fef9052be90148ca0ed65581752e9",
+        "skip_capitalised": true
+      },
+      "license": "Unlicense (as published; the headwords come from SAOL)",
+      "attribution": "hising/svenska-ord.txt (about 120,000 headwords from SAOL)",
+      "notes": "Base forms only, on the assumption that Wordfeud's Swedish strict allows no inflected forms (unconfirmed)."
+    },
+    "es": {
+      "name": "Español",
+      "rulesets": [
+        6
+      ],
+      "alphabet": "ABCDEFGHIJLMNOPQRSTUVXYZÑ",
+      "digraphs": [
+        "CH",
+        "LL",
+        "RR"
+      ],
+      "source": {
+        "url": "https://raw.githubusercontent.com/lorenbrichter/Words/f4976d6a6d34beb431dec8d4b443a138f4dc8bee/Words/es.txt",
+        "sha256": "a6e805ab9a56a32e27aa528c2abf022e6594d8dc6001322236560a7a58ee34b4"
+      },
+      "license": "CC0 1.0 (as published by lorenbrichter/Words; the content matches the FISE-2 Scrabble lexicon)",
+      "attribution": "lorenbrichter/Words es.txt (Letterpress word list)",
+      "notes": "Plain spelling; the patch reads CH, LL and RR as the Wordfeud digraph tiles. Maximum length counted in tiles."
+    },
+    "fi": {
+      "name": "Suomi",
+      "rulesets": [
+        11
+      ],
+      "alphabet": "ABCDEFGHIJKLMNOPRSTUVYÄÖ",
+      "source": {
+        "format": "hunspell",
+        "url": "https://raw.githubusercontent.com/mhavo/suomen-kieliavut/538f91e2c296f1466dcfd5e24400b38f46f4d76f/dict/ginter/fi_FI.dic",
+        "sha256": "7015bf1eba98f52f29428117687e08d657ffc189c13960734ff3083d572c98db",
+        "aff_url": "https://raw.githubusercontent.com/mhavo/suomen-kieliavut/538f91e2c296f1466dcfd5e24400b38f46f4d76f/dict/ginter/fi_FI.aff",
+        "aff_sha256": "027d87effa5c4c629e912d22e052d68fba450bd2849401f5459a3da09b86723d",
+        "skip_capitalised": true
+      },
+      "license": "CC0 1.0",
+      "attribution": "fginter/hunspell-fi (TurkuNLP), via mhavo/suomen-kieliavut",
+      "notes": "All forms generated from the Hunspell dictionary (built from forms attested in a Finnish corpus)."
     }
   }
 }

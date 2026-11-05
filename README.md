@@ -56,9 +56,13 @@ download), and verified against a SHA-256 before use.
 | 10 | Norwegian (nynorsk) | Norsk ordbank (Språkbanken / Språkrådet), via [Ondkloss/norwegian-wordlist](https://github.com/Ondkloss/norwegian-wordlist) | CC BY 4.0 |
 | 3 | Danish | [COR₁ 1.5.1.0](https://ordregister.dk/) (Det Centrale Ordregister, Dansk Sprognævn), the register behind Retskrivningsordbogen 5.1 | Free for any use (CC0 1.0) |
 | 7 | French | [Grammalecte](https://grammalecte.net/) lexicon of inflected forms v7.7 | MPL 2.0 |
+| 6 | Spanish | [lorenbrichter/Words](https://github.com/lorenbrichter/Words) `es.txt` (the Letterpress list; its content matches the FISE-2 Scrabble lexicon). CH, LL and RR are read as Wordfeud's digraph tiles | CC0 1.0 as published |
+| 8 | Swedish (strict) | [hising/svenska-ord.txt](https://github.com/hising/svenska-ord.txt): about 120,000 SAOL headwords, base forms only | Unlicense as published |
+| 11 | Finnish | [fginter/hunspell-fi](https://github.com/fginter/hunspell-fi) (TurkuNLP), via mhavo/suomen-kieliavut, all forms generated from the Hunspell dictionary | CC0 1.0 |
+| 12 | Portuguese | [jfoclpf/words-pt](https://github.com/jfoclpf/words-pt) (European Portuguese, Natura lists of Universidade do Minho) | GPL-3.0 |
 
-Rulesets 6 (Spanish), 8 (Swedish strict, most likely base forms only), 11 (Finnish) and 12 (Portuguese) have no open word list yet; the overlay
-reports `WL-NONE` for them. The derived lists keep the license of their source; see `wordlists/README.md`.
+Every Wordfeud ruleset (0-12) has a list. Words are at most 15 tiles long. Only the lists of rulesets you actually
+have games in are downloaded. The derived lists keep the license of their source; see `wordlists/README.md`.
 
 ## Error codes
 

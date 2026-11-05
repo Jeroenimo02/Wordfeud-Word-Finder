@@ -29,11 +29,14 @@ import unicodedata
 import urllib.request
 import zipfile
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import hunspell  # noqa: E402  (same directory)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 WORDLISTS = os.path.join(ROOT, "wordlists")
 SOURCES = os.path.join(WORDLISTS, "sources.json")
 MANIFEST = os.path.join(WORDLISTS, "manifest.json")
-MAX_WORD = 15  # the board is 15 squares wide
+MAX_WORD = 15  # the board is 15 squares wide: at most 15 tiles
 
 
 def sha256(data):
@@ -59,9 +62,17 @@ def fetch(url, expected, cache):
     return data
 
 
+def tile_length(word, digraphs):
+    """Number of tiles a word takes: a digraph tile (Spanish CH, LL, RR) counts once."""
+    for d in digraphs:
+        word = word.replace(d, "#")
+    return len(word)
+
+
 def normaliser(lang):
     alphabet = set(lang["alphabet"])
     replace = lang.get("replace", {})
+    digraphs = lang.get("digraphs", [])
 
     def norm(line):
         w = line.strip().lstrip("﻿").upper()
@@ -80,7 +91,7 @@ def normaliser(lang):
             else:
                 return None
         w = "".join(out)
-        return w if 2 <= len(w) <= MAX_WORD else None
+        return w if 2 <= tile_length(w, digraphs) <= MAX_WORD else None
 
     return norm
 
@@ -98,14 +109,23 @@ def read_word_file(path, norm):
     return words
 
 
-def source_entries(src, raw):
+def source_entries(src, raw, raw_aff=None):
     """The candidate words of a source, before normalisation.
 
     Source options (all optional): "zip_member" (read that file from a zip archive), "column" (0-based column of
     a tab-separated table; lines with fewer columns are skipped), "numeric_id" (only table lines whose first
     column is a number), "filter_column" + "filter_values" (only lines with one of those values there),
-    "skip_capitalised" (drop entries starting with a capital letter: proper nouns).
+    "skip_capitalised" (drop entries starting with a capital letter: proper nouns), "format": "hunspell" (the url
+    is a .dic and "aff_url" + "aff_sha256" its .aff; all word forms are generated, see hunspell.py).
     """
+    if src.get("format") == "hunspell":
+        aff = raw_aff.decode(src.get("charset", "utf-8"), errors="replace")
+        dic = raw.decode(src.get("charset", "utf-8"), errors="replace")
+        for form in hunspell.expand(dic, aff):
+            if src.get("skip_capitalised") and form[:1].isupper():
+                continue
+            yield form
+        return
     if src.get("zip_member"):
         with zipfile.ZipFile(io.BytesIO(raw)) as z:
             raw = z.read(src["zip_member"])
@@ -136,9 +156,10 @@ def source_entries(src, raw):
 def build_language(code, lang, cache):
     src = lang["source"]
     raw = fetch(src["url"], src["sha256"], cache)
+    raw_aff = fetch(src["aff_url"], src["aff_sha256"], cache) if src.get("aff_url") else None
     norm = normaliser(lang)
     words = set()
-    for entry in source_entries(src, raw):
+    for entry in source_entries(src, raw, raw_aff):
         w = norm(entry)
         if w:
             words.add(w)

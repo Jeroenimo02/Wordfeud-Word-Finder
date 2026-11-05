@@ -14,7 +14,12 @@ Per taal een opgeschoonde woordenlijst die de patch downloadt. Alle lijsten kome
 | `da` | 3 (Deens) | COR₁ 1.5.1.0 (Det Centrale Ordregister, Dansk Sprognævn; = Retskrivningsordbogen 5.1), vormen met status N en K | Vrij voor elk gebruik (CC0 1.0) |
 | `fr` | 7 (Frans) | Lexique des formes fléchies du français, Grammalecte v7.7 | MPL 2.0 |
 
-Geen lijst (nog): 6 (Spaans), 8 (Zweeds strikt, waarschijnlijk alleen grondvormen), 11 (Fins), 12 (Portugees).
+| `es` | 6 (Spaans) | lorenbrichter/Words `es.txt` (Letterpress; inhoud = FISE-2-lexicon). CH, LL en RR telt als één tegel | CC0 1.0 zoals gepubliceerd |
+| `sv-strict` | 8 (Zweeds strikt) | hising/svenska-ord.txt, ~120.000 SAOL-grondvormen | Unlicense zoals gepubliceerd |
+| `fi` | 11 (Fins) | fginter/hunspell-fi (TurkuNLP) via mhavo/suomen-kieliavut; alle vormen uit het Hunspell-woordenboek gegenereerd (`tools/wordlists/hunspell.py`) | CC0 1.0 |
+| `pt` | 12 (Portugees) | jfoclpf/words-pt (Europees-Portugees, Natura-lijsten Universidade do Minho) | GPL-3.0 |
+
+Woorden zijn 2 tot 15 tegels lang (bij Spaans telt een dubbelletter-tegel als één).
 
 De afgeleide lijst in elke map valt onder dezelfde licentie als de bron (bij CC BY-SA ook "share alike").
 De licentie van de code van dit project (GPLv3) geldt niet voor deze gegevensbestanden.

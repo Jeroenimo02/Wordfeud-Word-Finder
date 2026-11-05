@@ -28,13 +28,11 @@ public class WordListSourcesTest {
 
     @Test
     public void openListsPerRuleset() {
-        // 0/5 English (ENABLE), 1 bokmål, 2 Dutch, 3 Danish, 4 Swedish, 7 French, 9 German, 10 nynorsk
-        // (wordlists/sources.json). 8 (Swedish strict) has no list: it most likely allows base forms only.
-        java.util.Set<Integer> present = new java.util.HashSet<>(java.util.Arrays.asList(0, 1, 2, 3, 4, 5, 7, 9, 10));
-        for (int id = 0; id <= MAX_ID; id++) {
-            if (present.contains(id)) assertNotNull("id " + id, WordListSources.get(id));
-            else assertNull("id " + id, WordListSources.get(id));
-        }
+        // Every Wordfeud ruleset 0..12 has an open list (wordlists/sources.json); 8 (Swedish strict) its own.
+        for (int id = 0; id <= MAX_ID; id++) assertNotNull("id " + id, WordListSources.get(id));
+        assertNull(WordListSources.get(13));
+        assertTrue(WordListSources.get(8).url.endsWith("/wordlists/sv-strict/words.txt.gz"));
+        assertTrue(WordListSources.get(6).url.endsWith("/wordlists/es/words.txt.gz"));
         WordListSources.Source nl = WordListSources.get(2);
         assertTrue(nl.url, nl.url.endsWith("/wordlists/nl/words.txt.gz"));
         assertTrue(nl.gzip());
