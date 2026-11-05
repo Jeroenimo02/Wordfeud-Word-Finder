@@ -27,4 +27,15 @@ assert.equal((await post("", "/report", "GET")).status, 405);
 assert.equal((await post("{}", "/other")).status, 404);
 globalThis.fetch = async () => new Response("no", { status: 401 });
 assert.equal((await post(JSON.stringify({ ruleset: 2, words: ["ndj"] }))).status, 502);
+// KV rate limit: 20 per IP per hour, then 429; other IPs unaffected; no KV = no limit.
+const store = new Map();
+const kv = { get: async (k) => store.get(k) ?? null, put: async (k, v) => { store.set(k, v); } };
+globalThis.fetch = async () => new Response(null, { status: 204 });
+const envKv = { ...env, REPORT_KV: kv };
+const fromIp = (ip) => worker.fetch(new Request("https://w.example/report", {
+  method: "POST", headers: { "cf-connecting-ip": ip }, body: JSON.stringify({ ruleset: 2, words: ["ndj"] }) }), envKv);
+for (let i = 0; i < 20; i++) assert.equal((await fromIp("1.2.3.4")).status, 202);
+assert.equal((await fromIp("1.2.3.4")).status, 429);
+assert.equal((await fromIp("5.6.7.8")).status, 202);
+assert.ok([...store.keys()].every((k) => !k.includes("1.2.3.4")), "IP is not stored in clear text");
 console.log("report-worker: all checks passed");
