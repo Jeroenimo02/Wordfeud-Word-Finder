@@ -42,12 +42,12 @@
       "attribution": "Lexique des formes fléchies du français, Grammalecte v7.7 (Olivier R.)",
       "file": "wordlists/fr/words.txt.gz",
       "license": "MPL 2.0",
-      "removed": 0,
-      "sha256": "3fc60514893354f292b976b26d8fd94ad6ef9e1bb001848ffcfe0aba7d474fa1",
-      "size": 971906,
+      "removed": 2,
+      "sha256": "dc6899d0e8c566185c52370de5551087febf54d640b4080a7f4db7e157b3d3f4",
+      "size": 971901,
       "source_words": 408364,
-      "version": 1,
-      "words": 408364
+      "version": 2,
+      "words": 408362
     },
     "nb": {
       "added": 0,
