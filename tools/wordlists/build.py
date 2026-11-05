@@ -109,6 +109,18 @@ def read_word_file(path, norm):
     return words
 
 
+def skipped(src, cols):
+    """Table rows to leave out: "skip_if" is a list of {"column": n, "token": t, "max_len": m (optional)}; a row is
+    skipped when that column holds the token (space separated) and, with max_len, the entry is at most that long.
+    A word skipped in one row is still taken from another row that is not skipped."""
+    for rule in src.get("skip_if", []):
+        c = rule["column"]
+        if c < len(cols) and rule["token"] in cols[c].split():
+            if "max_len" not in rule or len(cols[src["column"]].strip()) <= rule["max_len"]:
+                return True
+    return False
+
+
 def source_entries(src, raw, raw_aff=None):
     """The candidate words of a source, before normalisation.
 
@@ -144,6 +156,8 @@ def source_entries(src, raw, raw_aff=None):
             if src.get("numeric_id") and not cols[0].strip().isdigit():
                 continue
             if fcol is not None and (len(cols) <= fcol or cols[fcol].strip() not in fvals):
+                continue
+            if skipped(src, cols):
                 continue
             entry = cols[col]
         else:

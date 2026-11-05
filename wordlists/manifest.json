@@ -79,11 +79,11 @@
       "file": "wordlists/fr/words.txt.gz",
       "license": "MPL 2.0",
       "removed": 0,
-      "sha256": "3fc60514893354f292b976b26d8fd94ad6ef9e1bb001848ffcfe0aba7d474fa1",
-      "size": 971906,
-      "source_words": 408364,
-      "version": 1,
-      "words": 408364
+      "sha256": "dd9e9cccd029ad2bb4fc8f30e232d5c9f345949a87dea88df44b63d38f096c2c",
+      "size": 970528,
+      "source_words": 407899,
+      "version": 2,
+      "words": 407899
     },
     "nb": {
       "added": 0,
