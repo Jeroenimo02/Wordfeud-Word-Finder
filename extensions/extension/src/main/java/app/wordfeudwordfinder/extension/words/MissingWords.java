@@ -1,5 +1,6 @@
 package app.wordfeudwordfinder.extension.words;
 
+import app.wordfeudwordfinder.extension.core.Tiles;
 import app.wordfeudwordfinder.extension.core.Storage;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -78,7 +79,7 @@ public final class MissingWords {
             } catch (IOException | RuntimeException e) {
                 // remembered in memory for this session
             }
-            reporter.reportAdditions(rulesetId, fresh);
+            reporter.reportAdditions(rulesetId, Tiles.spell(fresh)); // digraph tiles spelled out
         } catch (RuntimeException e) {
             // never affect the game
         }

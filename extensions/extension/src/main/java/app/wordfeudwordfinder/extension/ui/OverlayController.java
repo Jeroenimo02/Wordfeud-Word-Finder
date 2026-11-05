@@ -1,5 +1,6 @@
 package app.wordfeudwordfinder.extension.ui;
 
+import app.wordfeudwordfinder.extension.core.Tiles;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -1226,7 +1227,7 @@ public final class OverlayController {
     private void updateInfo() {
         if (infoRow == null) return;
         Move m = selected;
-        infoWord.setText(m == null ? "" : m.word);
+        infoWord.setText(m == null ? "" : Tiles.spell(m.word));
         infoDetail.setText(m == null ? "" : OverlayFormat.detail(lang, m));
         infoDetail.setVisibility(m == null ? View.GONE : View.VISIBLE);
         infoScore.setText(m == null ? "" : OverlayFormat.scoreText(lang, m.score));
