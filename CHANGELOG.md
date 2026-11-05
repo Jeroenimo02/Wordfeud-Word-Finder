@@ -1,3 +1,9 @@
+## [1.2.0-dev.3](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0-dev.2...v1.2.0-dev.3) (2026-11-05)
+
+### 🐛 Bug Fixes
+
+* **wordlists:** fr: symbolen, eenheden en korte afkortingen uit de Franse lijst ([5635f27](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/5635f276f954328790bbbf8d04c5c12911ef25e8))
+
 ## [1.2.0-dev.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0-dev.1...v1.2.0-dev.2) (2026-11-05)
 
 ### ✨ New Features
