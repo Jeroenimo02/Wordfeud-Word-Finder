@@ -8,3 +8,6 @@ OP
 SB
 ZBQ
 ZV
+PHZ
+PC
+ZM
