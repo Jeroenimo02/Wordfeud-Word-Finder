@@ -2,3 +2,5 @@
 # Wordt toegepast door tools/wordlists/build.py.
 NF
 FV
+PBQ
+PV
