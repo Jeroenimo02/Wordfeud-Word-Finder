@@ -37,7 +37,10 @@ public class WordListSourcesTest {
         assertTrue(nl.url, nl.url.endsWith("/wordlists/nl/words.txt.gz"));
         assertTrue(nl.gzip());
         assertEquals("UTF-8", nl.charset);
-        assertEquals(WordListSources.get(0).sha256, WordListSources.get(5).sha256);
+        // US (0) and international (5) English have their own lists since 2026-11-05.
+        assertTrue(WordListSources.get(0).url.endsWith("/wordlists/en-us/words.txt.gz"));
+        assertTrue(WordListSources.get(5).url.endsWith("/wordlists/en-intl/words.txt.gz"));
+        assertTrue(WordListSources.get(0).version >= 2); // above the old shared English list (version 1)
     }
 
     @Test

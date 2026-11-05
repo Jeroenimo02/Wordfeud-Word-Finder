@@ -25,17 +25,29 @@
       "version": 1,
       "words": 590890
     },
-    "en": {
+    "en-intl": {
       "added": 0,
-      "attribution": "ENABLE2K word list, via dolph/dictionary",
-      "file": "wordlists/en/words.txt.gz",
-      "license": "Public domain (ENABLE word list)",
+      "attribution": "ENABLE2K via dolph/dictionary; Wordnik open word list; lorenbrichter/Words en.txt (Letterpress)",
+      "file": "wordlists/en-intl/words.txt.gz",
+      "license": "Public domain (ENABLE), MIT (Wordnik, Copyright (c) 2020 Wordnik), CC0 1.0 (Letterpress, as published)",
       "removed": 0,
-      "sha256": "229586853b5802c19b24bedba058c236605f81758a9c8380940a217a5205e324",
-      "size": 439691,
-      "source_words": 168551,
-      "version": 1,
-      "words": 168551
+      "sha256": "5f187bd2f0b0a8592a515981dff42df58f40c595560ad33f56bf4a57d3725326",
+      "size": 713730,
+      "source_words": 275412,
+      "version": 2,
+      "words": 275412
+    },
+    "en-us": {
+      "added": 0,
+      "attribution": "ENABLE2K word list via dolph/dictionary; Wordnik open word list (wordnik/wordlist)",
+      "file": "wordlists/en-us/words.txt.gz",
+      "license": "Public domain (ENABLE) and MIT (Wordnik, Copyright (c) 2020 Wordnik)",
+      "removed": 0,
+      "sha256": "ebebc666e1002cc47ecc4a562eae5ab37952a9e35ec7184bb64e35a5044d0389",
+      "size": 502716,
+      "source_words": 194220,
+      "version": 2,
+      "words": 194220
     },
     "es": {
       "added": 0,
@@ -147,7 +159,7 @@
     }
   },
   "rulesets": {
-    "0": "en",
+    "0": "en-us",
     "1": "nb",
     "10": "nn",
     "11": "fi",
@@ -155,7 +167,7 @@
     "2": "nl",
     "3": "da",
     "4": "sv",
-    "5": "en",
+    "5": "en-intl",
     "6": "es",
     "7": "fr",
     "8": "sv-strict",

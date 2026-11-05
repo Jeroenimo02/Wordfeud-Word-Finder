@@ -115,7 +115,8 @@ def source_entries(src, raw, raw_aff=None):
     Source options (all optional): "zip_member" (read that file from a zip archive), "column" (0-based column of
     a tab-separated table; lines with fewer columns are skipped), "numeric_id" (only table lines whose first
     column is a number), "filter_column" + "filter_values" (only lines with one of those values there),
-    "skip_capitalised" (drop entries starting with a capital letter: proper nouns), "format": "hunspell" (the url
+    "skip_capitalised" (drop entries starting with a capital letter: proper nouns), "strip_quotes" (entries
+    written as "word"), "format": "hunspell" (the url
     is a .dic and "aff_url" + "aff_sha256" its .aff; all word forms are generated, see hunspell.py).
     """
     if src.get("format") == "hunspell":
@@ -148,21 +149,25 @@ def source_entries(src, raw, raw_aff=None):
         else:
             entry = line
         entry = entry.strip().lstrip("\ufeff")
+        if src.get("strip_quotes"):
+            entry = entry.strip('"')
         if src.get("skip_capitalised") and entry[:1].isupper():
             continue
         yield entry
 
 
 def build_language(code, lang, cache):
-    src = lang["source"]
-    raw = fetch(src["url"], src["sha256"], cache)
-    raw_aff = fetch(src["aff_url"], src["aff_sha256"], cache) if src.get("aff_url") else None
+    # "source" (one) or "sources" (several, merged: the union of their words)
+    sources = lang.get("sources") or [lang["source"]]
     norm = normaliser(lang)
     words = set()
-    for entry in source_entries(src, raw, raw_aff):
-        w = norm(entry)
-        if w:
-            words.add(w)
+    for src in sources:
+        raw = fetch(src["url"], src["sha256"], cache)
+        raw_aff = fetch(src["aff_url"], src["aff_sha256"], cache) if src.get("aff_url") else None
+        for entry in source_entries(src, raw, raw_aff):
+            w = norm(entry)
+            if w:
+                words.add(w)
     source_count = len(words)
     folder = os.path.join(WORDLISTS, code)
     removed = set(read_word_file(os.path.join(folder, "remove.txt"), norm))
@@ -203,6 +208,9 @@ def main():
             data, stats = build_language(code, lang, args.cache)
             digest = sha256(data)
             version = prev["version"] if prev and prev["sha256"] == digest else (prev["version"] + 1 if prev else 1)
+            # "min_version" in sources.json: a language that replaces an older list (en -> en-us/en-intl) starts
+            # above the version installed patches already have, so they download the new list.
+            version = max(version, lang.get("min_version", 1))
             rel = "wordlists/%s/words.txt.gz" % code
             path = os.path.join(ROOT, rel)
             current = open(path, "rb").read() if os.path.exists(path) else None

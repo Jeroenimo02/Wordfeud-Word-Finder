@@ -48,7 +48,8 @@ download), and verified against a SHA-256 before use.
 
 | Ruleset id | Language | Source | License of the list |
 |---|---|---|---|
-| 0, 5 | English (US / international) | ENABLE word list, via [dolph/dictionary](https://github.com/dolph/dictionary). A free approximation of TWL and Collins: the server may reject words that are not in Wordfeud's own list | Public domain |
+| 0 | English (US) | ENABLE ([dolph/dictionary](https://github.com/dolph/dictionary)) + [Wordnik open word list](https://github.com/wordnik/wordlist): about 95% of NWL | Public domain + MIT (Copyright (c) 2020 Wordnik) |
+| 5 | English (international) | ENABLE + Wordnik + [Letterpress](https://github.com/lorenbrichter/Words) `en.txt`: about 98% of Collins Scrabble Words | Public domain + MIT + CC0 (as published) |
 | 1 | Norwegian (bokmål) | Norsk ordbank (Språkbanken / Språkrådet), via [Ondkloss/norwegian-wordlist](https://github.com/Ondkloss/norwegian-wordlist) | CC BY 4.0 |
 | 2 | Dutch | [OpenTaal](https://www.opentaal.org/), via [jensanjo/wordfeud-wordlists](https://github.com/jensanjo/wordfeud-wordlists) | Revised BSD and/or CC BY 3.0 |
 | 4 | Swedish | Den stora svenska ordlistan (Göran Andersson), via [mrcz/Wordfeud-Player](https://github.com/mrcz/Wordfeud-Player) | CC BY-SA 3.0 |

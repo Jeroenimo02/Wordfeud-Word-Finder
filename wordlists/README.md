@@ -5,7 +5,8 @@ Per taal een opgeschoonde woordenlijst die de patch downloadt. Alle lijsten kome
 
 | Map | Regelsets | Bron | Licentie van de lijst |
 |---|---|---|---|
-| `en` | 0 (Engels VS), 5 (Engels internationaal) | ENABLE, via dolph/dictionary | Publiek domein |
+| `en-us` | 0 (Engels VS) | ENABLE (dolph/dictionary) + Wordnik open word list; ~95% van NWL | Publiek domein + MIT (Copyright (c) 2020 Wordnik) |
+| `en-intl` | 5 (Engels internationaal) | ENABLE + Wordnik + Letterpress `en.txt`; ~98% van Collins | Publiek domein + MIT + CC0 zoals gepubliceerd |
 | `nb` | 1 (Noors bokmål) | Norsk ordbank, Språkbanken / Språkrådet, via Ondkloss/norwegian-wordlist | CC BY 4.0 |
 | `nl` | 2 (Nederlands) | OpenTaal, via jensanjo/wordfeud-wordlists | BSD en/of CC BY 3.0 |
 | `sv` | 4 (Zweeds) | Den stora svenska ordlistan (Göran Andersson), via mrcz/Wordfeud-Player | CC BY-SA 3.0 |
