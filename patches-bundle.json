@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-11-05T22:06:08",
-  "description": "## [1.2.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.1.1...v1.2.0-dev.1) (2026-11-05)\n\n### ✨ New Features\n\n* gespeelde woorden die in de lijst ontbreken automatisch melden ([ffc0a47](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ffc0a474e2319be39262fe3b652c7de275216ace))\n\n### 🐛 Bug Fixes\n\n* releases botsen niet meer; Gradle-waarschuwingen; meldlimiet in Worker ([be3781c](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/be3781cb198e92bb1c6bb0989fa28e17e0f00b5d))",
-  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.2.0-dev.1/patches-1.2.0-dev.1.mpp",
+  "created_at": "2026-11-05T22:57:38",
+  "description": "## [1.2.0-dev.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0-dev.1...v1.2.0-dev.2) (2026-11-05)\n\n### ✨ New Features\n\n* betere Engelse lijsten, apart voor VS en internationaal ([ceb5fc7](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ceb5fc73516fd1e0a639a64b73ea9b362757bd18))\n* Spaans, Portugees, Fins en Zweeds strikt; dubbelletter-tegels; kleinere woordgraaf ([6445023](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/6445023163ff837cfe2826b5442fad5f064ce0aa))",
+  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.2.0-dev.2/patches-1.2.0-dev.2.mpp",
   "signature_download_url": "",
-  "version": "1.2.0-dev.1"
+  "version": "1.2.0-dev.2"
 }

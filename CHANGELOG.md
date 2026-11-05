@@ -1,3 +1,10 @@
+## [1.2.0-dev.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0-dev.1...v1.2.0-dev.2) (2026-11-05)
+
+### ✨ New Features
+
+* betere Engelse lijsten, apart voor VS en internationaal ([ceb5fc7](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ceb5fc73516fd1e0a639a64b73ea9b362757bd18))
+* Spaans, Portugees, Fins en Zweeds strikt; dubbelletter-tegels; kleinere woordgraaf ([6445023](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/6445023163ff837cfe2826b5442fad5f064ce0aa))
+
 ## [1.2.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.1.1...v1.2.0-dev.1) (2026-11-05)
 
 ### ✨ New Features
