@@ -107,11 +107,26 @@
         "zip_member": "lexique-grammalecte-fr-v7.7.txt",
         "column": 2,
         "numeric_id": true,
-        "skip_capitalised": true
+        "skip_capitalised": true,
+        "skip_if": [
+          {
+            "column": 7,
+            "token": "symb"
+          },
+          {
+            "column": 7,
+            "token": "sig"
+          },
+          {
+            "column": 7,
+            "token": "abr",
+            "max_len": 2
+          }
+        ]
       },
       "license": "MPL 2.0",
       "attribution": "Lexique des formes fléchies du français, Grammalecte v7.7 (Olivier R.)",
-      "notes": "Accents folded as in French Scrabble (É -> E); contains classic and 1990 reform spellings."
+      "notes": "Accents folded as in French Scrabble (É -> E); contains classic and 1990 reform spellings. Symbols, units and acronyms (Notes column: symb, sig) and abbreviations of at most 2 letters (abr) are left out."
     },
     "pt": {
       "name": "Português",
