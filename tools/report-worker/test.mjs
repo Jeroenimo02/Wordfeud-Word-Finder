@@ -2,8 +2,10 @@
 import assert from "node:assert/strict";
 import worker, { validate } from "./src/index.js";
 
-assert.deepEqual(validate({ ruleset: 2, words: ["ndj", " Xy "], patch: "1.1.0" }), { ruleset: 2, words: ["NDJ", "XY"], patch: "1.1.0" });
-assert.deepEqual(validate({ ruleset: 4, words: ["åsna"] }), { ruleset: 4, words: ["ÅSNA"], patch: "unknown" });
+assert.deepEqual(validate({ ruleset: 2, words: ["ndj", " Xy "], patch: "1.1.0" }), { type: "remove", ruleset: 2, words: ["NDJ", "XY"], patch: "1.1.0" });
+assert.deepEqual(validate({ type: "add", ruleset: 2, words: ["tong"] }), { type: "add", ruleset: 2, words: ["TONG"], patch: "unknown" });
+assert.equal(validate({ type: "delete", ruleset: 2, words: ["ab"] }), null);
+assert.deepEqual(validate({ ruleset: 4, words: ["åsna"] }), { type: "remove", ruleset: 4, words: ["ÅSNA"], patch: "unknown" });
 assert.equal(validate({ ruleset: 13, words: ["ab"] }), null);
 assert.equal(validate({ ruleset: 2, words: [] }), null);
 assert.equal(validate({ ruleset: 2, words: ["a"] }), null);
@@ -20,7 +22,7 @@ const post = (body, path = "/report", method = "POST") =>
 
 assert.equal((await post(JSON.stringify({ ruleset: 2, words: ["ndj"], patch: "1.1.0" }))).status, 202);
 assert.equal(sent.url, "https://api.github.com/repos/o/r/dispatches");
-assert.deepEqual(JSON.parse(sent.init.body), { event_type: "wordlist-report", client_payload: { ruleset: 2, words: ["NDJ"], patch: "1.1.0" } });
+assert.deepEqual(JSON.parse(sent.init.body), { event_type: "wordlist-report", client_payload: { type: "remove", ruleset: 2, words: ["NDJ"], patch: "1.1.0" } });
 assert.equal((await post("{")).status, 400);
 assert.equal((await post(JSON.stringify({ ruleset: 2, words: ["1"] }))).status, 400);
 assert.equal((await post("", "/report", "GET")).status, 405);

@@ -5,7 +5,8 @@
 // The GitHub token lives only here (secret GITHUB_TOKEN); the patch has no secret. Anyone can call this endpoint,
 // so input is validated strictly and the pull request review is the real safeguard.
 //
-// Request:  POST /report  {"ruleset": 2, "words": ["NDJ"], "patch": "1.1.0"}
+// Request:  POST /report  {"type": "remove", "ruleset": 2, "words": ["NDJ"], "patch": "1.1.0"}
+//           type "remove" (server rejected the words; default) or "add" (played but missing from our list)
 // Response: 202 accepted, 400 invalid input, 405 wrong method, 404 other path, 429 too many reports, 502 GitHub error.
 // Nothing is stored or logged by this code.
 
@@ -51,8 +52,10 @@ export function validate(body) {
     if (!WORD.test(u)) return null;
     if (!words.includes(u)) words.push(u);
   }
+  const type = body.type === undefined ? "remove" : body.type;
+  if (type !== "remove" && type !== "add") return null;
   const patch = typeof body.patch === "string" && PATCH.test(body.patch) ? body.patch : "unknown";
-  return { ruleset, words, patch };
+  return { type, ruleset, words, patch };
 }
 
 export default {
