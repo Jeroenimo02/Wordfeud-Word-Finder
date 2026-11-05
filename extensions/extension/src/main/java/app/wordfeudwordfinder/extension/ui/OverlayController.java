@@ -986,6 +986,12 @@ public final class OverlayController {
                 });
                 return;
             }
+            try {
+                // Words played in this game that our list lacks are reported once (wordlists/<code>/add.txt review).
+                wf.missingWords().check(rulesetId, wg, st.playedWords());
+            } catch (Throwable ignored) {
+                // reporting never affects the overlay
+            }
             final List<Move> out = MovePipeline.compute(st, bl, rs, wg,
                     l -> wf.submitter().hidden().filter(gid, wf.rejected().filter(rulesetId, l)), mode, token);
             if (out == null) return;

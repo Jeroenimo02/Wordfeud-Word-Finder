@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.json.JSONArray;
@@ -31,6 +32,7 @@ public final class GameReplay {
         boolean myTurn = g.getCurrentPlayer() == lp && g.getEndGame() == 0;
         char[][] board = new char[GameState.SIZE][GameState.SIZE];
         List<String> rack = new ArrayList<>();
+        Set<String> played = new LinkedHashSet<>();
         try {
             if (lp < 0) throw WfError.gsData("no local player");
             int index = -1;
@@ -39,7 +41,7 @@ public final class GameReplay {
                 String type = ev.getType();
                 if (type == null) throw WfError.gsData("event " + index + " without type");
                 try {
-                    applyEvent(ev, type, lp, board, rack);
+                    applyEvent(ev, type, lp, board, rack, played);
                 } catch (WfError e) {
                     if (!"GS-DATA".equals(e.code())) throw e;
                     throw WfError.gsData("event " + index + " " + type + ": " + e.getMessage());
@@ -49,11 +51,11 @@ public final class GameReplay {
             return new GameState(g.getId(), new char[GameState.SIZE][GameState.SIZE], new ArrayList<String>(),
                     myTurn, ended, e);
         }
-        return new GameState(g.getId(), board, rack, myTurn, ended, null);
+        return new GameState(g.getId(), board, rack, myTurn, ended, null, new ArrayList<>(played));
     }
 
-    private static void applyEvent(LogEvent ev, String type, int lp, char[][] board, List<String> rack)
-            throws WfError {
+    private static void applyEvent(LogEvent ev, String type, int lp, char[][] board, List<String> rack,
+                                   Set<String> played) throws WfError {
         {
             {
                 switch (type) {
@@ -63,7 +65,7 @@ public final class GameReplay {
                         break;
                     case "packed_move":
                         checkFields(ev.getRaw(), PACKED_MOVE_FIELDS);
-                        applyPackedMove(ev.getRaw(), lp, board, rack);
+                        applyPackedMove(ev.getRaw(), lp, board, rack, played);
                         break;
                     case "swap":
                         checkFields(ev.getRaw(), SWAP_FIELDS);
@@ -103,7 +105,8 @@ public final class GameReplay {
         rack.addAll(letters((JSONArray) mine));
     }
 
-    private static void applyPackedMove(JSONObject raw, int lp, char[][] board, List<String> rack) throws WfError {
+    private static void applyPackedMove(JSONObject raw, int lp, char[][] board, List<String> rack,
+                                        Set<String> played) throws WfError {
         int player = ResponseParser.integer(raw, "player");
         int x = ResponseParser.integer(raw, "x");
         int y = ResponseParser.integer(raw, "y");
@@ -115,6 +118,7 @@ public final class GameReplay {
         List<String> placed = moveTiles(ResponseParser.arr(raw, "tiles"));
         if (placed.isEmpty()) throw WfError.gsData("move without tiles");
 
+        List<int[]> positions = new ArrayList<>(placed.size());
         for (String letter : placed) {
             while (inside(x, y) && board[y][x] != '\0') { // skip occupied squares
                 x += dx;
@@ -123,9 +127,12 @@ public final class GameReplay {
             if (!inside(x, y)) throw WfError.gsData("tile " + letter + " leaves the board (x=" + x + ", y=" + y + ")");
             // blank used as X: stored as lowercase (board convention: lowercase = blank, 0 points)
             board[y][x] = letter.length() == 2 ? Character.toLowerCase(letter.charAt(1)) : letter.charAt(0);
+            positions.add(new int[] {x, y});
             x += dx;
             y += dy;
         }
+
+        collectWords(board, positions, dx, dy, played);
 
         if (player == lp) {
             for (String letter : placed) {
@@ -178,6 +185,31 @@ public final class GameReplay {
             out.add(t);
         }
         return out;
+    }
+
+    /** The main word through the placed tiles and every cross word they form (2+ letters), upper case. */
+    static void collectWords(char[][] board, List<int[]> positions, int dx, int dy, Set<String> out) {
+        if (positions.isEmpty()) return;
+        int[] first = positions.get(0);
+        addWord(board, first[0], first[1], dx, dy, out);
+        for (int[] p : positions) addWord(board, p[0], p[1], dy, dx, out);
+    }
+
+    /** Adds the run of occupied squares through (x, y) in direction (dx, dy) when it has 2+ letters. */
+    private static void addWord(char[][] board, int x, int y, int dx, int dy, Set<String> out) {
+        int sx = x;
+        int sy = y;
+        while (inside(sx - dx, sy - dy) && board[sy - dy][sx - dx] != '\0') {
+            sx -= dx;
+            sy -= dy;
+        }
+        StringBuilder sb = new StringBuilder();
+        while (inside(sx, sy) && board[sy][sx] != '\0') {
+            sb.append(Character.toUpperCase(board[sy][sx]));
+            sx += dx;
+            sy += dy;
+        }
+        if (sb.length() >= 2) out.add(sb.toString());
     }
 
     private static boolean inside(int x, int y) {

@@ -141,6 +141,11 @@ taal ter beoordeling aangeboden; niets gaat zonder merge van de opdrachtgever na
 - De workflow `wordlist-report.yml` zet geldige woorden die in de lijst staan in `wordlists/<taal>/remove.txt` op
   de branch `wordlist/<taal>`, bouwt de lijst opnieuw (commit type `fix`) en houdt per taal één PR naar `main`
   open. Na de merge maakt de release-workflow een nieuwe versie met de bijgewerkte lijst.
+- Toevoegen (2026-11-05): `GameReplay` verzamelt per zet het hoofdwoord en de dwarswoorden (`GameState.playedWords`).
+  Bij het berekenen van zetten in de overlay meldt `MissingWords` gespeelde woorden die niet in de lijst staan
+  (type `add`, eenmalig per toestel en regelset, max. 24 per keer); de workflow zet ze in `add.txt` op dezelfde
+  branch (alleen als ze niet in de lijst, `add.txt` of `remove.txt` staan). De Worker begrenst meldingen op 20 per IP
+  per uur (KV-binding `REPORT_KV`).
 
 ### 6.2 Downloadflow
 
