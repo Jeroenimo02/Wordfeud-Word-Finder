@@ -1,3 +1,13 @@
+## [1.2.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.1.1...v1.2.0-dev.1) (2026-11-05)
+
+### ✨ New Features
+
+* gespeelde woorden die in de lijst ontbreken automatisch melden ([ffc0a47](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ffc0a474e2319be39262fe3b652c7de275216ace))
+
+### 🐛 Bug Fixes
+
+* releases botsen niet meer; Gradle-waarschuwingen; meldlimiet in Worker ([be3781c](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/be3781cb198e92bb1c6bb0989fa28e17e0f00b5d))
+
 ## [1.1.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.1.0...v1.1.1) (2026-11-04)
 
 ### 🐛 Bug Fixes
