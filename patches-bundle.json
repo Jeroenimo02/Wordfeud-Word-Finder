@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-11-06T13:28:26",
-  "description": "## [1.3.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.3...v1.3.0-dev.1) (2026-11-06)\n\n### ✨ New Features\n\n* anoniem dagelijks gebruiksseintje en een overzicht in de Worker ([87ed839](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/87ed839f725a577d31d13d5b07131072a0ad66f0))",
-  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.3.0-dev.1/patches-1.3.0-dev.1.mpp",
+  "created_at": "2026-11-06T13:34:48",
+  "description": "## [1.3.0](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.3...v1.3.0) (2026-11-06)\n\n### ✨ New Features\n\n* anoniem dagelijks gebruiksseintje en een overzicht in de Worker ([87ed839](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/87ed839f725a577d31d13d5b07131072a0ad66f0))",
+  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.3.0/patches-1.3.0.mpp",
   "signature_download_url": "",
-  "version": "1.3.0-dev.1"
+  "version": "1.3.0"
 }
