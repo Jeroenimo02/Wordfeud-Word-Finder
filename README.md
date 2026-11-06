@@ -14,7 +14,7 @@ Add the patch source in Morphe with the badge above, or open
 - Lists all legal moves, sortable by score, length or A-Z.
 - The Play button sends the chosen move through the Wordfeud API.
 
-Supported app: `com.hbwares.wordfeud.free` **5.7.1**. Other versions are experimental.
+Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versions are experimental; see `docs/UPDATING.md` for checking and adding a new Wordfeud version.
 
 ## Patches
 
@@ -93,7 +93,7 @@ Every message shows a short text and a code.
 ## Status and limitations
 
 - Requires Android 7.0 (API 24) or newer.
-- Verified on a device with Wordfeud 5.7.1: moves, blanks, cross words, the seven-tile bonus, refresh after a move, light and dark themes, word rejections by the server, and games in all languages (including the Spanish CH, LL and RR tiles).
+- Verified on a device with Wordfeud 5.7.1 and 5.8.0: moves, blanks, cross words, the seven-tile bonus, refresh after a move, light and dark themes, word rejections by the server, and games in all languages (including the Spanish CH, LL and RR tiles).
 - Word lists exist for every Wordfeud language (rulesets 0-12). They come from open sources and approximate Wordfeud's own lists, so the server sometimes rejects a suggested word or accepts one that is not suggested. Rejected words and words played in your games that are missing from the list are reported (see above), reviewed by the maintainer and fixed in a following release.
 - Assumptions not confirmed by Wordfeud: Swedish strict (ruleset 8) allows base forms only; Portuguese (ruleset 12) is European Portuguese.
 
