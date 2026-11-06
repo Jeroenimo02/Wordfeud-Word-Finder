@@ -2,3 +2,10 @@
 # Wordt toegepast door tools/wordlists/build.py.
 ÆS
 BILTE
+ØN
+UN
+RIG
+HOER
+YRA
+RIGA
+HET
