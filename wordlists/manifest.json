@@ -110,16 +110,16 @@
       "words": 340667
     },
     "nn": {
-      "added": 0,
+      "added": 2,
       "attribution": "Norsk ordbank (nynorsk 2012), Språkbanken / Språkrådet, via Ondkloss/norwegian-wordlist",
       "file": "wordlists/nn/words.txt.gz",
       "license": "CC BY 4.0",
-      "removed": 0,
-      "sha256": "3d61b813150c75dcf3c0102b7e45b5f03d7a5c5c4606d60ec264a9756eedcb97",
-      "size": 326581,
+      "removed": 1,
+      "sha256": "58d6c44adc0dc977d0fe3fab32e0eaf0240f8f37e0719fcb9ca41233d6def6c7",
+      "size": 326582,
       "source_words": 98470,
-      "version": 1,
-      "words": 98470
+      "version": 3,
+      "words": 98471
     },
     "pt": {
       "added": 0,
