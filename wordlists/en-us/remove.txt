@@ -2,3 +2,9 @@
 # Wordt toegepast door tools/wordlists/build.py.
 REIM
 RIEM
+ST
+DEARN
+DA
+UR
+DI
+NATIS
