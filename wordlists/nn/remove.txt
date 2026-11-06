@@ -2,3 +2,4 @@
 # Wordt toegepast door tools/wordlists/build.py.
 HAGR
 MW
+MS
