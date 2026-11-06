@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-11-06T07:23:51",
-  "description": "## [1.2.3](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.2...v1.2.3) (2026-11-06)\n\n### 🐛 Bug Fixes\n\n* **wordlists:** fr: AV verwijderd (gemeld door de patch) ([2e4623a](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/2e4623a97b94f37522f46bd5535aa312a2f44cdd))\n* **wordlists:** fr: NF,FV verwijderd (gemeld door de patch) ([891b65b](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/891b65bffb6bfee7ac2a5a98ee29211ed224c15d))\n* **wordlists:** fr: OP verwijderd (gemeld door de patch) ([53f74d4](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/53f74d41c2b2b2988f416760174b9995b16f1593))\n* **wordlists:** fr: opnieuw gebouwd op main (v1.2.0) ([cdda801](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/cdda8016b990ff3dc8563ee19f230509a5cf8e15))\n* **wordlists:** fr: PBQ,PV verwijderd (gemeld door de patch) ([bea7ede](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/bea7ede7bcebdeb0facdf7681218360cc492d79f))\n* **wordlists:** fr: PHZ,PC,ZM verwijderd (gemeld door de patch) ([639725a](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/639725ab555966141a147a93d0eef580d6eb0b4e))\n* **wordlists:** fr: SB verwijderd (gemeld door de patch) ([f548583](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/f548583473825ee47450817251016e70d80dddc4))\n* **wordlists:** fr: ZBQ,ZV verwijderd (gemeld door de patch) ([23a6a7b](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/23a6a7bcac536f5f11fbf8c3c0be358341514c8d))",
-  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.2.3/patches-1.2.3.mpp",
+  "created_at": "2026-11-06T13:28:26",
+  "description": "## [1.3.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.3...v1.3.0-dev.1) (2026-11-06)\n\n### ✨ New Features\n\n* anoniem dagelijks gebruiksseintje en een overzicht in de Worker ([87ed839](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/87ed839f725a577d31d13d5b07131072a0ad66f0))",
+  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.3.0-dev.1/patches-1.3.0-dev.1.mpp",
   "signature_download_url": "",
-  "version": "1.2.3"
+  "version": "1.3.0-dev.1"
 }

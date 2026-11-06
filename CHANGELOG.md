@@ -1,3 +1,9 @@
+## [1.3.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.3...v1.3.0-dev.1) (2026-11-06)
+
+### ✨ New Features
+
+* anoniem dagelijks gebruiksseintje en een overzicht in de Worker ([87ed839](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/87ed839f725a577d31d13d5b07131072a0ad66f0))
+
 ## [1.2.3](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.2...v1.2.3) (2026-11-06)
 
 ### 🐛 Bug Fixes
