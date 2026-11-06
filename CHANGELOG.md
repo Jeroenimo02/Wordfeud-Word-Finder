@@ -1,3 +1,9 @@
+## [1.2.1-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0...v1.2.1-dev.1) (2026-11-06)
+
+### 🐛 Bug Fixes
+
+* meldingen gaan niet meer verloren bij gelijktijdige meldingen of GitHub-fouten ([47e5018](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/47e50180981927c58e17f584a532e57d7ff96b26))
+
 ## [1.2.0](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.1.1...v1.2.0) (2026-11-05)
 
 ### ✨ New Features
