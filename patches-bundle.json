@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-11-06T06:58:54",
-  "description": "## [1.2.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0...v1.2.1) (2026-11-06)\n\n### 🐛 Bug Fixes\n\n* meldingen gaan niet meer verloren bij gelijktijdige meldingen of GitHub-fouten ([47e5018](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/47e50180981927c58e17f584a532e57d7ff96b26))\n* **wordlists:** nl: EAUX verwijderd (gemeld door de patch) ([87fbeef](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/87fbeef14b827d477c629790d2bca9bea52c073f))\n* **wordlists:** nl: FAIT verwijderd (gemeld door de patch) ([81e7722](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/81e7722a8cc61e4404871aa2d5583ac21d6c2446))\n* **wordlists:** nl: HRKETEL verwijderd (gemeld door de patch) ([74ff960](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/74ff960c5f01c955bcd612f6d4368813f0bf2bbc))\n* **wordlists:** nl: HRKETELS verwijderd (gemeld door de patch) ([e26fc82](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/e26fc822f49d91b4b2e6bdbb05743d3072a793c3))",
-  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.2.1/patches-1.2.1.mpp",
+  "created_at": "2026-11-06T07:15:04",
+  "description": "## [1.2.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.1...v1.2.2) (2026-11-06)\n\n### 🐛 Bug Fixes\n\n* **wordlists:** nn: ÆS, BILTE toegevoegd (gespeeld, ontbrak in de lijst) ([97092ca](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/97092caf1266f470e4ed9cc8af7b506df2826300))\n* **wordlists:** nn: HAGR verwijderd (gemeld door de patch) ([0c3c225](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/0c3c225ab2c71ee358fd554d0256696e62bd13b0))",
+  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.2.2/patches-1.2.2.mpp",
   "signature_download_url": "",
-  "version": "1.2.1"
+  "version": "1.2.2"
 }

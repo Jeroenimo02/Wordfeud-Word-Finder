@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.1...v1.2.2) (2026-11-06)
+
+### 🐛 Bug Fixes
+
+* **wordlists:** nn: ÆS, BILTE toegevoegd (gespeeld, ontbrak in de lijst) ([97092ca](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/97092caf1266f470e4ed9cc8af7b506df2826300))
+* **wordlists:** nn: HAGR verwijderd (gemeld door de patch) ([0c3c225](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/0c3c225ab2c71ee358fd554d0256696e62bd13b0))
+
 ## [1.2.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0...v1.2.1) (2026-11-06)
 
 ### 🐛 Bug Fixes
