@@ -11,3 +11,4 @@ RIGA
 HET
 UNNER
 FÅR
+NØL
