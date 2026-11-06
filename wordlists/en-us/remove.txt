@@ -3,3 +3,6 @@
 REIM
 RIEM
 ST
+DEARN
+DA
+UR
