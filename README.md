@@ -93,8 +93,9 @@ Every message shows a short text and a code.
 ## Status and limitations
 
 - Requires Android 7.0 (API 24) or newer.
-- Verified on a device with Wordfeud 5.7.1 and the Dutch word list: moves, blanks, cross words, the seven-tile bonus, refresh after a move, light and dark themes. Other word lists and rulesets are not available yet.
-- The exact form of a word rejection by the server (V6) and the button position with an ad banner (V7) are not verified yet.
+- Verified on a device with Wordfeud 5.7.1: moves, blanks, cross words, the seven-tile bonus, refresh after a move, light and dark themes, word rejections by the server, and games in all languages (including the Spanish CH, LL and RR tiles).
+- Word lists exist for every Wordfeud language (rulesets 0-12). They come from open sources and approximate Wordfeud's own lists, so the server sometimes rejects a suggested word or accepts one that is not suggested. Rejected words and words played in your games that are missing from the list are reported (see above), reviewed by the maintainer and fixed in a following release.
+- Assumptions not confirmed by Wordfeud: Swedish strict (ruleset 8) allows base forms only; Portuguese (ruleset 12) is European Portuguese.
 
 ## Translations
 
