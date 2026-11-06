@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-11-05T23:35:30",
-  "description": "## [1.2.0](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.1.1...v1.2.0) (2026-11-05)\n\n### ✨ New Features\n\n* betere Engelse lijsten, apart voor VS en internationaal ([ceb5fc7](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ceb5fc73516fd1e0a639a64b73ea9b362757bd18))\n* gespeelde woorden die in de lijst ontbreken automatisch melden ([ffc0a47](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/ffc0a474e2319be39262fe3b652c7de275216ace))\n* Spaans, Portugees, Fins en Zweeds strikt; dubbelletter-tegels; kleinere woordgraaf ([6445023](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/6445023163ff837cfe2826b5442fad5f064ce0aa))\n\n### 🐛 Bug Fixes\n\n* releases botsen niet meer; Gradle-waarschuwingen; meldlimiet in Worker ([be3781c](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/be3781cb198e92bb1c6bb0989fa28e17e0f00b5d))\n* **wordlists:** fr: symbolen, eenheden en korte afkortingen uit de Franse lijst ([5635f27](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/5635f276f954328790bbbf8d04c5c12911ef25e8))",
-  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.2.0/patches-1.2.0.mpp",
+  "created_at": "2026-11-06T06:50:20",
+  "description": "## [1.2.1-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0...v1.2.1-dev.1) (2026-11-06)\n\n### 🐛 Bug Fixes\n\n* meldingen gaan niet meer verloren bij gelijktijdige meldingen of GitHub-fouten ([47e5018](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/47e50180981927c58e17f584a532e57d7ff96b26))",
+  "download_url": "https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/download/v1.2.1-dev.1/patches-1.2.1-dev.1.mpp",
   "signature_download_url": "",
-  "version": "1.2.0"
+  "version": "1.2.1-dev.1"
 }
