@@ -1,3 +1,13 @@
+## [1.2.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0...v1.2.1) (2026-11-06)
+
+### 🐛 Bug Fixes
+
+* meldingen gaan niet meer verloren bij gelijktijdige meldingen of GitHub-fouten ([47e5018](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/47e50180981927c58e17f584a532e57d7ff96b26))
+* **wordlists:** nl: EAUX verwijderd (gemeld door de patch) ([87fbeef](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/87fbeef14b827d477c629790d2bca9bea52c073f))
+* **wordlists:** nl: FAIT verwijderd (gemeld door de patch) ([81e7722](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/81e7722a8cc61e4404871aa2d5583ac21d6c2446))
+* **wordlists:** nl: HRKETEL verwijderd (gemeld door de patch) ([74ff960](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/74ff960c5f01c955bcd612f6d4368813f0bf2bbc))
+* **wordlists:** nl: HRKETELS verwijderd (gemeld door de patch) ([e26fc82](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/e26fc822f49d91b4b2e6bdbb05743d3072a793c3))
+
 ## [1.2.1-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.0...v1.2.1-dev.1) (2026-11-06)
 
 ### 🐛 Bug Fixes
