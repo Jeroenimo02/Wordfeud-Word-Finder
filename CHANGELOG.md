@@ -1,3 +1,9 @@
+## [1.4.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.3.0...v1.4.0-dev.1) (2026-11-06)
+
+### ✨ New Features
+
+* Wordfeud 5.8.0 ondersteund; controlescript en handleiding voor nieuwe versies ([6a892a4](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/6a892a4c34e7fc95c4fec8591fd4aa5edfbb0007))
+
 ## [1.3.0](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.3...v1.3.0) (2026-11-06)
 
 ### ✨ New Features
