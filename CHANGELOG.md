@@ -1,3 +1,16 @@
+## [1.2.3](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.2...v1.2.3) (2026-11-06)
+
+### 🐛 Bug Fixes
+
+* **wordlists:** fr: AV verwijderd (gemeld door de patch) ([2e4623a](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/2e4623a97b94f37522f46bd5535aa312a2f44cdd))
+* **wordlists:** fr: NF,FV verwijderd (gemeld door de patch) ([891b65b](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/891b65bffb6bfee7ac2a5a98ee29211ed224c15d))
+* **wordlists:** fr: OP verwijderd (gemeld door de patch) ([53f74d4](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/53f74d41c2b2b2988f416760174b9995b16f1593))
+* **wordlists:** fr: opnieuw gebouwd op main (v1.2.0) ([cdda801](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/cdda8016b990ff3dc8563ee19f230509a5cf8e15))
+* **wordlists:** fr: PBQ,PV verwijderd (gemeld door de patch) ([bea7ede](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/bea7ede7bcebdeb0facdf7681218360cc492d79f))
+* **wordlists:** fr: PHZ,PC,ZM verwijderd (gemeld door de patch) ([639725a](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/639725ab555966141a147a93d0eef580d6eb0b4e))
+* **wordlists:** fr: SB verwijderd (gemeld door de patch) ([f548583](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/f548583473825ee47450817251016e70d80dddc4))
+* **wordlists:** fr: ZBQ,ZV verwijderd (gemeld door de patch) ([23a6a7b](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/23a6a7bcac536f5f11fbf8c3c0be358341514c8d))
+
 ## [1.2.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.2.1...v1.2.2) (2026-11-06)
 
 ### 🐛 Bug Fixes
