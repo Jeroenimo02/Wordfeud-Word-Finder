@@ -102,12 +102,12 @@
       "attribution": "OpenTaal word list, via jensanjo/wordfeud-wordlists",
       "file": "wordlists/nl/words.txt.gz",
       "license": "Revised BSD and/or CC BY 3.0 (OpenTaal)",
-      "removed": 5,
-      "sha256": "a172c0d51629217120d9f18c775d14b3c29a84d5c44d8d8035b0e1464a245083",
+      "removed": 6,
+      "sha256": "aa63ec3b77958cf88ee607746031a541a8a9210f9cdacc64d2c3c68757f0347d",
       "size": 1018312,
       "source_words": 340672,
-      "version": 10,
-      "words": 340673
+      "version": 11,
+      "words": 340672
     },
     "nn": {
       "added": 9,
