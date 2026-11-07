@@ -78,12 +78,12 @@
       "attribution": "Lexique des formes fléchies du français, Grammalecte v7.7 (Olivier R.)",
       "file": "wordlists/fr/words.txt.gz",
       "license": "MPL 2.0",
-      "removed": 14,
-      "sha256": "71d79e6c67f576e0ed9b32fd673884182df1aad58e4c7cf87e97e65e2c8b04e2",
-      "size": 970519,
+      "removed": 15,
+      "sha256": "45065e52b3948663de0b227092ee270649142dc1e45212cccbeb2e7e505b71c4",
+      "size": 970515,
       "source_words": 407899,
-      "version": 5,
-      "words": 407896
+      "version": 6,
+      "words": 407895
     },
     "nb": {
       "added": 0,
