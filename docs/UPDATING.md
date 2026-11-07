@@ -39,6 +39,7 @@ Wordfeud is a Flutter app. The patch relies on two kinds of things in the app:
 | Playing with the Play button, the board refreshes afterwards | MV-… error, board does not refresh | `play/MoveRequest`, `play/Refresher` |
 | A word the server rejects: message in the overlay, pull request "Word list …" on GitHub | No message | `play/MoveSubmitter`, report worker |
 | A game in another language opens without an error | WL-… error | `words/WordListManager` |
+| Remove ads: no banner, no full-screen ad after a game, no consent popup on a fresh install | Ads or the popup appear | `ads/AdBlock` (`BLOCKED`), the AdApi lines of the check script |
 
 ## Step 3: when the check script reports MISSING
 
@@ -47,7 +48,8 @@ Wordfeud is a Flutter app. The patch relies on two kinds of things in the app:
 | Hook | Where it comes from | Where to change |
 |---|---|---|
 | `MainActivity.onCreate` | Wordfeud's own activity (listed in `AndroidManifest.xml`) | `patches/.../ui/OverlayPatch.kt` |
-| `FlutterJNI.handlePlatformMessage` and `dispatchPlatformMessage` | The Flutter engine (changes only with a major Flutter update) | `patches/.../platform/PlatformTapPatch.kt`, `extension/.../play/JniDispatch.java` |
+| `FlutterJNI.handlePlatformMessage` and `dispatchPlatformMessage` | The Flutter engine (changes only with a major Flutter update) | `patches/.../platform/PlatformTapPatch.kt`, `patches/.../ads/RemoveAdsPatch.kt`, `extension/.../play/JniDispatch.java` |
+| `FlutterJNI.invokePlatformMessageResponseCallback` and `cleanupMessageData` | The Flutter engine | `extension/.../ads/AdBlock.java` (reflection; when missing, ads come back but nothing breaks) |
 | `CronetEngine$Builder.setUserAgent`, `UrlResponseInfo.getUrl` | Chromium Cronet (stable public API) | `patches/.../platform/UserAgentPatch.kt`, `extension/.../hooks/NetworkTap.java` |
 | `UrlRequestCallbackProxy.on…` | The `cronet_http` Flutter plugin (open source) | `patches/.../network/Fingerprints.kt` |
 
@@ -85,6 +87,7 @@ really sends, and the error code names the unknown field or event type.
 | Theme from `statusBarIconBrightness` | Wrong colours in the overlay | `hooks/PlatformMessages.java` |
 | Refresh after a move through `flutter/lifecycle` (`LifecycleBounce`) | The board refreshes only after about 20 s | `play/Refresher.java` (other strategies are ready, see `docs/DEV.md`) |
 | Move format `[x,y,"L"]`, blank `"*L"`, digraph `"CH"` | MV-SERVER-protocol | `play/MoveRequest.java` |
+| The blocked ad calls (`AdBlock.BLOCKED`) return nothing (void) | An error or a stuck screen right after an ad call | In jadx, search for the channel name (`dev.flutter.pigeon.wordfeud.AdApi.showInterstitial`, …): the handler of a void call replies with a list holding only `null`. Remove a call that returns a value from `BLOCKED` |
 
 ## Compatibility
 

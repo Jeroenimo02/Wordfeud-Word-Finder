@@ -13,6 +13,7 @@ Add the patch source in Morphe with the badge above, or open
 - The button opens an overlay with your rack and a preview board.
 - Lists all legal moves, sortable by score, length or A-Z.
 - The Play button sends the chosen move through the Wordfeud API.
+- Separate patch **Remove ads**: no banner or full-screen ads, and no ads are downloaded.
 
 Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versions are experimental; see `docs/UPDATING.md` for checking and adding a new Wordfeud version.
 
