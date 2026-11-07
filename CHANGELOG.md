@@ -1,3 +1,9 @@
+## [1.5.0-dev.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0-dev.1...v1.5.0-dev.2) (2026-11-07)
+
+### ✨ New Features
+
+* Debloat patch ([af7609f](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/af7609fb0c14b1779104c834343e033565817c28))
+
 ## [1.5.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.4.0...v1.5.0-dev.1) (2026-11-07)
 
 ### ✨ New Features
