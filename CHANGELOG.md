@@ -1,3 +1,9 @@
+## [1.5.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.4.0...v1.5.0-dev.1) (2026-11-07)
+
+### ✨ New Features
+
+* Remove ads patch ([6b7b04f](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/6b7b04fb65ebea523ab6abf53c4f5fc0f0ad4626))
+
 ## [1.4.0](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.3.0...v1.4.0) (2026-11-06)
 
 ### ✨ New Features
