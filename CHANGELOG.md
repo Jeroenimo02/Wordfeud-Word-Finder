@@ -1,3 +1,9 @@
+## [1.5.0-dev.4](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0-dev.3...v1.5.0-dev.4) (2026-11-08)
+
+### 🐛 Bug Fixes
+
+* Remove ads posts its replies like Flutter does ([3fae71c](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/3fae71caea56d8fc53066d96c7c0298002ff8169))
+
 ## [1.5.0-dev.3](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0-dev.2...v1.5.0-dev.3) (2026-11-08)
 
 ### 🐛 Bug Fixes
