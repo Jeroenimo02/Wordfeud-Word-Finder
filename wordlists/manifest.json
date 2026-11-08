@@ -146,16 +146,16 @@
       "words": 370672
     },
     "sv-strict": {
-      "added": 0,
+      "added": 1,
       "attribution": "hising/svenska-ord.txt (about 120,000 headwords from SAOL)",
       "file": "wordlists/sv-strict/words.txt.gz",
       "license": "Unlicense (as published; the headwords come from SAOL)",
       "removed": 0,
-      "sha256": "3642c79d19cd837afc0062e9493b699ddf0a5bbb4dd26ac41c2431a9376ff340",
-      "size": 386059,
+      "sha256": "f4e040ef204d73b9362d2c2218ead535ea7ad6db9fdde8d6ce3a72caa8452998",
+      "size": 386061,
       "source_words": 108839,
-      "version": 1,
-      "words": 108839
+      "version": 2,
+      "words": 108840
     }
   },
   "rulesets": {
