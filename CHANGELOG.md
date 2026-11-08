@@ -1,3 +1,9 @@
+## [1.5.0-dev.3](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0-dev.2...v1.5.0-dev.3) (2026-11-08)
+
+### 🐛 Bug Fixes
+
+* Remove ads no longer blocks the consent form ([3d2aef4](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/3d2aef4181faba3245b70001a2fde13d6e86516e))
+
 ## [1.5.0-dev.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0-dev.1...v1.5.0-dev.2) (2026-11-07)
 
 ### ✨ New Features
