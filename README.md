@@ -20,7 +20,7 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versio
 ## Patches
 
 <!-- PATCHES_START -->
-> **[v1.5.0-dev.5](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/tag/v1.5.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
+> **[v1.5.0-dev.6](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/tag/v1.5.0-dev.6)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
 <details open>
 <summary>📦 Wordfeud&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
