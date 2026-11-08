@@ -66,7 +66,7 @@ DART_STRINGS = [
     ("dev.flutter.pigeon.wordfeud.AdApi." + m, "ads/AdBlock: blocked ad call")
     for m in ("setBannerAdUnitId", "setInterstitialAdUnitId", "setAutoLoadInterstitial", "setInterstitialInterval",
               "setInterstitialPreloading", "showInterstitial", "setLeaderboardAdUnitId", "setLeaderboardVisible",
-              "setMrecAdUnitId", "setMrecVisible")
+              "setMrecAdUnitId", "setMrecVisible", "showConsentFormIfNeeded")
 ]
 
 

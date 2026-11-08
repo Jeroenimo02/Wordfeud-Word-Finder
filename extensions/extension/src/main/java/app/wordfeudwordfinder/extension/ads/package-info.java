@@ -1,7 +1,7 @@
 /**
  * The "Remove ads" patch. {@code AdBlock} answers Wordfeud's ad calls itself, so the app's ad plugin never receives
- * an ad unit and never shows or preloads an interstitial. The ad consent form is still shown (see
- * {@link app.wordfeudwordfinder.extension.ads.AdBlock#BLOCKED}).
+ * an ad unit, never shows or preloads an interstitial and never starts the ad consent flow (which is what starts the
+ * ad SDKs on a fresh install).
  *
  * <p>Wordfeud dependency: {@code FlutterJNI.handlePlatformMessage} (hooked by {@code RemoveAdsPatch}), the public
  * {@code FlutterJNI} methods {@code invokePlatformMessageResponseCallback} and {@code cleanupMessageData} (called by

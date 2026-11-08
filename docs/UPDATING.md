@@ -39,7 +39,7 @@ Wordfeud is a Flutter app. The patch relies on two kinds of things in the app:
 | Playing with the Play button, the board refreshes afterwards | MV-… error, board does not refresh | `play/MoveRequest`, `play/Refresher` |
 | A word the server rejects: message in the overlay, pull request "Word list …" on GitHub | No message | `play/MoveSubmitter`, report worker |
 | A game in another language opens without an error | WL-… error | `words/WordListManager` |
-| Remove ads: the app starts, no banner, no full-screen ad after a game | Crash at start, or ads appear | `ads/AdBlock` (`BLOCKED`), the AdApi lines of the check script |
+| Remove ads: the app starts, no banner, no full-screen ad after a game, no consent popup on a fresh install | Crash at start, or ads or the popup appear | `ads/AdBlock` (`BLOCKED`), the AdApi lines of the check script |
 | Debloat: with the app closed, a push notification arrives when the opponent plays | No notification | `patches/.../debloat/DebloatPatch.kt` (it must never touch `NOTIFICATION_COMPONENTS`) |
 
 ## Step 3: when the check script reports MISSING
