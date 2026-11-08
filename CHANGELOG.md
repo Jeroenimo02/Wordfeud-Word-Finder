@@ -1,3 +1,15 @@
+## [1.5.0-dev.5](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0-dev.4...v1.5.0-dev.5) (2026-11-08)
+
+### ✨ New Features
+
+* Remove ads and Debloat are one patch ([4181ef1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/4181ef18e9595f7c2681deec6c49ad7f3ae13ab4))
+
+### 🐛 Bug Fixes
+
+* **ci:** the release repair also adds the missing tag note ([aa66241](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/aa662411a265da19c7215ca3cd690a5798955ac2))
+* Remove ads no longer makes Android reject the Flutter bridge ([dcdb2c8](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/dcdb2c889d43bf2e9775e2ed459f6c232b7a9b98))
+* Remove ads skips the ad consent popup again, Debloat on by default ([951d943](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/951d94329fe2cffbbc66be6586bfe8b3eba70cb2))
+
 ## [1.5.0-dev.4](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0-dev.3...v1.5.0-dev.4) (2026-11-08)
 
 ### 🐛 Bug Fixes

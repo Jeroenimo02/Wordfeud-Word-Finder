@@ -20,9 +20,9 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versio
 ## Patches
 
 <!-- PATCHES_START -->
-> **[v1.5.0-dev.4](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/tag/v1.5.0-dev.4)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
+> **[v1.5.0-dev.5](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/tag/v1.5.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
 <details open>
-<summary>📦 Wordfeud&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
+<summary>📦 Wordfeud&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
 
 **Package name:** `com.hbwares.wordfeud.free`
@@ -34,8 +34,7 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versio
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Debloat](#debloat) | Stops the ad SDKs from starting with the app, turns off Firebase Analytics and removes the advertising ID permissions. Also applies "Remove ads". Notifications keep working. |  |
-| [Remove ads](#remove-ads) | Removes the banner and full-screen ads. No ads are loaded. |  |
+| [Remove ads](#remove-ads) | Removes the banner and full-screen ads and skips the ad consent popup. The ad SDKs no longer start with the app, Firebase Analytics is turned off and the advertising ID permissions are removed. Notifications keep working. |  |
 | [Word finder overlay](#word-finder-overlay) | Adds a floating button on the game screen that opens a list of all possible moves. |  |
 
 </details>
