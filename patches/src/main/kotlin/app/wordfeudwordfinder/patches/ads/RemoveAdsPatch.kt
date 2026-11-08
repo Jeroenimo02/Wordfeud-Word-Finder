@@ -13,12 +13,15 @@ private const val AD_BLOCK = "Lapp/wordfeudwordfinder/extension/ads/AdBlock;"
 @Suppress("unused")
 val removeAdsPatch = bytecodePatch(
     name = "Remove ads",
-    description = "Removes the banner and full-screen ads. No ads are loaded and the ad consent popup is skipped.",
+    description = "Removes the banner and full-screen ads and skips the ad consent popup. The ad SDKs no longer " +
+        "start with the app, Firebase Analytics is turned off and the advertising ID permissions are removed. " +
+        "Notifications keep working.",
     default = true
 ) {
     compatibleWith(COMPATIBILITY_WORDFEUD)
 
-    dependsOn(extensionPatch)
+    // extensionPatch: the AdBlock hook below. adManifestPatch: ad SDK start-up, Analytics and permissions.
+    dependsOn(extensionPatch, adManifestPatch)
 
     execute {
         // Wordfeud's ad plugin is obfuscated (its class names change with every release), so the patch does not

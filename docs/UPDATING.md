@@ -40,7 +40,7 @@ Wordfeud is a Flutter app. The patch relies on two kinds of things in the app:
 | A word the server rejects: message in the overlay, pull request "Word list …" on GitHub | No message | `play/MoveSubmitter`, report worker |
 | A game in another language opens without an error | WL-… error | `words/WordListManager` |
 | Remove ads: the app starts, no banner, no full-screen ad after a game, no consent popup on a fresh install | Crash at start, or ads or the popup appear | `ads/AdBlock` (`BLOCKED`), the AdApi lines of the check script |
-| Debloat: with the app closed, a push notification arrives when the opponent plays | No notification | `patches/.../debloat/DebloatPatch.kt` (it must never touch `NOTIFICATION_COMPONENTS`) |
+| Remove ads: with the app closed, a push notification arrives when the opponent plays | No notification | `patches/.../ads/AdManifestPatch.kt` (it must never touch `NOTIFICATION_COMPONENTS`) |
 
 ## Step 3: when the check script reports MISSING
 
@@ -79,8 +79,8 @@ really sends, and the error code names the unknown field or event type.
 
 ## What the script cannot check
 
-The "Debloat" patch edits `AndroidManifest.xml` by component name. Components a new version no longer has are
-skipped; new ad SDK start-up components are not removed until they are added to the lists in `DebloatPatch.kt`.
+"Remove ads" also edits `AndroidManifest.xml` by component name (`ads/AdManifestPatch.kt`). Components a new version
+no longer has are skipped; new ad SDK start-up components are not removed until they are added to its lists.
 
 | Assumption | What happens when it changes | Fix |
 |---|---|---|
