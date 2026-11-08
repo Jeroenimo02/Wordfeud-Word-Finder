@@ -13,6 +13,19 @@ import java.util.List;
 import org.junit.Test;
 
 public class AdBlockTest {
+    /** Collects the posted replies so a test can check that nothing is sent synchronously. */
+    private final List<Runnable> posted = new ArrayList<>();
+
+    @org.junit.Before
+    public void postToList() {
+        AdBlock.setReplyExecutorForTests(posted::add);
+    }
+
+    private void runPosted() {
+        for (Runnable r : posted) r.run();
+        posted.clear();
+    }
+
     /** Stands in for FlutterJNI: the same public method names and parameter types. */
     public static final class FakeJni {
         final List<String> calls = new ArrayList<>();
@@ -38,6 +51,8 @@ public class AdBlockTest {
         int before = AdBlock.blockedCount();
         assertTrue(AdBlock.onPlatformMessage(jni, AdBlock.PREFIX + "showInterstitial",
                 ByteBuffer.wrap(new byte[0]), 7, 1234L));
+        assertTrue(jni.calls.isEmpty()); // never answered from inside handlePlatformMessage
+        runPosted();
         assertEquals(Arrays.asList("reply 7", "cleanup 1234"), jni.calls);
         assertArrayEquals(new byte[] {12, 1, 0}, jni.reply);
         assertEquals(before + 1, AdBlock.blockedCount());
@@ -52,6 +67,7 @@ public class AdBlockTest {
         assertFalse(AdBlock.onPlatformMessage(jni, AdBlock.PREFIX + "reset", m, 1, 1L));
         assertFalse(AdBlock.onPlatformMessage(jni, null, m, 1, 1L));
         assertFalse(AdBlock.onPlatformMessage(null, AdBlock.PREFIX + "showInterstitial", m, 1, 1L));
+        assertTrue(posted.isEmpty());
         assertTrue(jni.calls.isEmpty());
     }
 
@@ -66,6 +82,7 @@ public class AdBlockTest {
         FakeJni jni = new FakeJni();
         assertTrue(AdBlock.onPlatformMessage(jni, AdBlock.PREFIX + "setMrecVisible",
                 ByteBuffer.wrap(new byte[0]), 0, 5L));
+        runPosted();
         assertEquals(Arrays.asList("cleanup 5"), jni.calls);
     }
 

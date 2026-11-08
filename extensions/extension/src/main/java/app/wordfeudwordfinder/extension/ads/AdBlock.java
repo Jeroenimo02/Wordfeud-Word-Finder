@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -46,6 +47,8 @@ public final class AdBlock {
     private static final AtomicInteger BLOCKED_COUNT = new AtomicInteger();
     private static volatile Method replyMethod;
     private static volatile Method cleanupMethod;
+    /** Where the reply is sent from; null = the main thread (created on first use). Tests replace it. */
+    private static volatile Executor replyExecutor;
 
     private AdBlock() {
     }
@@ -54,6 +57,11 @@ public final class AdBlock {
     public static boolean isBlocked(String channel) {
         return channel != null && channel.startsWith(PREFIX)
                 && BLOCKED.contains(channel.substring(PREFIX.length()));
+    }
+
+    /** Tests only: runs the replies on {@code e} instead of the main thread. */
+    static void setReplyExecutorForTests(Executor e) {
+        replyExecutor = e;
     }
 
     /** Number of ad calls answered since the app started (for "Copy details"). */
@@ -72,6 +80,7 @@ public final class AdBlock {
         if (jni == null || !isBlocked(channel)) return false;
         Method reply;
         Method cleanup;
+        Executor executor;
         try {
             // Cached per class: looked up again if a different engine class ever shows up.
             reply = replyMethod;
@@ -85,28 +94,51 @@ public final class AdBlock {
                 cleanup = jni.getClass().getMethod("cleanupMessageData", long.class);
                 cleanupMethod = cleanup;
             }
+            executor = replyExecutor;
+            if (executor == null) {
+                // By name: MainThread uses android.os and is left out of the plain-JVM test build.
+                executor = (Executor) Class.forName(AdBlock.class.getPackage().getName() + ".MainThread")
+                        .getDeclaredConstructor().newInstance();
+                replyExecutor = executor;
+            }
         } catch (Throwable t) {
-            return false; // methods not found: let the app handle the message
+            return false; // methods not found or no main thread: let the app handle the message
         }
         // The word finder places its button higher while Dart shows the banner area, so it still needs to see
         // setBannerVisible. RouteTap only reads the message and never throws.
         if (message != null) RouteTap.onPlatformMessage(channel, message);
         // From here on the message counts as handled: answering it twice could crash the engine.
-        try {
-            if (replyId != 0) {
-                // Like DartMessenger: a direct buffer whose position is the length of the reply.
-                ByteBuffer buf = ByteBuffer.allocateDirect(VOID_REPLY.length);
-                buf.put(VOID_REPLY);
-                reply.invoke(jni, replyId, buf, buf.position());
+        //
+        // The reply is posted, never sent from inside handlePlatformMessage. Flutter's own DartMessenger does the
+        // same (it runs every handler from a posted task). Replying synchronously re-enters the engine while Dart is
+        // still inside its send call. With Flutter's merged UI/platform thread that is the suspected cause of the crash
+        // about a second after start in v1.5.0-dev.1 to dev.3 (Wordfeud 5.8.0).
+        final Method replyM = reply;
+        final Method cleanupM = cleanup;
+        final Runnable answer = () -> {
+            try {
+                if (replyId != 0) {
+                    // Like DartMessenger: a direct buffer whose position is the length of the reply.
+                    ByteBuffer buf = ByteBuffer.allocateDirect(VOID_REPLY.length);
+                    buf.put(VOID_REPLY);
+                    replyM.invoke(jni, replyId, buf, buf.position());
+                }
+            } catch (Throwable ignored) {
+                // nothing else to do; the Dart call then never completes, like a slow ad call
             }
-        } catch (Throwable ignored) {
-            // nothing else to do; the Dart call then never completes, like a slow ad call
-        }
+            try {
+                // DartMessenger frees the native message after its handler ran; we skip it, so we free it here.
+                cleanupM.invoke(jni, messageData);
+            } catch (Throwable ignored) {
+                // a small native leak at worst
+            }
+        };
         try {
-            // DartMessenger frees the native message after its handler ran; we skip it, so we free it here.
-            cleanup.invoke(jni, messageData);
-        } catch (Throwable ignored) {
-            // a small native leak at worst
+            executor.execute(answer);
+        } catch (Throwable t) {
+            // Could not post (should not happen on a running app). The message is not answered or freed yet,
+            // so the app can still handle it normally.
+            return false;
         }
         BLOCKED_COUNT.incrementAndGet();
         return true;
