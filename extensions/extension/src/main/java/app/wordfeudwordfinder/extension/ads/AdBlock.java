@@ -26,16 +26,16 @@ public final class AdBlock {
     /**
      * Blocked AdApi methods. All return void in Wordfeud 5.8.0 (checked in the app's code; see docs/UPDATING.md), so
      * {@link #VOID_REPLY} is the right answer for each. Not blocked: {@code reset}, {@code canShowPrivacyOptions}
-     * (returns a bool), {@code showPrivacyOptions} and {@code showAdInspector} (only on user action).
-     * {@code showConsentFormIfNeeded} starts the ad consent flow, and the ad SDKs are only initialised after it.
+     * (returns a bool), {@code showPrivacyOptions} and {@code showAdInspector} (only on user action), and
+     * {@code showConsentFormIfNeeded}: v1.5.0-dev.1/dev.2 also answered that one and Wordfeud 5.8.0 then crashed about
+     * a second after start; it is the only blocked call that changes the start-up flow, so it is the main suspect.
      */
     public static final Set<String> BLOCKED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "setBannerAdUnitId", "setBannerVisible",
             "setInterstitialAdUnitId", "setAutoLoadInterstitial", "setInterstitialInterval",
             "setInterstitialPreloading", "showInterstitial",
             "setLeaderboardAdUnitId", "setLeaderboardVisible",
-            "setMrecAdUnitId", "setMrecVisible",
-            "showConsentFormIfNeeded")));
+            "setMrecAdUnitId", "setMrecVisible")));
 
     /**
      * Pigeon's reply for a successful void call: the standard message codec encoding of {@code [null]}
