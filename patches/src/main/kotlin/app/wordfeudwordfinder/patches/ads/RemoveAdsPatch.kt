@@ -12,7 +12,7 @@ private const val AD_BLOCK = "Lapp/wordfeudwordfinder/extension/ads/AdBlock;"
 @Suppress("unused")
 val removeAdsPatch = bytecodePatch(
     name = "Remove ads",
-    description = "Removes the banner and full-screen ads. No ads are loaded and the ad consent popup is skipped.",
+    description = "Removes the banner and full-screen ads. No ads are loaded.",
     default = true
 ) {
     compatibleWith(COMPATIBILITY_WORDFEUD)

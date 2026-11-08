@@ -7,7 +7,9 @@ import org.w3c.dom.Element
 
 /**
  * Ad SDK components that Android starts at every app launch, before any app code runs. With "Remove ads" the ad
- * SDKs are never used, so starting them only costs time, memory and network.
+ * SDKs never load an ad, so starting them only costs time, memory and network. Note: after the user accepts the ad
+ * consent form, Wordfeud still initialises the ad SDKs (AdMob mediation); that path is not verified on a device
+ * without these components yet, so the patch is off by default.
  * (tag, android:name). Elements inside them are removed with them.
  */
 private val REMOVED_COMPONENTS = listOf(
@@ -54,7 +56,8 @@ val debloatPatch = resourcePatch(
     name = "Debloat",
     description = "Stops the ad SDKs from starting with the app, turns off Firebase Analytics and removes the " +
         "advertising ID permissions. Also applies \"Remove ads\". Notifications keep working.",
-    default = true
+    // Off until verified on a device together with the ad consent form (see REMOVED_COMPONENTS).
+    default = false
 ) {
     compatibleWith(COMPATIBILITY_WORDFEUD)
 
