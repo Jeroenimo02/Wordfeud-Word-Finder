@@ -27,16 +27,16 @@ public final class AdBlock {
     /**
      * Blocked AdApi methods. All return void in Wordfeud 5.8.0 (checked in the app's code; see docs/UPDATING.md), so
      * {@link #VOID_REPLY} is the right answer for each. Not blocked: {@code reset}, {@code canShowPrivacyOptions}
-     * (returns a bool), {@code showPrivacyOptions} and {@code showAdInspector} (only on user action), and
-     * {@code showConsentFormIfNeeded}: v1.5.0-dev.1/dev.2 also answered that one and Wordfeud 5.8.0 then crashed about
-     * a second after start; it is the only blocked call that changes the start-up flow, so it is the main suspect.
+     * (returns a bool), {@code showPrivacyOptions} and {@code showAdInspector} (only on user action).
+     * {@code showConsentFormIfNeeded} starts the ad consent flow, and the ad SDKs are only initialised after it.
      */
     public static final Set<String> BLOCKED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             "setBannerAdUnitId", "setBannerVisible",
             "setInterstitialAdUnitId", "setAutoLoadInterstitial", "setInterstitialInterval",
             "setInterstitialPreloading", "showInterstitial",
             "setLeaderboardAdUnitId", "setLeaderboardVisible",
-            "setMrecAdUnitId", "setMrecVisible")));
+            "setMrecAdUnitId", "setMrecVisible",
+            "showConsentFormIfNeeded")));
 
     /**
      * Pigeon's reply for a successful void call: the standard message codec encoding of {@code [null]}
@@ -111,8 +111,7 @@ public final class AdBlock {
         //
         // The reply is posted, never sent from inside handlePlatformMessage. Flutter's own DartMessenger does the
         // same (it runs every handler from a posted task). Replying synchronously re-enters the engine while Dart is
-        // still inside its send call. With Flutter's merged UI/platform thread that is the suspected cause of the crash
-        // about a second after start in v1.5.0-dev.1 to dev.3 (Wordfeud 5.8.0).
+        // still inside its send call (Flutter's UI and platform thread can be the same thread).
         final Method replyM = reply;
         final Method cleanupM = cleanup;
         final Runnable answer = () -> {

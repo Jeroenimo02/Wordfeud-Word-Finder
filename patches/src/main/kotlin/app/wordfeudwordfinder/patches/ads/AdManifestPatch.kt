@@ -1,15 +1,12 @@
-package app.wordfeudwordfinder.patches.debloat
+package app.wordfeudwordfinder.patches.ads
 
 import app.morphe.patcher.patch.resourcePatch
-import app.wordfeudwordfinder.patches.ads.removeAdsPatch
-import app.wordfeudwordfinder.patches.shared.Constants.COMPATIBILITY_WORDFEUD
 import org.w3c.dom.Element
 
 /**
  * Ad SDK components that Android starts at every app launch, before any app code runs. With "Remove ads" the ad
- * SDKs never load an ad, so starting them only costs time, memory and network. Note: after the user accepts the ad
- * consent form, Wordfeud still initialises the ad SDKs (AdMob mediation); that path is not verified on a device
- * without these components yet, so the patch is off by default.
+ * SDKs are never initialised (they start only after the ad consent flow, which AdBlock skips), so starting
+ * these components only costs time, memory and network.
  * (tag, android:name). Elements inside them are removed with them.
  */
 private val REMOVED_COMPONENTS = listOf(
@@ -51,19 +48,9 @@ private val NOTIFICATION_COMPONENTS = listOf(
     "receiver" to "io.flutter.plugins.firebase.messaging.FlutterFirebaseMessagingReceiver",
 )
 
-@Suppress("unused")
-val debloatPatch = resourcePatch(
-    name = "Debloat",
-    description = "Stops the ad SDKs from starting with the app, turns off Firebase Analytics and removes the " +
-        "advertising ID permissions. Also applies \"Remove ads\". Notifications keep working.",
-    // Off until verified on a device together with the ad consent form (see REMOVED_COMPONENTS).
-    default = false
-) {
-    compatibleWith(COMPATIBILITY_WORDFEUD)
-
-    // Without "Remove ads" the app would still try to use the ad SDKs whose start-up this patch removes.
-    dependsOn(removeAdsPatch)
-
+// Internal patch (no name): the manifest part of "Remove ads" (removeAdsPatch depends on it, which also supplies
+// compatibleWith). A resource patch, because it edits AndroidManifest.xml; the bytecode part is in RemoveAdsPatch.kt.
+internal val adManifestPatch = resourcePatch {
     execute {
         document("AndroidManifest.xml").use { doc ->
             fun elements(tag: String): List<Element> {
@@ -102,7 +89,7 @@ val debloatPatch = resourcePatch(
             // Safety net for notifications (see NOTIFICATION_COMPONENTS).
             val missing = notificationsBefore.filter { (tag, name) -> name !in names(tag) }
             if (missing.isNotEmpty()) {
-                error("Debloat would remove what notifications need: $missing")
+                error("Remove ads would remove what notifications need: $missing")
             }
         }
     }
