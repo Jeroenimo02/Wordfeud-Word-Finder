@@ -14,16 +14,16 @@
       "words": 341891
     },
     "de": {
-      "added": 0,
+      "added": 1,
       "attribution": "enz/german-wordlist",
       "file": "wordlists/de/words.txt.gz",
       "license": "CC0 1.0",
       "removed": 2,
-      "sha256": "390b9d65fd10e28ca17f5dace2497a50eb22d4086cc5c0941a28442b1b37b6ab",
+      "sha256": "88d5c069aa6ccd0e99de9118c7b4b8d4cbf736e6ca1d04bd1313db26be0b6a9a",
       "size": 1445443,
       "source_words": 590890,
-      "version": 3,
-      "words": 590888
+      "version": 4,
+      "words": 590889
     },
     "en-intl": {
       "added": 0,
