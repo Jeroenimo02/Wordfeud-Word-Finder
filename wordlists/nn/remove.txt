@@ -5,3 +5,6 @@ MW
 MS
 CF
 CG
+BS
+TG
+KJ
