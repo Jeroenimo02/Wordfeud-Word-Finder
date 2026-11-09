@@ -122,16 +122,16 @@
       "words": 98474
     },
     "pt": {
-      "added": 2,
+      "added": 3,
       "attribution": "jfoclpf/words-pt (European Portuguese, from the Natura word lists of Universidade do Minho)",
       "file": "wordlists/pt/words.txt.gz",
       "license": "GPL-3.0",
       "removed": 0,
-      "sha256": "25e48bee7aec6152f887cd9ae94ba88a0c4e68ea9ca59dd584b2da3cc6161773",
-      "size": 856663,
+      "sha256": "1749fdefbf69a62879ac795834997cd0f1d1da01e8b23a8d22b53a41d17b0dc8",
+      "size": 856665,
       "source_words": 372377,
-      "version": 4,
-      "words": 372379
+      "version": 5,
+      "words": 372380
     },
     "sv": {
       "added": 0,
