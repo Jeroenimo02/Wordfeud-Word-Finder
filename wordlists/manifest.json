@@ -134,16 +134,16 @@
       "words": 372379
     },
     "sv": {
-      "added": 1,
+      "added": 2,
       "attribution": "Den stora svenska ordlistan (Göran Andersson), as adapted in mrcz/Wordfeud-Player",
       "file": "wordlists/sv/words.txt.gz",
       "license": "CC BY-SA 3.0",
       "removed": 0,
-      "sha256": "0d8b078cfac6aef55c9e713a614a65cc8519cfac9c56beefb0bc70e0b76f7083",
-      "size": 895057,
+      "sha256": "6dc698279954410f2688ee21556b24cc3c7e8a6b8b6b28d0af6de8a1a7703e6d",
+      "size": 895058,
       "source_words": 370672,
-      "version": 2,
-      "words": 370673
+      "version": 3,
+      "words": 370674
     },
     "sv-strict": {
       "added": 1,
