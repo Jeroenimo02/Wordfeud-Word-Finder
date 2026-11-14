@@ -30,12 +30,12 @@
       "attribution": "ENABLE2K via dolph/dictionary; Wordnik open word list; lorenbrichter/Words en.txt (Letterpress)",
       "file": "wordlists/en-intl/words.txt.gz",
       "license": "Public domain (ENABLE), MIT (Wordnik, Copyright (c) 2020 Wordnik), CC0 1.0 (Letterpress, as published)",
-      "removed": 5,
-      "sha256": "4a75f649c2c775e3f125e898a6f389d88a95b1a7a55b2cd4cd9f56e14ef4a7d9",
-      "size": 713715,
+      "removed": 6,
+      "sha256": "41a13c7b4fa6b5b4bc048e6d1171ff6990eb0cc671c8ec7ae7e5d0a9e90d7820",
+      "size": 713714,
       "source_words": 275412,
-      "version": 7,
-      "words": 275407
+      "version": 8,
+      "words": 275406
     },
     "en-us": {
       "added": 0,
