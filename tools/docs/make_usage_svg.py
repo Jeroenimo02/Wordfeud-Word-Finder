@@ -36,13 +36,13 @@ def board(x0, y0, c, move=None, labels=True):
         for (r,k),ch in move.items():
             tile(x0+k*c+0.5, y0+r*c+0.5, c-1, ch, fill="#CFE3FF", stroke="#2F6FDB", txt="#12305E")
 
-W, H = 640, 420
+W, H = 640, 440
 A(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" viewBox="0 0 {W} {H}" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">')
-A('<title>How to use the word finder: tap the book button above your rack, then pick a move and press Play</title>')
+A('<title>How to use the word finder: tap the book button above your rack, then pick a move and press Play next to it</title>')
 A(f'<rect width="{W}" height="{H}" rx="14" fill="#F4F6F8"/>')
 
 # ---------- step 1: game screen ----------
-px, py, pw, ph = 40, 48, 230, 352
+px, py, pw, ph = 40, 48, 230, 372
 A(f'<text x="{px+pw/2}" y="30" text-anchor="middle" font-size="16" font-weight="600" fill="#1F2937">1. Open a game, tap the book</text>')
 A(f'<rect x="{px}" y="{py}" width="{pw}" height="{ph}" rx="20" fill="#D0D5DB" stroke="#9CA3AF" stroke-width="2"/>')
 # score bar
@@ -66,44 +66,56 @@ for i,ch in enumerate(RACK):
 # arrow
 A('<path d="M286 224h40" stroke="#6B7280" stroke-width="2.5" fill="none"/><path d="M326 217l11 7-11 7z" fill="#6B7280"/>')
 
-# ---------- step 2: overlay ----------
-ox, oy, ow, oh = 352, 48, 248, 352
+# ---------- step 2: overlay (same order as OverlayController.buildPanel) ----------
+# header "Word finder" + close, rack (used tiles dimmed), board, info row (word, detail, score, Play),
+# sort row (three equal buttons), move list (word, detail, score).
+ox, oy, ow, oh = 352, 48, 248, ph
 A(f'<text x="{ox+ow/2}" y="30" text-anchor="middle" font-size="16" font-weight="600" fill="#1F2937">2. Pick a move, press Play</text>')
 A(f'<rect x="{ox}" y="{oy}" width="{ow}" height="{oh}" rx="20" fill="#FFFFFF" stroke="#9CA3AF" stroke-width="2"/>')
-# mini rack
+# header
+A(f'<text x="{ox+16}" y="{oy+26}" font-size="14" font-weight="700" fill="#111827">Word finder</text>')
+A(f'<text x="{ox+ow-18}" y="{oy+27}" text-anchor="end" font-size="18" fill="#374151">\u00d7</text>')
+# rack, the tiles the chosen move uses dimmed
 ms = 17; mx0 = ox + (ow - 7*ms - 6*2)/2
 used = list(MOVE.values())
 for i,ch in enumerate(RACK):
     if ch in used:
         used.remove(ch)
-        tile(mx0 + i*(ms+2), oy+12, ms, ch, fill="#ECEEF1", stroke="#C7CBD1", txt="#9AA1AB")
+        tile(mx0 + i*(ms+2), oy+38, ms, ch, fill="#ECEEF1", stroke="#C7CBD1", txt="#9AA1AB")
     else:
-        tile(mx0 + i*(ms+2), oy+12, ms, ch)
+        tile(mx0 + i*(ms+2), oy+38, ms, ch)
 # preview board with the chosen move
-c2 = 14
-board(ox + (ow - N*c2)/2, oy+38, c2, move=MOVE, labels=False)
-# sort chips
-cy = oy + 38 + N*c2 + 10
-chips = [("Score", 48, True), ("Length", 52, False), ("A-Z", 38, False)]
-x = ox + 16
-for label, w, on in chips:
-    A(f'<rect x="{x}" y="{cy}" width="{w}" height="20" rx="10" fill="{"#1B5E9E" if on else "#E5E7EB"}"/>')
-    A(f'<text x="{x+w/2}" y="{cy+14}" text-anchor="middle" font-size="11" fill="{"#FFFFFF" if on else "#374151"}">{label}</text>')
-    x += w + 6
+c2 = 13
+by0 = oy + 64
+board(ox + (ow - N*c2)/2, by0, c2, move=MOVE, labels=False)
+# info row: chosen word + detail, score, Play
+iy = by0 + N*c2 + 12
+A(f'<text x="{ox+16}" y="{iy+15}" font-size="15" font-weight="700" font-family="Menlo, Consolas, monospace" fill="#111827">QUIET</text>')
+A(f'<text x="{ox+16}" y="{iy+30}" font-size="10" fill="#6B7280">Down \u00b7 Uses: Q U I T</text>')
+A(f'<text x="{ox+ow-82}" y="{iy+21}" text-anchor="end" font-size="13" font-weight="700" fill="#111827">31 pts</text>')
+A(f'<rect x="{ox+ow-74}" y="{iy+4}" width="58" height="26" rx="13" fill="#16A34A"/>')
+A(f'<rect x="{ox+ow-79}" y="{iy-1}" width="68" height="36" rx="18" fill="none" stroke="#2563EB" stroke-width="2" stroke-dasharray="4 3"/>')
+A(f'<text x="{ox+ow-45}" y="{iy+21.5}" text-anchor="middle" font-size="13" font-weight="700" fill="#FFFFFF">Play</text>')
+# sort row: three equal buttons
+sy = iy + 42
+bw = (ow - 32 - 8) / 3
+for i,(label,on) in enumerate([("Score", True), ("Length", False), ("A-Z", False)]):
+    x = ox + 16 + i*(bw+4)
+    A(f'<rect x="{x:.1f}" y="{sy}" width="{bw:.1f}" height="22" rx="11" fill="{"#1B5E9E" if on else "#E5E7EB"}"/>')
+    A(f'<text x="{x+bw/2:.1f}" y="{sy+15}" text-anchor="middle" font-size="11" fill="{"#FFFFFF" if on else "#374151"}">{label}</text>')
 # move list
-moves = [("QUIET", 31), ("QUINT", 28), ("ZINE", 24), ("TUNE", 9)]
-ly = cy + 28; rh = 25
-for i,(w,s) in enumerate(moves):
+moves = [("QUIET", "Down \u00b7 Uses: Q U I T", 31), ("QUINT", "Across \u00b7 Uses: Q U I N T", 28),
+         ("ZINE", "Down \u00b7 Uses: Z I N", 24)]
+ly = sy + 30; rh = 31
+for i,(w,d,sc) in enumerate(moves):
     y = ly + i*rh
+    if y + rh > oy + oh - 10: break
     if i == 0:
-        A(f'<rect x="{ox+12}" y="{y}" width="{ow-24}" height="{rh-2}" rx="6" fill="#DBEAFE" stroke="#3B82F6"/>')
-    elif i > 0:
+        A(f'<rect x="{ox+10}" y="{y}" width="{ow-20}" height="{rh-3}" rx="6" fill="#DBEAFE" stroke="#3B82F6"/>')
+    else:
         A(f'<path d="M{ox+12} {y-1}h{ow-24}" stroke="#E5E7EB"/>')
-    fw = ' font-weight="700"' if i == 0 else ''
-    A(f'<text x="{ox+24}" y="{y+16}" font-size="13" fill="#111827"{fw}>{w}</text>')
-    A(f'<text x="{ox+ow-24}" y="{y+16}" text-anchor="end" font-size="13" fill="#111827"{fw}>{s}</text>')
-by = oy + oh - 42
-A(f'<rect x="{ox+ow/2-48}" y="{by}" width="96" height="30" rx="15" fill="#16A34A"/>')
-A(f'<text x="{ox+ow/2}" y="{by+20}" text-anchor="middle" font-size="14" font-weight="700" fill="#FFFFFF">Play</text>')
+    A(f'<text x="{ox+20}" y="{y+13}" font-size="12" font-weight="700" font-family="Menlo, Consolas, monospace" fill="#111827">{w}</text>')
+    A(f'<text x="{ox+20}" y="{y+24}" font-size="9" fill="#6B7280">{d}</text>')
+    A(f'<text x="{ox+ow-20}" y="{y+18}" text-anchor="end" font-size="12" font-weight="600" fill="#111827">{sc} pts</text>')
 A('</svg>')
 open(sys.argv[1], "w").write("\n".join(out) + "\n")

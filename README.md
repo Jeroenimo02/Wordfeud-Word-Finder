@@ -21,7 +21,7 @@ Add the patch source in Morphe with the badge above, or open
 
 1. Patch Wordfeud with "Word Finder overlay" (and optionally "Remove ads") in Morphe Manager.
 2. Open a game: a round book button appears just above your rack. Tap it.
-3. Pick a move from the list (sort by score, length or A-Z) to see it on the preview board, then press **Play**.
+3. Pick a move from the list (sort by score, length or A-Z): it shows on the preview board, with **Play** next to it above the list.
 
 Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versions are experimental; see `docs/UPDATING.md` for checking and adding a new Wordfeud version.
 
