@@ -1,3 +1,9 @@
+## [1.6.0-dev.2](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.6.0-dev.1...v1.6.0-dev.2) (2026-11-15)
+
+### ✨ New Features
+
+* Wordfeud 5.8.2 support ([922769b](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/922769b9a81a8d9e65b93621e49f40ca1d3ebda0))
+
 ## [1.6.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.1-dev.1...v1.6.0-dev.1) (2026-11-15)
 
 ### ✨ New Features
