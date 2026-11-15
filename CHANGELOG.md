@@ -1,3 +1,10 @@
+## [1.6.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.1-dev.1...v1.6.0-dev.1) (2026-11-15)
+
+### ✨ New Features
+
+* "Word finder overlay" is now "Word finder"; usage picture in the README ([48e4f81](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/48e4f8111698cb6696a30f76de21c6e3c9db6b2b))
+* keep "overlay" in the name ("Word Finder overlay"), clearer usage picture ([2b03b93](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/commit/2b03b93ead07fa9036e6cb409574e4cf08370406))
+
 ## [1.5.1-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/compare/v1.5.0...v1.5.1-dev.1) (2026-11-15)
 
 ### 🐛 Bug Fixes

@@ -28,7 +28,7 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versio
 ## Patches
 
 <!-- PATCHES_START -->
-> **[v1.5.1-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/tag/v1.5.1-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
+> **[v1.6.0-dev.1](https://github.com/Jeroenimo02/Wordfeud-Word-Finder/releases/tag/v1.6.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
 <details open>
 <summary>📦 Wordfeud&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
@@ -43,7 +43,7 @@ Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versio
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
 | [Remove ads](#remove-ads) | Removes the banner and full-screen ads and skips the ad consent popup. The ad SDKs no longer start with the app, Firebase Analytics is turned off and the advertising ID permissions are removed. Notifications keep working. |  |
-| [Word finder overlay](#word-finder-overlay) | Adds a floating button on the game screen that opens a list of all possible moves. |  |
+| [Word Finder overlay](#word-finder-overlay) | Adds a floating button on the game screen that opens a list of all possible moves. |  |
 
 </details>
 
