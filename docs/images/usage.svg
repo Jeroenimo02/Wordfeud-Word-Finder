@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="330" viewBox="0 0 560 330" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <title>How to use the word finder: tap the book button on the game screen, then pick a move and press Play</title>
+  <rect width="560" height="330" rx="14" fill="#F4F6F8"/>
+
+  <!-- Step 1: game screen with the book button -->
+  <text x="140" y="30" text-anchor="middle" font-size="15" font-weight="600" fill="#1F2937">1. Open a game, tap the book</text>
+  <rect x="55" y="45" width="170" height="268" rx="18" fill="#D0D5DB" stroke="#9CA3AF" stroke-width="2"/>
+  <g fill="#F9FAFB" stroke="#C4C9D0" stroke-width="1">
+    <rect x="68" y="62" width="144" height="144" rx="3"/>
+  </g>
+  <g stroke="#E2E5E9" stroke-width="1">
+    <path d="M86 62v144M104 62v144M122 62v144M140 62v144M158 62v144M176 62v144M194 62v144"/>
+    <path d="M68 80h144M68 98h144M68 116h144M68 134h144M68 152h144M68 170h144M68 188h144"/>
+  </g>
+  <g fill="#F3E3B5" stroke="#C9A85A" stroke-width="1">
+    <rect x="105" y="117" width="16" height="16" rx="2"/><rect x="123" y="117" width="16" height="16" rx="2"/><rect x="141" y="117" width="16" height="16" rx="2"/>
+  </g>
+  <!-- book button -->
+  <circle cx="196" cy="236" r="17" fill="none" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="4 3"/>
+  <circle cx="196" cy="236" r="12" fill="#1B5E9E"/>
+  <path d="M189 231.5c2.5-1.2 4.8-1.2 7 0.4v8.6c-2.2-1.6-4.5-1.6-7-0.4zM203 231.5c-2.5-1.2-4.8-1.2-7 0.4v8.6c2.2-1.6 4.5-1.6 7-0.4z" fill="#FFFFFF"/>
+  <text x="168" y="240" text-anchor="end" font-size="12" font-weight="600" fill="#2563EB">tap</text>
+  <!-- rack -->
+  <g fill="#F3E3B5" stroke="#C9A85A" stroke-width="1">
+    <rect x="70" y="266" width="18" height="20" rx="2"/><rect x="90" y="266" width="18" height="20" rx="2"/><rect x="110" y="266" width="18" height="20" rx="2"/>
+    <rect x="130" y="266" width="18" height="20" rx="2"/><rect x="150" y="266" width="18" height="20" rx="2"/><rect x="170" y="266" width="18" height="20" rx="2"/><rect x="190" y="266" width="18" height="20" rx="2"/>
+  </g>
+
+  <!-- arrow -->
+  <path d="M248 180h44" stroke="#6B7280" stroke-width="2.5" fill="none"/>
+  <path d="M292 173l10 7-10 7z" fill="#6B7280"/>
+
+  <!-- Step 2: overlay with the move list -->
+  <text x="420" y="30" text-anchor="middle" font-size="15" font-weight="600" fill="#1F2937">2. Pick a move, press Play</text>
+  <rect x="325" y="45" width="190" height="268" rx="18" fill="#FFFFFF" stroke="#9CA3AF" stroke-width="2"/>
+  <!-- preview board -->
+  <rect x="340" y="60" width="160" height="70" rx="4" fill="#F3F4F6" stroke="#D1D5DB"/>
+  <g fill="#BFDBFE" stroke="#3B82F6" stroke-width="1">
+    <rect x="380" y="86" width="16" height="16" rx="2"/><rect x="398" y="86" width="16" height="16" rx="2"/><rect x="416" y="86" width="16" height="16" rx="2"/><rect x="434" y="86" width="16" height="16" rx="2"/>
+  </g>
+  <!-- sort chips -->
+  <g font-size="10" fill="#374151">
+    <rect x="340" y="140" width="46" height="18" rx="9" fill="#1B5E9E"/><text x="363" y="152.5" text-anchor="middle" fill="#FFFFFF">Score</text>
+    <rect x="392" y="140" width="50" height="18" rx="9" fill="#E5E7EB"/><text x="417" y="152.5" text-anchor="middle">Length</text>
+    <rect x="448" y="140" width="36" height="18" rx="9" fill="#E5E7EB"/><text x="466" y="152.5" text-anchor="middle">A-Z</text>
+  </g>
+  <!-- move list -->
+  <g font-size="12" fill="#111827">
+    <rect x="340" y="166" width="160" height="26" rx="5" fill="#DBEAFE" stroke="#3B82F6"/>
+    <text x="350" y="183" font-weight="600">QUIZ</text><text x="490" y="183" text-anchor="end" font-weight="600">48</text>
+    <text x="350" y="209">ZONE</text><text x="490" y="209" text-anchor="end">31</text>
+    <path d="M340 216h160" stroke="#E5E7EB"/>
+    <text x="350" y="233">QUOTE</text><text x="490" y="233" text-anchor="end">27</text>
+    <path d="M340 240h160" stroke="#E5E7EB"/>
+    <text x="350" y="257">TONE</text><text x="490" y="257" text-anchor="end">14</text>
+  </g>
+  <rect x="380" y="272" width="80" height="28" rx="14" fill="#16A34A"/>
+  <text x="420" y="290.5" text-anchor="middle" font-size="13" font-weight="600" fill="#FFFFFF">Play</text>
+</svg>

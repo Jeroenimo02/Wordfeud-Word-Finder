@@ -15,6 +15,14 @@ Add the patch source in Morphe with the badge above, or open
 - The Play button sends the chosen move through the Wordfeud API.
 - Separate patch **Remove ads**: no banner or full-screen ads and no ad consent popup; the ad SDKs no longer start with the app, Firebase Analytics is off and the advertising ID permissions are removed. Notifications keep working.
 
+## How to use
+
+<img src="docs/images/usage.svg" alt="Tap the book button on the game screen, then pick a move and press Play" width="420">
+
+1. Patch Wordfeud with "Word finder" (and optionally "Remove ads") in Morphe Manager.
+2. Open a game: a round book button appears just above your rack. Tap it.
+3. Pick a move from the list (sort by score, length or A-Z) to see it on the preview board, then press **Play**.
+
 Supported app: `com.hbwares.wordfeud.free` **5.7.1** and **5.8.0**. Other versions are experimental; see `docs/UPDATING.md` for checking and adding a new Wordfeud version.
 
 ## Patches
