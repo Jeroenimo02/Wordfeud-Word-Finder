@@ -19,7 +19,7 @@ Add the patch source in Morphe with the badge above, or open
 
 <img src="docs/images/usage.svg" alt="Tap the book button on the game screen, then pick a move and press Play" width="420">
 
-1. Patch Wordfeud with "Word finder" (and optionally "Remove ads") in Morphe Manager.
+1. Patch Wordfeud with "Word Finder overlay" (and optionally "Remove ads") in Morphe Manager.
 2. Open a game: a round book button appears just above your rack. Tap it.
 3. Pick a move from the list (sort by score, length or A-Z) to see it on the preview board, then press **Play**.
 
