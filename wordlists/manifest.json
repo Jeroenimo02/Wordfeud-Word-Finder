@@ -42,12 +42,12 @@
       "attribution": "ENABLE2K word list via dolph/dictionary; Wordnik open word list (wordnik/wordlist)",
       "file": "wordlists/en-us/words.txt.gz",
       "license": "Public domain (ENABLE) and MIT (Wordnik, Copyright (c) 2020 Wordnik)",
-      "removed": 8,
-      "sha256": "e27ffbd4d85c879d404961a179d8d0ceb7d54103196f9ab340c00d3dbe8b79eb",
-      "size": 502702,
+      "removed": 13,
+      "sha256": "5203d0f7309d9d3b4c6284ab96b41fc28086d8d405f7bc90fbd36edf1fd1db8e",
+      "size": 502699,
       "source_words": 194220,
-      "version": 8,
-      "words": 194212
+      "version": 13,
+      "words": 194207
     },
     "es": {
       "added": 0,
