@@ -98,16 +98,16 @@
       "words": 126426
     },
     "nl": {
-      "added": 91,
+      "added": 93,
       "attribution": "OpenTaal word list, via jensanjo/wordfeud-wordlists",
       "file": "wordlists/nl/words.txt.gz",
       "license": "Revised BSD and/or CC BY 3.0 (OpenTaal)",
       "removed": 10,
-      "sha256": "67d252e5adee32c55867d8f294fe28ae7bcefe3488964f57f60ff81ab989730c",
-      "size": 1018498,
+      "sha256": "2535595c7b47ee53813eb34d13de9d4cc113b7753624179b8279b712ec4d543e",
+      "size": 1018505,
       "source_words": 340672,
-      "version": 62,
-      "words": 340753
+      "version": 63,
+      "words": 340755
     },
     "nn": {
       "added": 12,
